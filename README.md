@@ -11,7 +11,7 @@
 - 笔记：Markdown 预览、标签、分类和基础 `[[双链]]` 文本识别。
 - 数据：数据集登记、实验指标 JSON、简单图表和结果对比。
 - 事务：组会、材料、报销、截止事项的状态追踪。
-- AI：服务端接口和试验台骨架，密钥只通过环境变量读取。
+- AI：服务端接口和试验台骨架，Key、Base URL 和模型名可在设置中心维护。
 - 设置：Vercel 环境变量状态、Zotero/AI 配置状态、JSON/BibTeX 导出。
 
 ## 技术栈
@@ -54,12 +54,21 @@ ZOTERO_LIBRARY_TYPE="user"
 ZOTERO_COLLECTION_KEY=""
 ZOTERO_SYNC_LIMIT="100"
 
-OPENAI_API_KEY=""
-ANTHROPIC_API_KEY=""
-AI_MODEL=""
+APP_ENCRYPTION_KEY=""
 ```
 
 `ZOTERO_LIBRARY_TYPE` 可选 `user` 或 `group`。`ZOTERO_COLLECTION_KEY` 留空时同步库中的顶层条目；填写后只同步指定 collection。
+
+`APP_ENCRYPTION_KEY` 用于加密设置中心保存的 AI API Key。部署后更换这个值会导致旧 Key 无法解密，因此只建议在首次部署时生成一次强随机字符串。
+
+## AI 设置中心
+
+AI 的 API Key、Base URL 和模型名属于高频变动项，部署后可以直接在设置页修改。保存逻辑如下：
+
+- API Key 加密后写入数据库，页面只显示“已配置/未配置”。
+- API Key 输入框留空表示不修改当前 Key。
+- 输入 `CLEAR` 可以清除当前保存的 Key。
+- Vercel 只需要稳定配置 `APP_ENCRYPTION_KEY`，不需要每次换模型都重新部署。
 
 ## Zotero 同步
 

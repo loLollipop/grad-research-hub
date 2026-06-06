@@ -121,3 +121,10 @@ export const adminItemSchema = z.object({
   location: optionalText,
   notes: optionalText,
 });
+
+export const aiSettingsSchema = z.object({
+  provider: z.enum(["openai", "anthropic", "custom"]).default("openai"),
+  baseUrl: z.string().trim().url("Base URL 需要是合法 URL"),
+  model: z.string().trim().min(1, "模型名不能为空").max(120, "模型名过长"),
+  apiKey: z.string().trim().max(4_000, "API Key 过长").default(""),
+});

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { splitTags, tagsToString } from "@/lib/format";
 import {
   adminItemSchema,
+  aiSettingsSchema,
   datasetSchema,
   experimentSchema,
   milestoneSchema,
@@ -15,6 +16,7 @@ import {
   resultSchema,
   taskSchema,
 } from "@/lib/validators";
+import { saveAiSettings } from "@/lib/settings";
 import { fetchZoteroPapers } from "@/lib/zotero";
 
 function data(formData: FormData) {
@@ -519,4 +521,13 @@ export async function deleteAdminItem(formData: FormData) {
   await prisma.adminItem.delete({ where: { id } });
   revalidatePath("/");
   revalidatePath("/admin");
+}
+
+export async function updateAiSettings(formData: FormData) {
+  const parsed = aiSettingsSchema.safeParse(data(formData));
+  if (!parsed.success) fail(parsed.error);
+
+  await saveAiSettings(parsed.data);
+  revalidatePath("/settings");
+  revalidatePath("/ai");
 }

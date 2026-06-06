@@ -9,7 +9,10 @@ import {
   UploadCloud,
 } from "lucide-react";
 
+import { updateAiSettings } from "@/lib/actions";
 import { PageHeader } from "@/components/shared/page-header";
+import { Field } from "@/components/shared/field";
+import { SubmitButton } from "@/components/shared/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -18,13 +21,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { prisma } from "@/lib/db";
+import { getAiSettings } from "@/lib/settings";
 import { getZoteroConfigStatus } from "@/lib/zotero";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const zotero = getZoteroConfigStatus();
+  const aiSettings = await getAiSettings();
   const counts = await Promise.all([
     prisma.paper.count(),
     prisma.project.count(),
@@ -122,12 +128,16 @@ export default async function SettingsPage() {
               <Bot className="size-4" />
               AI 配置
             </CardTitle>
-            <CardDescription>密钥只在服务端读取，页面不保存也不回显。</CardDescription>
+            <CardDescription>高频变动项可以直接在这里修改，Key 不会完整回显。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm">
-            <EnvStatus label="OPENAI_API_KEY" ready={Boolean(process.env.OPENAI_API_KEY)} />
-            <EnvStatus label="ANTHROPIC_API_KEY" ready={Boolean(process.env.ANTHROPIC_API_KEY)} />
-            <InfoRow label="默认模型" value={process.env.AI_MODEL || "未设置"} />
+            <EnvStatus label="运行时 API Key" ready={aiSettings.apiKeyConfigured} />
+            <InfoRow label="当前模型" value={aiSettings.model} />
+            <InfoRow label="Base URL" value={aiSettings.baseUrl} />
+            <details className="rounded-md border p-3">
+              <summary className="cursor-pointer text-sm font-medium">编辑 AI 连接</summary>
+              <AiSettingsForm settings={aiSettings} />
+            </details>
           </CardContent>
         </Card>
       </section>
@@ -145,9 +155,7 @@ export default async function SettingsPage() {
               "ZOTERO_LIBRARY_ID",
               "ZOTERO_LIBRARY_TYPE",
               "ZOTERO_COLLECTION_KEY",
-              "OPENAI_API_KEY",
-              "ANTHROPIC_API_KEY",
-              "AI_MODEL",
+              "APP_ENCRYPTION_KEY",
             ].map((name) => (
               <code key={name} className="rounded-md border bg-[#fffdf7] px-3 py-2 text-sm">
                 {name}
@@ -164,12 +172,58 @@ export default async function SettingsPage() {
           <CardContent className="grid gap-2 text-sm text-muted-foreground">
             <p>1. 在 Vercel 导入 GitHub 仓库。</p>
             <p>2. 绑定 PostgreSQL 数据库，并配置 `DATABASE_URL`。</p>
-            <p>3. 配置 Zotero 和 AI 相关环境变量。</p>
+            <p>3. 配置 Zotero 变量和 `APP_ENCRYPTION_KEY`。</p>
             <p>4. 首次部署后执行 Prisma migration，再访问文献页同步 Zotero。</p>
+            <p>5. AI 的 Key、Base URL 和模型名可以在设置中心随时更新。</p>
           </CardContent>
         </Card>
       </section>
     </div>
+  );
+}
+
+function AiSettingsForm({
+  settings,
+}: {
+  settings: {
+    provider: "openai" | "anthropic" | "custom";
+    baseUrl: string;
+    model: string;
+    apiKeyConfigured: boolean;
+  };
+}) {
+  return (
+    <form action={updateAiSettings} className="mt-3 grid gap-3">
+      <Field label="服务商">
+        <select
+          name="provider"
+          defaultValue={settings.provider}
+          className="h-8 rounded-lg border bg-background px-2 text-sm"
+        >
+          <option value="openai">OpenAI 兼容</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="custom">自定义兼容接口</option>
+        </select>
+      </Field>
+      <Field label="Base URL">
+        <Input name="baseUrl" defaultValue={settings.baseUrl} required />
+      </Field>
+      <Field label="模型名">
+        <Input name="model" defaultValue={settings.model} required />
+      </Field>
+      <Field
+        label="API Key"
+        hint={settings.apiKeyConfigured ? "留空表示不修改；输入 CLEAR 可以清除当前 Key。" : "保存后只显示配置状态，不回显完整 Key。"}
+      >
+        <Input
+          name="apiKey"
+          type="password"
+          autoComplete="off"
+          placeholder={settings.apiKeyConfigured ? "已配置，留空不改" : "粘贴新的 API Key"}
+        />
+      </Field>
+      <SubmitButton>保存 AI 配置</SubmitButton>
+    </form>
   );
 }
 

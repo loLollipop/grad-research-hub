@@ -176,3 +176,14 @@ model AdminItem {
   @@index([status])
   @@index([dueDate])
 }
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  secret    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([secret])
+}

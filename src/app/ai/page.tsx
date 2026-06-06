@@ -27,7 +27,7 @@ export default function AiPage() {
       <PageHeader
         eyebrow="AI"
         title="AI 助手"
-        description="先保留服务端接口和试验台，密钥在设置中心或 Vercel 环境变量中配置，不干扰核心管理流程。"
+        description="先保留服务端接口和试验台；API Key、Base URL 和模型名在设置中心维护。"
       />
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
@@ -56,8 +56,8 @@ export default function AiPage() {
               <EnvRow label="OPENAI_API_KEY" ready={openaiReady} />
               <EnvRow label="ANTHROPIC_API_KEY" ready={anthropicReady} />
               <p className="pt-2 text-xs leading-5 text-muted-foreground">
-                首版不会把密钥暴露到浏览器。真实调用应只放在服务端 route handler 或 Server
-                Action 中，并为请求增加速率限制。
+                首版不会把密钥暴露到浏览器。真实调用应只放在服务端 route handler 或
+                Server Action 中，并为请求增加速率限制。
               </p>
             </CardContent>
           </Card>

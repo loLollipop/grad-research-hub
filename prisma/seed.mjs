@@ -15,6 +15,7 @@ async function main() {
   await prisma.project.deleteMany();
   await prisma.note.deleteMany();
   await prisma.adminItem.deleteMany();
+  await prisma.appSetting.deleteMany();
 
   const project = await prisma.project.create({
     data: {
@@ -150,6 +151,23 @@ async function main() {
         location: "学院楼 B402",
         notes: "带上基线实验曲线和失败样例。",
         tags: tags(["组会"]),
+      },
+    ],
+  });
+
+  await prisma.appSetting.createMany({
+    data: [
+      {
+        key: "ai.provider",
+        value: "openai",
+      },
+      {
+        key: "ai.baseUrl",
+        value: "https://api.openai.com/v1",
+      },
+      {
+        key: "ai.model",
+        value: "gpt-5-mini",
       },
     ],
   });

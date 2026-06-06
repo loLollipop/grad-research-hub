@@ -143,6 +143,17 @@ CREATE TABLE "AdminItem" (
     CONSTRAINT "AdminItem_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "AppSetting" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "secret" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AppSetting_pkey" PRIMARY KEY ("id")
+);
+
 CREATE TABLE "_ExperimentToPaper" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
@@ -169,6 +180,8 @@ CREATE INDEX "Result_datasetId_idx" ON "Result"("datasetId");
 CREATE INDEX "AdminItem_type_idx" ON "AdminItem"("type");
 CREATE INDEX "AdminItem_status_idx" ON "AdminItem"("status");
 CREATE INDEX "AdminItem_dueDate_idx" ON "AdminItem"("dueDate");
+CREATE UNIQUE INDEX "AppSetting_key_key" ON "AppSetting"("key");
+CREATE INDEX "AppSetting_secret_idx" ON "AppSetting"("secret");
 CREATE INDEX "_ExperimentToPaper_B_index" ON "_ExperimentToPaper"("B");
 
 ALTER TABLE "Milestone" ADD CONSTRAINT "Milestone_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
