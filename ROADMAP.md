@@ -2,7 +2,7 @@
 
 ## v0.1 MVP
 
-- Vercel-first Next.js app with Prisma and PostgreSQL.
+- Server-first Next.js app with Docker Compose, Prisma, and PostgreSQL.
 - Homepage for tasks, papers, experiments, notes, data, and admin items.
 - Zotero Web API sync for literature metadata.
 - Markdown experiment records and notes.

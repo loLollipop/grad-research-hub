@@ -95,7 +95,7 @@ export default async function PapersPage({ searchParams }: Props) {
       {!zotero.ready ? (
         <Card className="rounded-lg border-amber-200 bg-amber-50">
           <CardContent className="py-3 text-sm text-amber-900">
-            Zotero 同步需要在 Vercel 环境变量中配置 `ZOTERO_API_KEY` 和
+            Zotero 同步需要在服务器 `.env` 中配置 `ZOTERO_API_KEY` 和
             `ZOTERO_LIBRARY_ID`。配置后回到这里点击同步即可。
           </CardContent>
         </Card>

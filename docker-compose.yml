@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-grad_research_hub}
+      POSTGRES_USER: ${POSTGRES_USER:-gradhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gradhub} -d ${POSTGRES_DB:-grad_research_hub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gradhub}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-grad_research_hub}
+      APP_PASSWORD: ${APP_PASSWORD:?set APP_PASSWORD in .env}
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:?set APP_ENCRYPTION_KEY in .env}
+      ZOTERO_API_KEY: ${ZOTERO_API_KEY:-}
+      ZOTERO_LIBRARY_ID: ${ZOTERO_LIBRARY_ID:-}
+      ZOTERO_LIBRARY_TYPE: ${ZOTERO_LIBRARY_TYPE:-user}
+      ZOTERO_COLLECTION_KEY: ${ZOTERO_COLLECTION_KEY:-}
+      ZOTERO_SYNC_LIMIT: ${ZOTERO_SYNC_LIMIT:-100}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  postgres_data:

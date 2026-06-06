@@ -14,113 +14,174 @@
 - AI：Key、Base URL 和模型名可在设置中心维护。
 - 设置：AI 连接、数据导出、部署健康检查和少量高级信息。
 
-## 技术栈
+## 推荐部署方式
 
-- Next.js App Router + TypeScript
-- Tailwind CSS + shadcn/ui + lucide-react
-- Prisma ORM + PostgreSQL
-- zod + Server Actions
-- react-markdown + remark-gfm
-- recharts
+推荐部署到一台普通 Linux 服务器，用 Docker Compose 同时启动：
 
-## 快速部署到 Vercel
+- `app`：Next.js 应用
+- `db`：PostgreSQL 数据库
 
-最省事的路线是：GitHub 仓库 + Vercel + 托管 PostgreSQL。下面按第一次部署的顺序写。
+这样不需要另外购买托管数据库，也不用在多个平台之间来回复制连接串。
 
-### 1. 导入项目
+## 服务器要求
 
-1. Fork 本仓库，或把代码推到你自己的 GitHub 仓库。
-2. 打开 [Vercel Dashboard](https://vercel.com/dashboard)。
-3. 点击 `Add New... -> Project`。
-4. 选择你的 `grad-research-hub` 仓库并导入。
+最低建议：
 
-### 2. 创建数据库并获取 `DATABASE_URL`
+- Ubuntu 22.04 / Debian 12 / 其他常见 Linux 发行版
+- 1 核 CPU
+- 1 GB 内存，建议 2 GB 以上
+- 10 GB 磁盘空间
+- 已安装 Docker 和 Docker Compose
 
-`DATABASE_URL` 是 PostgreSQL 数据库连接字符串，不是项目里生成的。任选一种方式：
+安装 Docker 可参考官方文档：[Install Docker Engine](https://docs.docker.com/engine/install/)。
 
-#### 方式 A：Vercel Marketplace / Neon，推荐
+## 一键部署
 
-1. 在 Vercel 项目里打开 `Storage` 或 `Marketplace`。
-2. 选择 Neon/Postgres 类数据库并创建。
-3. 绑定到当前 Vercel 项目。
-4. 绑定后通常会自动生成 `DATABASE_URL` 环境变量。
+### 1. 克隆项目
 
-如果没有自动生成，就进入数据库控制台复制连接字符串。它一般长这样：
-
-```env
-postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require
+```bash
+git clone https://github.com/loLollipop/grad-research-hub.git
+cd grad-research-hub
 ```
 
-#### 方式 B：Supabase
+### 2. 创建配置文件
 
-1. 创建 Supabase 项目。
-2. 进入 `Project Settings -> Database`。
-3. 找到 `Connection string`，选择 URI 格式。
-4. 复制 PostgreSQL URI，填到 Vercel 的 `DATABASE_URL`。
+```bash
+cp .env.server.example .env
+```
 
-注意：`DATABASE_URL` 不是 `SUPABASE_URL`，也不是 anon key。
+编辑 `.env`：
 
-### 3. 设置 Vercel 环境变量
+```bash
+nano .env
+```
 
-在 Vercel 项目中进入：
+至少改这几个：
 
-`Settings -> Environment Variables`
+```env
+APP_PASSWORD=你的登录密码
+APP_ENCRYPTION_KEY=一段很长的随机字符串
+POSTGRES_PASSWORD=一段数据库密码
+```
 
-至少填写这些：
+可以用下面命令生成随机字符串。数据库密码建议用十六进制，避免特殊字符影响连接字符串：
 
-| 变量名 | 必填 | 示例/说明 |
+```bash
+openssl rand -hex 24
+```
+
+### 3. 启动
+
+```bash
+docker compose up -d --build
+```
+
+启动后访问：
+
+```text
+http://服务器IP:3000
+```
+
+第一次打开会要求输入 `APP_PASSWORD`。
+
+### 4. 查看运行状态
+
+```bash
+docker compose ps
+docker compose logs -f app
+```
+
+应用容器启动时会自动执行数据库迁移，不需要手动建表。
+
+## `.env` 配置说明
+
+服务器部署主要配置这个文件：`.env`
+
+| 变量名 | 必填 | 说明 |
 | --- | --- | --- |
-| `DATABASE_URL` | 是 | PostgreSQL 连接字符串 |
-| `APP_PASSWORD` | 强烈建议 | 进入工作台的访问密码 |
-| `APP_ENCRYPTION_KEY` | 是 | 用来加密设置中心保存的 AI Key |
+| `APP_PORT` | 否 | 应用端口，默认 `3000` |
+| `APP_PASSWORD` | 是 | 登录研途 Hub 的访问密码 |
+| `APP_ENCRYPTION_KEY` | 是 | 加密设置中心保存的 AI Key |
+| `POSTGRES_DB` | 否 | 数据库名，默认 `grad_research_hub` |
+| `POSTGRES_USER` | 否 | 数据库用户，默认 `gradhub` |
+| `POSTGRES_PASSWORD` | 是 | PostgreSQL 数据库密码 |
 | `ZOTERO_API_KEY` | 建议 | Zotero Web API Key |
 | `ZOTERO_LIBRARY_ID` | 建议 | Zotero user id 或 group id |
 | `ZOTERO_LIBRARY_TYPE` | 建议 | `user` 或 `group`，默认 `user` |
 | `ZOTERO_COLLECTION_KEY` | 否 | 只同步某个 collection 时填写 |
 | `ZOTERO_SYNC_LIMIT` | 否 | 默认 `100` |
 
-`.env.example` 也列出了这些变量。
+`DATABASE_URL` 不需要手动填写。Docker Compose 会根据数据库配置自动传给应用容器。
 
-### 4. 设置 Build Command
+## Nginx 反向代理，可选
 
-Vercel 项目里进入：
+如果你有域名，建议用 Nginx 把 `3000` 端口代理到 HTTPS。
 
-`Settings -> Build & Development Settings`
+示例：
 
-把 Build Command 改成：
+```nginx
+server {
+    server_name your-domain.com;
 
-```bash
-npm run vercel-build
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
-这个脚本会先执行数据库迁移，再构建 Next.js：
+HTTPS 可以用 Certbot：
 
 ```bash
-prisma migrate deploy && next build
+sudo certbot --nginx -d your-domain.com
 ```
 
-如果你不想改 Build Command，也可以部署后在 Vercel/本地手动执行一次：
+## 更新项目
 
 ```bash
-npx prisma migrate deploy
+git pull
+docker compose up -d --build
 ```
 
-### 5. 部署
+更新时会保留 PostgreSQL 数据卷。不要随便删除 Docker volume。
 
-点击 Vercel 的 `Deploy`。部署成功后访问你的 Vercel 域名：
+## 备份和恢复
 
-1. 如果设置了 `APP_PASSWORD`，先输入访问密码。
-2. 进入文献页，点击同步 Zotero。
-3. 进入设置中心，填写 AI Key、Base URL 和模型名。
+### 备份数据库
 
-## Zotero 配置怎么拿
+```bash
+docker compose exec db pg_dump -U gradhub grad_research_hub > backup.sql
+```
+
+如果你修改了 `POSTGRES_USER` 或 `POSTGRES_DB`，把命令里的用户名和数据库名替换成自己的。
+
+### 恢复数据库
+
+```bash
+cat backup.sql | docker compose exec -T db psql -U gradhub grad_research_hub
+```
+
+设置页也提供 JSON 和 BibTeX 导出，适合轻量备份和迁移前检查。
+
+## Zotero 配置
+
+文献管理默认不要求手动导入。配置 Zotero API 后，进入文献页点击“同步 Zotero”，系统会读取 Zotero Web API v3 的条目数据并写入本平台。
 
 ### `ZOTERO_API_KEY`
 
 1. 打开 [Zotero API Keys](https://www.zotero.org/settings/keys)。
 2. 创建一个新的 private key。
 3. 勾选允许读取 library。
-4. 复制生成的 key，填到 Vercel 的 `ZOTERO_API_KEY`。
+4. 复制生成的 key，填到服务器 `.env` 的 `ZOTERO_API_KEY`。
+5. 修改后重启：
+
+```bash
+docker compose up -d
+```
 
 ### `ZOTERO_LIBRARY_ID`
 
@@ -129,14 +190,16 @@ npx prisma migrate deploy
 
 ### `ZOTERO_LIBRARY_TYPE`
 
+个人库：
+
 ```env
-ZOTERO_LIBRARY_TYPE="user"
+ZOTERO_LIBRARY_TYPE=user
 ```
 
-如果同步群组库，改成：
+群组库：
 
 ```env
-ZOTERO_LIBRARY_TYPE="group"
+ZOTERO_LIBRARY_TYPE=group
 ```
 
 ### `ZOTERO_COLLECTION_KEY`
@@ -145,7 +208,7 @@ ZOTERO_LIBRARY_TYPE="group"
 
 ## AI 设置中心
 
-AI 的 API Key、Base URL 和模型名属于高频变动项，部署后直接在设置页修改，不需要每次去 Vercel 改环境变量。
+AI 的 API Key、Base URL 和模型名属于高频变动项，部署后直接在设置页修改，不需要登录服务器改 `.env`。
 
 - API Key 加密后写入数据库，页面只显示“已配置/未配置”。
 - API Key 输入框留空表示不修改当前 Key。
@@ -154,11 +217,12 @@ AI 的 API Key、Base URL 和模型名属于高频变动项，部署后直接在
 
 ## 本地开发
 
-本地开发同样推荐 PostgreSQL，保持和 Vercel 一致：
+本地开发推荐直接使用 Docker 数据库：
 
 ```bash
+cp .env.server.example .env
+docker compose up -d db
 npm install
-cp .env.example .env
 npm run db:push
 npm run db:seed
 npm run dev
@@ -171,25 +235,15 @@ npm run dev
 ```bash
 npm run dev          # 启动开发服务器
 npm run build        # 生产构建
-npm run vercel-build # Vercel 构建：迁移数据库并构建应用
+npm run start        # 启动生产 Next.js
+npm run server:start # 容器内启动：迁移数据库并启动应用
 npm run lint         # ESLint 检查
 npm run db:generate  # 生成 Prisma Client
 npm run db:push      # 原型阶段同步 schema 到数据库
-npm run db:deploy    # 部署环境执行 Prisma migration
+npm run db:deploy    # 执行 Prisma migration
 npm run db:seed      # 写入种子数据
 npm run db:studio    # 打开 Prisma Studio
 ```
-
-## 导出
-
-设置页提供 JSON 和 BibTeX 导出按钮，也可以直接访问：
-
-```text
-/api/export
-/api/export/bibtex
-```
-
-JSON 导出包含所有 MVP 表和记录计数。BibTeX 导出只包含文献条目，方便接入 Zotero、JabRef、LaTeX 或其他参考文献工具。
 
 ## 开源边界
 
@@ -200,18 +254,9 @@ JSON 导出包含所有 MVP 表和记录计数。BibTeX 导出只包含文献条
 - MLflow/DVC：后续做自动集成，不把手工字段堆到日常界面里。
 - Supabase/S3：后续处理 PDF、图片和大文件存储。
 
-## 开源说明
-
-- `LICENSE`：MIT License。
-- `CONTRIBUTING.md`：本地开发、验证和贡献边界。
-- `SECURITY.md`：当前 MVP 的安全边界。
-- `ROADMAP.md`：后续版本路线。
-- `.github/ISSUE_TEMPLATE/`：bug 和 feature issue 模板。
-
 ## 参考文档
 
-- [Vercel Environment Variables](https://vercel.com/docs/environment-variables)
-- [Vercel Storage / Marketplace](https://vercel.com/docs/storage)
-- [Neon on Vercel](https://neon.com/docs/guides/vercel)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [PostgreSQL Docker image](https://hub.docker.com/_/postgres)
 - [Prisma migrate deploy](https://www.prisma.io/docs/orm/prisma-client/deployment/deploy-database-changes-with-prisma-migrate)
 - [Zotero Web API v3](https://www.zotero.org/support/dev/web_api/v3/start)

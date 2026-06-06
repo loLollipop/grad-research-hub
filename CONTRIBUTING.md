@@ -4,11 +4,12 @@ Thanks for helping improve Grad Research Hub. The project is intentionally small
 
 ## Local Setup
 
-Use PostgreSQL locally or connect to the same managed database style used by Vercel.
+Use Docker Compose for the database so local development stays close to server deployment.
 
 ```bash
 npm install
 cp .env.example .env
+docker compose up -d db
 npm run db:push
 npm run db:seed
 npm run dev
@@ -28,7 +29,7 @@ When database schema changes, also update `prisma/schema.prisma` and the matchin
 ## Contribution Guidelines
 
 - Prefer integrations with mature tools over rebuilding their full feature set.
-- Keep the default flow useful for a single Vercel-hosted graduate student.
+- Keep the default flow useful for a single server-hosted graduate student.
 - Keep UI dense, calm, Chinese-first, and workbench-like.
 - Put deployment parameters and secrets in environment variables, not everyday forms.
 - Avoid committing real research data, API keys, database exports, PDFs, or generated logs.

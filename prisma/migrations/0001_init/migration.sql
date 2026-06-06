@@ -1,4 +1,4 @@
--- Grad Research Hub MVP schema for PostgreSQL/Vercel.
+-- Grad Research Hub MVP schema for PostgreSQL.
 
 CREATE TABLE "Paper" (
     "id" TEXT NOT NULL,

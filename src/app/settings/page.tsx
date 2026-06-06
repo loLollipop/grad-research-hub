@@ -84,7 +84,7 @@ export default async function SettingsPage() {
               <Bot className="size-4" />
               AI 连接
             </CardTitle>
-            <CardDescription>常换的 Key、模型和代理地址放这里，别让 Vercel 配置页打断工作。</CardDescription>
+            <CardDescription>常换的 Key、模型和代理地址放这里，不用登录服务器改配置。</CardDescription>
           </CardHeader>
           <CardContent>
             <AiSettingsForm settings={aiSettings} encryptionReady={encryptionReady} />
@@ -156,11 +156,11 @@ export default async function SettingsPage() {
               <CardDescription>给第一次上线看的清单。</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm text-muted-foreground">
-              <p>1. 在 Vercel 导入 GitHub 仓库。</p>
-              <p>2. 绑定 PostgreSQL，并设置 `DATABASE_URL`。</p>
-              <p>3. 设置 `APP_PASSWORD` 和 `APP_ENCRYPTION_KEY`。</p>
-              <p>4. 设置 Zotero 变量，部署后同步文献。</p>
-              <p>5. 进入设置中心填写 AI Key、Base URL 和模型名。</p>
+              <p>1. 复制 `.env.server.example` 为 `.env`。</p>
+              <p>2. 修改访问密码、数据库密码和加密密钥。</p>
+              <p>3. 执行 `docker compose up -d --build`。</p>
+              <p>4. 访问服务器的 `3000` 端口，登录后同步 Zotero。</p>
+              <p>5. 在这里填写 AI Key、Base URL 和模型名。</p>
             </CardContent>
           </Card>
         </div>
@@ -185,7 +185,7 @@ function AiSettingsForm({
     <form action={updateAiSettings} className="grid gap-3">
       {!encryptionReady ? (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          保存 API Key 前，需要先在 Vercel 设置 `APP_ENCRYPTION_KEY`。
+          保存 API Key 前，需要先在服务器 `.env` 中设置 `APP_ENCRYPTION_KEY`。
         </div>
       ) : null}
       <div className="grid gap-3 md:grid-cols-3">

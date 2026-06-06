@@ -1,6 +1,6 @@
 # Security Policy
 
-Grad Research Hub is currently an MVP for personal Vercel/self-hosted use. It does not yet include authentication, multi-user authorization, upload scanning, or production hardening.
+Grad Research Hub is currently an MVP for personal server/self-hosted use. It does not yet include multi-user authorization, upload scanning, or full production hardening.
 
 ## Reporting
 
@@ -8,7 +8,7 @@ Please do not publish security issues publicly before maintainers have a chance 
 
 ## Current Scope
 
-- API keys must stay in server-side environment variables such as Vercel Environment Variables.
+- API keys must stay server-side. AI keys saved in the settings center are encrypted before being stored.
 - Public deployments should set `APP_PASSWORD`; otherwise anyone with the URL can access research data and export endpoints.
 - Do not commit `.env`, `prisma/dev.db`, exported JSON, PDFs, or private research data.
 - `/api/export` and `/api/export/bibtex` are intended for trusted self-hosted deployments.
