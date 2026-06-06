@@ -1,6 +1,13 @@
-import { existsSync, statSync } from "node:fs";
-import { join } from "node:path";
-import { Database, Download, FileText, KeyRound, Server, Settings } from "lucide-react";
+import {
+  Bot,
+  Database,
+  Download,
+  FileText,
+  KeyRound,
+  Server,
+  Settings,
+  UploadCloud,
+} from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,51 +19,32 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { prisma } from "@/lib/db";
+import { getZoteroConfigStatus } from "@/lib/zotero";
 
 export const dynamic = "force-dynamic";
 
-function databaseFileInfo() {
-  const url = process.env.DATABASE_URL ?? "";
-  if (!url.startsWith("file:")) {
-    return { path: url || "未配置", exists: false, size: null };
-  }
-
-  const relativePath = url.replace(/^file:/, "");
-  const absolutePath = join(process.cwd(), "prisma", relativePath.replace(/^\.\//, ""));
-  if (!existsSync(absolutePath)) {
-    return { path: absolutePath, exists: false, size: null };
-  }
-
-  return {
-    path: absolutePath,
-    exists: true,
-    size: statSync(absolutePath).size,
-  };
-}
-
 export default async function SettingsPage() {
-  const [counts, dbFile] = await Promise.all([
-    Promise.all([
-      prisma.paper.count(),
-      prisma.project.count(),
-      prisma.task.count(),
-      prisma.experiment.count(),
-      prisma.note.count(),
-      prisma.dataset.count(),
-      prisma.result.count(),
-      prisma.adminItem.count(),
-    ]),
-    Promise.resolve(databaseFileInfo()),
+  const zotero = getZoteroConfigStatus();
+  const counts = await Promise.all([
+    prisma.paper.count(),
+    prisma.project.count(),
+    prisma.task.count(),
+    prisma.experiment.count(),
+    prisma.note.count(),
+    prisma.dataset.count(),
+    prisma.result.count(),
+    prisma.adminItem.count(),
   ]);
 
   const totalRecords = counts.reduce((sum, count) => sum + count, 0);
+  const databaseUrl = process.env.DATABASE_URL ?? "";
 
   return (
     <div className="grid gap-6">
       <PageHeader
-        eyebrow="Settings"
-        title="设置与导出"
-        description="检查本地数据库、环境变量和导出入口，为自托管和后续开源部署留出清晰边界。"
+        eyebrow="设置"
+        title="设置中心"
+        description="部署时固定的参数放到 Vercel 环境变量；页面只显示配置状态和常用导出入口。"
         actions={
           <>
             <a className={buttonVariants({ variant: "outline" })} href="/api/export/bibtex" download>
@@ -74,9 +62,9 @@ export default async function SettingsPage() {
       <section className="grid gap-3 md:grid-cols-4">
         {[
           { label: "数据记录", value: totalRecords, icon: Database },
-          { label: "项目", value: counts[1], icon: Settings },
-          { label: "实验", value: counts[3], icon: Server },
-          { label: "笔记", value: counts[4], icon: KeyRound },
+          { label: "文献", value: counts[0], icon: FileText },
+          { label: "项目任务", value: counts[1] + counts[2], icon: Settings },
+          { label: "实验笔记", value: counts[3] + counts[4], icon: KeyRound },
         ].map((item) => (
           <Card key={item.label} className="rounded-lg bg-white/95">
             <CardContent className="flex items-center justify-between py-4">
@@ -90,32 +78,56 @@ export default async function SettingsPage() {
         ))}
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-3">
         <Card className="rounded-lg bg-white/95">
           <CardHeader>
-            <CardTitle>数据库状态</CardTitle>
-            <CardDescription>首版使用 SQLite，便于本机和小服务器快速运行。</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Server className="size-4" />
+              Vercel 数据库
+            </CardTitle>
+            <CardDescription>生产部署建议使用 Vercel Postgres、Neon 或 Supabase。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm">
-            <InfoRow label="DATABASE_URL" value={process.env.DATABASE_URL ?? "未配置"} />
-            <InfoRow label="SQLite 文件" value={dbFile.path} />
-            <InfoRow label="文件状态" value={dbFile.exists ? "已创建" : "未找到"} />
+            <EnvStatus label="DATABASE_URL" ready={Boolean(databaseUrl)} />
             <InfoRow
-              label="文件大小"
-              value={dbFile.size === null ? "未知" : `${Math.round(dbFile.size / 1024)} KB`}
+              label="当前类型"
+              value={databaseUrl.startsWith("postgres") ? "PostgreSQL" : "未识别或未配置"}
             />
+            <p className="text-xs leading-5 text-muted-foreground">
+              首次部署后运行 `npx prisma migrate deploy`，或在早期原型阶段使用
+              `npx prisma db push`。
+            </p>
           </CardContent>
         </Card>
 
         <Card className="rounded-lg bg-white/95">
           <CardHeader>
-            <CardTitle>环境变量</CardTitle>
-            <CardDescription>真实密钥只在服务端读取，前端只显示是否配置。</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <UploadCloud className="size-4" />
+              Zotero 同步
+            </CardTitle>
+            <CardDescription>文献条目优先从 Zotero Web API 同步。</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm">
+            <EnvStatus label="ZOTERO_API_KEY" ready={zotero.hasApiKey} />
+            <EnvStatus label="ZOTERO_LIBRARY_ID" ready={Boolean(zotero.libraryId)} />
+            <InfoRow label="库类型" value={zotero.libraryType === "group" ? "群组库" : "个人库"} />
+            <InfoRow label="集合范围" value={zotero.collectionKey || "全部顶层条目"} />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-lg bg-white/95">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="size-4" />
+              AI 配置
+            </CardTitle>
+            <CardDescription>密钥只在服务端读取，页面不保存也不回显。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm">
             <EnvStatus label="OPENAI_API_KEY" ready={Boolean(process.env.OPENAI_API_KEY)} />
             <EnvStatus label="ANTHROPIC_API_KEY" ready={Boolean(process.env.ANTHROPIC_API_KEY)} />
-            <EnvStatus label="DATABASE_URL" ready={Boolean(process.env.DATABASE_URL)} />
+            <InfoRow label="默认模型" value={process.env.AI_MODEL || "未设置"} />
           </CardContent>
         </Card>
       </section>
@@ -123,13 +135,22 @@ export default async function SettingsPage() {
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="rounded-lg bg-white/95">
           <CardHeader>
-            <CardTitle>本地运行</CardTitle>
-            <CardDescription>初始化数据库、种子数据和开发服务器。</CardDescription>
+            <CardTitle>Vercel 环境变量</CardTitle>
+            <CardDescription>这些值在部署平台配置，不需要出现在日常页面里。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
-            {["npm install", "npm run db:init", "npm run dev"].map((command) => (
-              <code key={command} className="rounded-md border bg-[#fffdf7] px-3 py-2 text-sm">
-                {command}
+            {[
+              "DATABASE_URL",
+              "ZOTERO_API_KEY",
+              "ZOTERO_LIBRARY_ID",
+              "ZOTERO_LIBRARY_TYPE",
+              "ZOTERO_COLLECTION_KEY",
+              "OPENAI_API_KEY",
+              "ANTHROPIC_API_KEY",
+              "AI_MODEL",
+            ].map((name) => (
+              <code key={name} className="rounded-md border bg-[#fffdf7] px-3 py-2 text-sm">
+                {name}
               </code>
             ))}
           </CardContent>
@@ -137,13 +158,14 @@ export default async function SettingsPage() {
 
         <Card className="rounded-lg bg-white/95">
           <CardHeader>
-            <CardTitle>迁移方向</CardTitle>
-            <CardDescription>后续切到 PostgreSQL/Supabase 时优先保持 schema 约束稳定。</CardDescription>
+            <CardTitle>部署步骤</CardTitle>
+            <CardDescription>面向 GitHub + Vercel 的主流程。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm text-muted-foreground">
-            <p>将 `provider` 切换为 `postgresql`，并把 `DATABASE_URL` 指向托管数据库。</p>
-            <p>标签字段当前用 JSON 字符串兼容 SQLite，迁移时可保留字符串或改为关系表。</p>
-            <p>文件上传、PDF 管理和 RAG 索引建议在 v1.1 之后接入对象存储。</p>
+            <p>1. 在 Vercel 导入 GitHub 仓库。</p>
+            <p>2. 绑定 PostgreSQL 数据库，并配置 `DATABASE_URL`。</p>
+            <p>3. 配置 Zotero 和 AI 相关环境变量。</p>
+            <p>4. 首次部署后执行 Prisma migration，再访问文献页同步 Zotero。</p>
           </CardContent>
         </Card>
       </section>
@@ -155,7 +177,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1 rounded-md border px-3 py-2">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="break-all font-mono text-xs">{value}</span>
+      <span className="break-all text-xs">{value}</span>
     </div>
   );
 }

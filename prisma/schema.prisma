@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -16,7 +16,7 @@ model Paper {
   journal    String?
   doi        String?
   arxivId    String?
-  zoteroKey  String?
+  zoteroKey  String?  @unique
   bibtexKey  String?
   category   String   @default("inbox")
   readStatus String   @default("unread")

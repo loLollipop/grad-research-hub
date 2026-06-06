@@ -84,10 +84,6 @@ async function main() {
       projectId: project.id,
       status: "running",
       template: "purpose-method-result",
-      externalRunId: "mlflow:seed-baseline-run",
-      repositoryUrl: "https://github.com/example/defect-baseline",
-      gitCommit: "seed42baseline",
-      artifactPath: "artifacts/baseline-resnet50-seed42",
       tags: tags(["baseline", "training"]),
       content:
         "## 目的\n复现基线模型，确认数据划分和指标口径。\n\n## 参数\n- backbone: ResNet50\n- batch size: 32\n- seed: 42\n\n## 今日观察\n验证集波动较大，需要检查类别不平衡。",
@@ -102,7 +98,6 @@ async function main() {
       version: "2026-06-clean",
       path: "D:/research/data/defectset-a",
       externalUrl: "https://example.org/datasets/defectset-a",
-      dvcPath: "data/defectset-a.dvc",
       description: "清洗后的材料缺陷图像数据集，包含四类缺陷标签。",
       tags: tags(["image", "defect", "internal"]),
     },
@@ -115,10 +110,6 @@ async function main() {
       datasetId: dataset.id,
       metrics: json({ accuracy: 0.842, f1: 0.801, loss: 0.438 }),
       config: json({ model: "resnet50", batchSize: 32, seed: 42 }),
-      mlflowRunId: "seed-baseline-run",
-      dvcExpName: "baseline-resnet50-seed42",
-      gitCommit: "seed42baseline",
-      artifactPath: "artifacts/baseline-resnet50-seed42",
       notes: "首轮结果可作为后续增强模型的对照。",
     },
   });
@@ -127,15 +118,15 @@ async function main() {
     data: [
       {
         title: "组会记录 2026-06-06",
-        folder: "Meetings",
+        folder: "组会",
         tags: tags(["组会", "导师反馈"]),
         content:
           "导师建议先把 [[多模态材料缺陷检测]] 的数据版本固定，再做模型对比。下周汇报需要给出误差案例。",
       },
       {
-        title: "灵感 Inbox",
-        folder: "Inbox",
-        tags: tags(["inbox"]),
+        title: "灵感收件箱",
+        folder: "收件箱",
+        tags: tags(["收件箱"]),
         content:
           "尝试把实验记录中的失败案例自动汇总成周报片段，减少周五晚上临时拼材料。",
       },

@@ -15,6 +15,7 @@ import {
   resultSchema,
   taskSchema,
 } from "@/lib/validators";
+import { fetchZoteroPapers } from "@/lib/zotero";
 
 function data(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -118,6 +119,39 @@ export async function updatePaperStatus(formData: FormData) {
   await prisma.paper.update({ where: { id }, data: { readStatus } });
   revalidatePath("/");
   revalidatePath("/papers");
+}
+
+export async function syncZoteroPapers() {
+  const papers = await fetchZoteroPapers();
+
+  await Promise.all(
+    papers.map((paper) =>
+      prisma.paper.upsert({
+        where: { zoteroKey: paper.zoteroKey },
+        create: {
+          ...paper,
+          readStatus: "unread",
+        },
+        update: {
+          title: paper.title,
+          authors: paper.authors,
+          year: paper.year,
+          abstract: paper.abstract,
+          journal: paper.journal,
+          doi: paper.doi,
+          arxivId: paper.arxivId,
+          category: paper.category,
+          externalUrl: paper.externalUrl,
+          tags: paper.tags,
+          lastSyncedAt: paper.lastSyncedAt,
+        },
+      }),
+    ),
+  );
+
+  revalidatePath("/");
+  revalidatePath("/papers");
+  revalidatePath("/settings");
 }
 
 export async function createProject(formData: FormData) {

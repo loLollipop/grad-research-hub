@@ -1,9 +1,7 @@
--- Grad Research Hub MVP schema for SQLite.
--- Prisma remains the source data model; this SQL avoids a Prisma schema-engine
--- issue observed under the current Windows/non-ASCII workspace path.
+-- Grad Research Hub MVP schema for PostgreSQL/Vercel.
 
-CREATE TABLE IF NOT EXISTS "Paper" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Paper" (
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "authors" TEXT NOT NULL DEFAULT '[]',
     "year" INTEGER,
@@ -19,48 +17,54 @@ CREATE TABLE IF NOT EXISTS "Paper" (
     "externalUrl" TEXT,
     "tags" TEXT NOT NULL DEFAULT '[]',
     "notes" TEXT,
-    "lastSyncedAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "lastSyncedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Paper_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "Project" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Project" (
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
     "status" TEXT NOT NULL DEFAULT 'active',
     "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "Milestone" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Milestone" (
+    "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
-    "dueDate" DATETIME,
+    "dueDate" TIMESTAMP(3),
     "status" TEXT NOT NULL DEFAULT 'planned',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Milestone_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Milestone_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "Task" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Task" (
+    "id" TEXT NOT NULL,
     "milestoneId" TEXT,
     "title" TEXT NOT NULL,
     "description" TEXT,
     "priority" TEXT NOT NULL DEFAULT 'medium',
     "status" TEXT NOT NULL DEFAULT 'todo',
-    "dueDate" DATETIME,
+    "dueDate" TIMESTAMP(3),
     "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Task_milestoneId_fkey" FOREIGN KEY ("milestoneId") REFERENCES "Milestone" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "Experiment" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Experiment" (
+    "id" TEXT NOT NULL,
     "projectId" TEXT,
     "title" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'running',
@@ -72,23 +76,26 @@ CREATE TABLE IF NOT EXISTS "Experiment" (
     "gitCommit" TEXT,
     "artifactPath" TEXT,
     "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Experiment_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Experiment_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "Note" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Note" (
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL DEFAULT '',
     "folder" TEXT NOT NULL DEFAULT 'Inbox',
     "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Note_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "Dataset" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Dataset" (
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "source" TEXT,
     "version" TEXT,
@@ -97,12 +104,14 @@ CREATE TABLE IF NOT EXISTS "Dataset" (
     "externalUrl" TEXT,
     "dvcPath" TEXT,
     "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Dataset_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "Result" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "Result" (
+    "id" TEXT NOT NULL,
     "experimentId" TEXT,
     "datasetId" TEXT,
     "title" TEXT NOT NULL,
@@ -113,49 +122,59 @@ CREATE TABLE IF NOT EXISTS "Result" (
     "gitCommit" TEXT,
     "artifactPath" TEXT,
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Result_experimentId_fkey" FOREIGN KEY ("experimentId") REFERENCES "Experiment" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Result_datasetId_fkey" FOREIGN KEY ("datasetId") REFERENCES "Dataset" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Result_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "AdminItem" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE "AdminItem" (
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "type" TEXT NOT NULL DEFAULT 'meeting',
     "status" TEXT NOT NULL DEFAULT 'todo',
-    "dueDate" DATETIME,
+    "dueDate" TIMESTAMP(3),
     "location" TEXT,
     "notes" TEXT,
     "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AdminItem_pkey" PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "_ExperimentToPaper" (
+CREATE TABLE "_ExperimentToPaper" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
-    CONSTRAINT "_ExperimentToPaper_A_fkey" FOREIGN KEY ("A") REFERENCES "Experiment" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "_ExperimentToPaper_B_fkey" FOREIGN KEY ("B") REFERENCES "Paper" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "_ExperimentToPaper_AB_pkey" PRIMARY KEY ("A","B")
 );
 
-CREATE INDEX IF NOT EXISTS "Paper_readStatus_idx" ON "Paper"("readStatus");
-CREATE INDEX IF NOT EXISTS "Paper_category_idx" ON "Paper"("category");
-CREATE INDEX IF NOT EXISTS "Paper_zoteroKey_idx" ON "Paper"("zoteroKey");
-CREATE INDEX IF NOT EXISTS "Project_status_idx" ON "Project"("status");
-CREATE INDEX IF NOT EXISTS "Milestone_projectId_idx" ON "Milestone"("projectId");
-CREATE INDEX IF NOT EXISTS "Milestone_dueDate_idx" ON "Milestone"("dueDate");
-CREATE INDEX IF NOT EXISTS "Milestone_status_idx" ON "Milestone"("status");
-CREATE INDEX IF NOT EXISTS "Task_status_idx" ON "Task"("status");
-CREATE INDEX IF NOT EXISTS "Task_priority_idx" ON "Task"("priority");
-CREATE INDEX IF NOT EXISTS "Task_dueDate_idx" ON "Task"("dueDate");
-CREATE INDEX IF NOT EXISTS "Experiment_status_idx" ON "Experiment"("status");
-CREATE INDEX IF NOT EXISTS "Experiment_projectId_idx" ON "Experiment"("projectId");
-CREATE INDEX IF NOT EXISTS "Note_folder_idx" ON "Note"("folder");
-CREATE INDEX IF NOT EXISTS "Result_experimentId_idx" ON "Result"("experimentId");
-CREATE INDEX IF NOT EXISTS "Result_datasetId_idx" ON "Result"("datasetId");
-CREATE INDEX IF NOT EXISTS "AdminItem_type_idx" ON "AdminItem"("type");
-CREATE INDEX IF NOT EXISTS "AdminItem_status_idx" ON "AdminItem"("status");
-CREATE INDEX IF NOT EXISTS "AdminItem_dueDate_idx" ON "AdminItem"("dueDate");
-CREATE UNIQUE INDEX IF NOT EXISTS "_ExperimentToPaper_AB_unique" ON "_ExperimentToPaper"("A", "B");
-CREATE INDEX IF NOT EXISTS "_ExperimentToPaper_B_index" ON "_ExperimentToPaper"("B");
+CREATE UNIQUE INDEX "Paper_zoteroKey_key" ON "Paper"("zoteroKey");
+CREATE INDEX "Paper_readStatus_idx" ON "Paper"("readStatus");
+CREATE INDEX "Paper_category_idx" ON "Paper"("category");
+CREATE INDEX "Paper_zoteroKey_idx" ON "Paper"("zoteroKey");
+CREATE INDEX "Project_status_idx" ON "Project"("status");
+CREATE INDEX "Milestone_projectId_idx" ON "Milestone"("projectId");
+CREATE INDEX "Milestone_dueDate_idx" ON "Milestone"("dueDate");
+CREATE INDEX "Milestone_status_idx" ON "Milestone"("status");
+CREATE INDEX "Task_status_idx" ON "Task"("status");
+CREATE INDEX "Task_priority_idx" ON "Task"("priority");
+CREATE INDEX "Task_dueDate_idx" ON "Task"("dueDate");
+CREATE INDEX "Experiment_status_idx" ON "Experiment"("status");
+CREATE INDEX "Experiment_projectId_idx" ON "Experiment"("projectId");
+CREATE INDEX "Note_folder_idx" ON "Note"("folder");
+CREATE INDEX "Result_experimentId_idx" ON "Result"("experimentId");
+CREATE INDEX "Result_datasetId_idx" ON "Result"("datasetId");
+CREATE INDEX "AdminItem_type_idx" ON "AdminItem"("type");
+CREATE INDEX "AdminItem_status_idx" ON "AdminItem"("status");
+CREATE INDEX "AdminItem_dueDate_idx" ON "AdminItem"("dueDate");
+CREATE INDEX "_ExperimentToPaper_B_index" ON "_ExperimentToPaper"("B");
+
+ALTER TABLE "Milestone" ADD CONSTRAINT "Milestone_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Task" ADD CONSTRAINT "Task_milestoneId_fkey" FOREIGN KEY ("milestoneId") REFERENCES "Milestone"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Experiment" ADD CONSTRAINT "Experiment_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Result" ADD CONSTRAINT "Result_experimentId_fkey" FOREIGN KEY ("experimentId") REFERENCES "Experiment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Result" ADD CONSTRAINT "Result_datasetId_fkey" FOREIGN KEY ("datasetId") REFERENCES "Dataset"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "_ExperimentToPaper" ADD CONSTRAINT "_ExperimentToPaper_A_fkey" FOREIGN KEY ("A") REFERENCES "Experiment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_ExperimentToPaper" ADD CONSTRAINT "_ExperimentToPaper_B_fkey" FOREIGN KEY ("B") REFERENCES "Paper"("id") ON DELETE CASCADE ON UPDATE CASCADE;

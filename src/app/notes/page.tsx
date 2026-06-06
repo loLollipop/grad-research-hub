@@ -57,9 +57,9 @@ export default async function NotesPage({ searchParams }: Props) {
   return (
     <div className="grid gap-6">
       <PageHeader
-        eyebrow="Knowledge Base"
+        eyebrow="笔记"
         title="笔记知识库"
-        description="自由笔记、会议记录、灵感和双链文本先集中起来，后续可升级为图谱和更强编辑器。"
+        description="记录想法、会议、阅读摘录和临时材料；部署配置和接口密钥统一放在设置中心。"
       />
 
       <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
@@ -75,7 +75,7 @@ export default async function NotesPage({ searchParams }: Props) {
 
           <Card className="rounded-lg bg-white/95">
             <CardHeader>
-              <CardTitle>文件夹</CardTitle>
+              <CardTitle>分类</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
               {folders.map((item) => (
@@ -91,7 +91,7 @@ export default async function NotesPage({ searchParams }: Props) {
         <div className="grid gap-3">
           <form className="grid gap-2 rounded-lg border bg-white/95 p-3 md:grid-cols-[1fr_180px_auto]">
             <Input name="q" placeholder="搜索标题、正文、标签" defaultValue={q} />
-            <Input name="folder" placeholder="文件夹" defaultValue={folder} />
+            <Input name="folder" placeholder="分类" defaultValue={folder} />
             <Button type="submit" variant="outline">
               筛选
             </Button>
@@ -175,8 +175,8 @@ function NoteForm({
         <Input name="title" required defaultValue={note?.title ?? ""} />
       </Field>
       <div className="grid gap-3 md:grid-cols-2">
-        <Field label="文件夹">
-          <Input name="folder" defaultValue={note?.folder ?? "Inbox"} />
+        <Field label="分类">
+          <Input name="folder" defaultValue={note?.folder ?? "收件箱"} />
         </Field>
         <Field label="标签">
           <Input name="tags" defaultValue={parseTags(note?.tags).join(", ")} />

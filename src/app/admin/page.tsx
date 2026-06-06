@@ -69,7 +69,7 @@ export default async function AdminPage({ searchParams }: Props) {
   return (
     <div className="grid gap-6">
       <PageHeader
-        eyebrow="Life Admin"
+        eyebrow="事务"
         title="轻行政事务"
         description="组会、材料、报销、截止日期这些碎片事项和科研任务一起管理，减少遗漏。"
       />
@@ -140,7 +140,7 @@ export default async function AdminPage({ searchParams }: Props) {
             <EmptyState
               icon={ClipboardList}
               title="暂无行政事务"
-              description="把组会、材料和报销先登记起来，Dashboard 会自动汇总近期事项。"
+              description="把组会、材料和报销先登记起来，首页会自动汇总近期事项。"
             />
           )}
         </div>

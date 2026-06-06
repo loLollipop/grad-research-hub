@@ -45,9 +45,9 @@ export default async function DataPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        eyebrow="Research Data"
+        eyebrow="数据"
         title="数据与结果"
-        description="登记数据集位置、实验配置和指标结果，形成可复盘的结果对比表。"
+        description="只登记复盘真正需要的信息：数据来源、版本、实验指标和备注。工具链细节后续通过集成自动带入。"
       />
 
       <section className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
@@ -126,19 +126,14 @@ export default async function DataPage() {
                           {dataset.source ?? "来源未填"} · {dataset.version ?? "无版本"} ·{" "}
                           {dataset.path ?? "无路径"}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          DVC {dataset.dvcPath ?? "未关联"} ·{" "}
-                          {dataset.externalUrl ? (
-                            <a
-                              className="text-[#1f3d33] underline-offset-4 hover:underline"
-                              href={dataset.externalUrl}
-                            >
-                              外部数据页
-                            </a>
-                          ) : (
-                            "无外部链接"
-                          )}
-                        </p>
+                        {dataset.externalUrl ? (
+                          <a
+                            className="mt-1 inline-flex text-xs text-[#1f3d33] underline-offset-4 hover:underline"
+                            href={dataset.externalUrl}
+                          >
+                            外部数据页
+                          </a>
+                        ) : null}
                       </div>
                       <TagList value={dataset.tags} />
                     </div>
@@ -190,10 +185,6 @@ function ResultCard({
               {result.experiment?.title ?? "未关联实验"} ·{" "}
               {result.dataset?.name ?? "未关联数据集"} · 更新 {formatDateTime(result.updatedAt)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              MLflow {result.mlflowRunId ?? "未关联"} · DVC {result.dvcExpName ?? "未关联"} · Git{" "}
-              {result.gitCommit ?? "未记录"}
-            </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             {Object.entries(metrics).map(([key, value]) => (
@@ -204,11 +195,6 @@ function ResultCard({
           </div>
         </div>
         <p className="text-sm leading-6 text-muted-foreground">{result.notes ?? "暂无备注。"}</p>
-        {result.artifactPath ? (
-          <p className="rounded-md border bg-[#fffdf7] px-3 py-2 text-xs text-muted-foreground">
-            Artifact: {result.artifactPath}
-          </p>
-        ) : null}
         <details className="rounded-md border p-3">
           <summary className="cursor-pointer text-sm font-medium">编辑结果</summary>
           <div className="mt-3">
@@ -256,14 +242,9 @@ function DatasetForm({
       <Field label="路径">
         <Input name="path" defaultValue={dataset?.path ?? ""} />
       </Field>
-      <div className="grid gap-3 md:grid-cols-2">
-        <Field label="外部链接">
-          <Input name="externalUrl" defaultValue={dataset?.externalUrl ?? ""} />
-        </Field>
-        <Field label="DVC 路径">
-          <Input name="dvcPath" defaultValue={dataset?.dvcPath ?? ""} />
-        </Field>
-      </div>
+      <Field label="外部链接">
+        <Input name="externalUrl" defaultValue={dataset?.externalUrl ?? ""} />
+      </Field>
       <Field label="标签">
         <Input name="tags" defaultValue={parseTags(dataset?.tags).join(", ")} />
       </Field>
@@ -329,29 +310,7 @@ function ResultForm({
           defaultValue={result?.metrics ?? '{ "accuracy": 0.85, "f1": 0.8 }'}
         />
       </Field>
-      <Field label="配置 JSON">
-        <Textarea
-          name="config"
-          rows={3}
-          defaultValue={result?.config ?? '{ "model": "baseline", "seed": 42 }'}
-        />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-2">
-        <Field label="MLflow Run ID">
-          <Input name="mlflowRunId" defaultValue={result?.mlflowRunId ?? ""} />
-        </Field>
-        <Field label="DVC 实验名">
-          <Input name="dvcExpName" defaultValue={result?.dvcExpName ?? ""} />
-        </Field>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        <Field label="Git Commit">
-          <Input name="gitCommit" defaultValue={result?.gitCommit ?? ""} />
-        </Field>
-        <Field label="Artifact 路径">
-          <Input name="artifactPath" defaultValue={result?.artifactPath ?? ""} />
-        </Field>
-      </div>
+      <input type="hidden" name="config" value={result?.config ?? "{}"} />
       <Field label="备注">
         <Textarea name="notes" rows={3} defaultValue={result?.notes ?? ""} />
       </Field>

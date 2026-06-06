@@ -25,9 +25,9 @@ export default function AiPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        eyebrow="AI Layer"
-        title="AI 助手骨架"
-        description="MVP 先保留服务端接口、配置状态和调用面板，不让 AI 接入阻塞核心管理功能。"
+        eyebrow="AI"
+        title="AI 助手"
+        description="先保留服务端接口和试验台，密钥在设置中心或 Vercel 环境变量中配置，不干扰核心管理流程。"
       />
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">

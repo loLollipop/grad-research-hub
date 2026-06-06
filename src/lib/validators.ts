@@ -1,17 +1,23 @@
 import { z } from "zod";
 
-const optionalText = z
-  .string()
-  .trim()
-  .transform((value) => (value.length ? value : undefined));
+const optionalText = z.preprocess(
+  (value) => (typeof value === "string" ? value : ""),
+  z
+    .string()
+    .trim()
+    .transform((value) => (value.length ? value : undefined)),
+);
 
-const optionalDate = z
-  .string()
-  .trim()
-  .transform((value) => (value.length ? new Date(value) : undefined))
-  .refine((value) => value === undefined || !Number.isNaN(value.getTime()), {
-    message: "日期格式不正确",
-  });
+const optionalDate = z.preprocess(
+  (value) => (typeof value === "string" ? value : ""),
+  z
+    .string()
+    .trim()
+    .transform((value) => (value.length ? new Date(value) : undefined))
+    .refine((value) => value === undefined || !Number.isNaN(value.getTime()), {
+      message: "日期格式不正确",
+    }),
+);
 
 export const paperSchema = z.object({
   title: z.string().trim().min(1, "标题不能为空"),

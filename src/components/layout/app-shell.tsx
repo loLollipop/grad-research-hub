@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/", label: "首页", icon: Home },
   { href: "/papers", label: "文献", icon: ScrollText },
   { href: "/experiments", label: "实验", icon: FlaskConical },
   { href: "/projects", label: "项目", icon: BarChart3 },
@@ -37,9 +37,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="flex size-9 items-center justify-center rounded-lg bg-[#1f3d33] text-white">
             <GraduationCap className="size-5" />
           </span>
-          <span>
+            <span>
             <span className="block text-sm font-semibold">研途 Hub</span>
-            <span className="block text-xs text-muted-foreground">Graduate Research OS</span>
+            <span className="block text-xs text-muted-foreground">研究生工作台</span>
           </span>
         </Link>
         <Separator className="my-4" />

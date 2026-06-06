@@ -71,9 +71,9 @@ export default async function DashboardPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        eyebrow="Research Console"
+        eyebrow="首页"
         title="今天先把散落的事情收拢"
-        description="Dashboard 汇总项目任务、文献阅读、实验记录和轻行政事务，让每一天都有清晰入口。"
+        description="首页汇总项目任务、文献阅读、实验记录和轻行政事务，让每一天都有清晰入口。"
       />
 
       <section className="grid gap-3 md:grid-cols-4">
