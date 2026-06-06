@@ -9,6 +9,7 @@ Please do not publish security issues publicly before maintainers have a chance 
 ## Current Scope
 
 - API keys must stay in server-side environment variables such as Vercel Environment Variables.
+- Public deployments should set `APP_PASSWORD`; otherwise anyone with the URL can access research data and export endpoints.
 - Do not commit `.env`, `prisma/dev.db`, exported JSON, PDFs, or private research data.
 - `/api/export` and `/api/export/bibtex` are intended for trusted self-hosted deployments.
 - Public deployments should add authentication before exposing the app on the internet.

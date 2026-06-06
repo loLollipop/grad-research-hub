@@ -25,6 +25,9 @@ const navItems = [
   { href: "/notes", label: "笔记", icon: NotebookTabs },
   { href: "/data", label: "数据", icon: Database },
   { href: "/admin", label: "事务", icon: ClipboardList },
+];
+
+const utilityItems = [
   { href: "/ai", label: "AI", icon: Bot },
   { href: "/settings", label: "设置", icon: Settings },
 ];
@@ -37,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="flex size-9 items-center justify-center rounded-lg bg-[#1f3d33] text-white">
             <GraduationCap className="size-5" />
           </span>
-            <span>
+          <span>
             <span className="block text-sm font-semibold">研途 Hub</span>
             <span className="block text-xs text-muted-foreground">研究生工作台</span>
           </span>
@@ -45,6 +48,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Separator className="my-4" />
         <nav className="grid gap-1">
           {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-[#eef4ef] hover:text-[#1f3d33]"
+            >
+              <item.icon className="size-4" />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <nav className="mt-4 grid gap-1 border-t pt-4">
+          {utilityItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -81,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Button>
             </form>
             <div className="flex items-center gap-2 overflow-x-auto md:hidden">
-              {navItems.slice(0, 7).map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

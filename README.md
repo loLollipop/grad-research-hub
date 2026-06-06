@@ -12,7 +12,7 @@
 - 数据：数据集登记、实验指标 JSON、简单图表和结果对比。
 - 事务：组会、材料、报销、截止事项的状态追踪。
 - AI：服务端接口和试验台骨架，Key、Base URL 和模型名可在设置中心维护。
-- 设置：Vercel 环境变量状态、Zotero/AI 配置状态、JSON/BibTeX 导出。
+- 设置：AI 连接、数据导出、部署健康检查和少量高级信息。
 
 ## 技术栈
 
@@ -28,7 +28,7 @@
 1. Fork 或导入本仓库到 GitHub。
 2. 在 Vercel 中导入项目。
 3. 绑定 PostgreSQL 数据库，例如 Vercel Postgres、Neon 或 Supabase，并设置 `DATABASE_URL`。
-4. 在 Vercel Environment Variables 中设置需要的 Zotero 和 AI 变量。
+4. 在 Vercel Environment Variables 中设置数据库、访问密码、加密密钥和 Zotero 变量。
 5. 首次部署后执行数据库迁移：
 
 ```bash
@@ -55,11 +55,24 @@ ZOTERO_COLLECTION_KEY=""
 ZOTERO_SYNC_LIMIT="100"
 
 APP_ENCRYPTION_KEY=""
+APP_PASSWORD=""
 ```
 
 `ZOTERO_LIBRARY_TYPE` 可选 `user` 或 `group`。`ZOTERO_COLLECTION_KEY` 留空时同步库中的顶层条目；填写后只同步指定 collection。
 
 `APP_ENCRYPTION_KEY` 用于加密设置中心保存的 AI API Key。部署后更换这个值会导致旧 Key 无法解密，因此只建议在首次部署时生成一次强随机字符串。
+
+`APP_PASSWORD` 是个人部署的访问密码。项目当前不做复杂账号系统，但公开部署前强烈建议设置它，避免研究数据、导出接口和 AI Key 管理入口暴露在公网。
+
+## 首次使用
+
+部署后只需要做三件事：
+
+1. 用访问密码进入工作台。
+2. 在文献页同步 Zotero。
+3. 在设置中心填写 AI Key、Base URL 和模型名。
+
+其他部署状态都收在设置页的“高级部署信息”里，日常不需要反复看。
 
 ## AI 设置中心
 
