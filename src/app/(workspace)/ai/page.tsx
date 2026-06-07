@@ -23,15 +23,15 @@ export default function AiPage() {
   ];
 
   return (
-    <div className="grid gap-6">
+    <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-6">
       <PageHeader
         eyebrow="AI"
         title="AI 助手"
         description="先保留服务端接口和试验台；API Key、Base URL 和模型名在设置中心维护。"
       />
 
-      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="bg-white/95">
+      <section className="grid flex-1 gap-4 lg:min-h-[520px] lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="h-full bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="size-4" />
@@ -44,7 +44,7 @@ export default function AiPage() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4">
+        <div className="grid h-full gap-4 lg:grid-rows-[auto_1fr]">
           <Card className="bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -62,7 +62,7 @@ export default function AiPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95">
+          <Card className="h-full bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ServerCog className="size-4" />
