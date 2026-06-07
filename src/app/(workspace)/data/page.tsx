@@ -1,6 +1,7 @@
 import {
   BarChart3,
   CheckCircle2,
+  ClipboardList,
   Database,
   Edit3,
   FileChartColumn,
@@ -20,6 +21,7 @@ import type { Dataset, Experiment, Prisma, Result } from "@prisma/client";
 import { ResultMetricsChart } from "@/components/charts/result-metrics-chart";
 import {
   createDataset,
+  createResultBriefNote,
   createResult,
   deleteDataset,
   deleteResult,
@@ -59,6 +61,7 @@ type Props = {
     manuscript?: string;
     experiment?: string;
     dataset?: string;
+    brief?: string;
   }>;
 };
 
@@ -87,6 +90,7 @@ export default async function DataPage({ searchParams }: Props) {
   const manuscript = valueOf(params.manuscript);
   const experimentId = valueOf(params.experiment);
   const datasetId = valueOf(params.dataset);
+  const brief = valueOf(params.brief);
   const activeFilterCount = [q, reproducibility, manuscript, experimentId, datasetId].filter(Boolean).length;
 
   const resultFilters: Prisma.ResultWhereInput[] = [];
@@ -191,7 +195,21 @@ export default async function DataPage({ searchParams }: Props) {
               >
                 <DatasetForm action={createDataset} />
               </CreateDialog>
+              <form action={createResultBriefNote} className="contents">
+                {filteredResults.slice(0, 12).map((result) => (
+                  <input key={result.id} type="hidden" name="ids" value={result.id} />
+                ))}
+                <Button type="submit" variant="outline" disabled={!filteredResults.length}>
+                  <ClipboardList className="size-4" />
+                  生成汇报清单
+                </Button>
+              </form>
             </div>
+            {brief === "empty" ? (
+              <p className="mt-3 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                当前没有可生成的结果。先记录一条关键结果，或清除筛选后再试。
+              </p>
+            ) : null}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -328,19 +346,32 @@ export default async function DataPage({ searchParams }: Props) {
                 </span>
               ) : null}
             </div>
-            {activeFilterCount ? (
-              <Link
-                href="/data"
-                className="inline-flex w-fit items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
-              >
-                <X className="size-3" />
-                清除 {activeFilterCount} 个筛选
-              </Link>
-            ) : (
-              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
-                未筛选
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {filteredResults.length ? (
+                <form action={createResultBriefNote} className="contents">
+                  {filteredResults.slice(0, 12).map((result) => (
+                    <input key={result.id} type="hidden" name="ids" value={result.id} />
+                  ))}
+                  <Button type="submit" variant="outline" size="sm">
+                    <ClipboardList className="size-3.5" />
+                    生成当前清单
+                  </Button>
+                </form>
+              ) : null}
+              {activeFilterCount ? (
+                <Link
+                  href="/data"
+                  className="inline-flex w-fit items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+                >
+                  <X className="size-3" />
+                  清除 {activeFilterCount} 个筛选
+                </Link>
+              ) : (
+                <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  未筛选
+                </span>
+              )}
+            </div>
           </div>
 
           <Card className="workbench-card overflow-hidden">

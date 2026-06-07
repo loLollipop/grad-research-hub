@@ -701,6 +701,124 @@ export async function deleteResult(formData: FormData) {
   revalidatePath("/data");
 }
 
+export async function createResultBriefNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 30);
+
+  if (!ids.length) {
+    redirect("/data?brief=empty");
+  }
+
+  const results = await prisma.result.findMany({
+    where: { id: { in: ids } },
+    orderBy: { updatedAt: "desc" },
+    include: { experiment: true, dataset: true },
+  });
+
+  if (!results.length) {
+    redirect("/data?brief=empty");
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `组会/论文图表清单 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "组会",
+      content: resultBriefMarkdown(results),
+      tags: tagsToString(["成果清单", "组会", "论文素材"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/data");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
+function resultBriefMarkdown(
+  results: Array<{
+    title: string;
+    metrics: string;
+    config: string;
+    artifactPath: string | null;
+    notes: string | null;
+    updatedAt: Date;
+    experiment: { title: string } | null;
+    dataset: { name: string } | null;
+  }>,
+) {
+  const lines = [
+    "# 组会/论文图表清单",
+    "",
+    `生成时间：${new Date().toLocaleString("zh-CN", { hour12: false })}`,
+    `结果数量：${results.length}`,
+    "",
+    "## 本次可讲的结论",
+    "",
+  ];
+
+  results.forEach((result, index) => {
+    const config = parseJsonObjectText(result.config);
+    const metrics = parseJsonObjectText(result.metrics);
+    const metricText = Object.entries(metrics)
+      .filter(([, value]) => String(value).trim())
+      .slice(0, 6)
+      .map(([key, value]) => `${key}: ${String(value)}`)
+      .join("；") || "未填写核心指标";
+    const reproducibility = reproducibilityText(String(config.reproducibility ?? "unknown"));
+    const manuscriptReady = config.manuscriptReady ? "是" : result.artifactPath ? "有图表路径" : "否";
+
+    lines.push(
+      `### ${index + 1}. ${result.title}`,
+      "",
+      `- 关联实验：${result.experiment?.title ?? "未关联"}`,
+      `- 数据集：${result.dataset?.name ?? "未关联"}`,
+      `- 核心指标：${metricText}`,
+      `- 复现状态：${reproducibility}`,
+      `- 可写入论文/组会：${manuscriptReady}`,
+      `- 图表或结果文件：${result.artifactPath || "待补"}`,
+      `- 最近更新：${result.updatedAt.toISOString().slice(0, 10)}`,
+      `- 一句话结论：${result.notes?.trim() || "待补充"}`,
+      "",
+    );
+  });
+
+  lines.push(
+    "## 汇报前检查",
+    "",
+    "- [ ] 每个结果都有一句话结论",
+    "- [ ] 关键图表路径可以打开",
+    "- [ ] 已标出哪些结果完成复现",
+    "- [ ] 待补实验或对照已经变成下一步任务",
+  );
+
+  return lines.join("\n");
+}
+
+function parseJsonObjectText(value: string) {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function reproducibilityText(value: string) {
+  const labels: Record<string, string> = {
+    unknown: "待判断",
+    todo: "待复现",
+    reproducing: "复现中",
+    verified: "已复现",
+  };
+
+  return labels[value] ?? value;
+}
+
 export async function createAdminItem(formData: FormData) {
   const parsed = adminItemSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
