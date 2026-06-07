@@ -13,6 +13,7 @@
 
 ## v0.2 Open Source Readiness
 
+- Implement the research-driven optimization plan in `docs/research-driven-optimization-plan.md`.
 - Add screenshots and demo GIFs.
 - Add Playwright smoke tests for core pages.
 - Add import preview for JSON backups, BibTeX, and RIS.

@@ -218,6 +218,13 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      <ResearchRhythm
+        next={focusItem?.title ?? "先建立第一条任务"}
+        paper={`${readingPapers + unreadPapers} 篇待处理`}
+        experiment={`${runningExperiments} 个进行中`}
+        evidence={`${manuscriptReady} 条可写入`}
+      />
+
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <ResearchSignal
           icon={ClipboardList}
@@ -591,6 +598,13 @@ function FirstRunDashboard() {
         </div>
       </section>
 
+      <ResearchRhythm
+        next="完成设置中心"
+        paper="同步 Zotero"
+        experiment="写第一条记录"
+        evidence="先别搬旧资料"
+      />
+
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <StartCard
           icon={Settings}
@@ -730,6 +744,76 @@ function ChecklistRow({ title, detail }: { title: string; detail: string }) {
   );
 }
 
+function ResearchRhythm({
+  next,
+  paper,
+  experiment,
+  evidence,
+}: {
+  next: string;
+  paper: string;
+  experiment: string;
+  evidence: string;
+}) {
+  const items = [
+    {
+      icon: TimerReset,
+      label: "先定下一步",
+      value: next,
+      detail: "减少每天开工前的选择成本",
+    },
+    {
+      icon: BookOpenText,
+      label: "文献输入",
+      value: paper,
+      detail: "Zotero 负责库，这里负责阅读状态",
+    },
+    {
+      icon: FlaskConical,
+      label: "实验推进",
+      value: experiment,
+      detail: "记录目的、观察、结论和下一步",
+    },
+    {
+      icon: FileChartColumn,
+      label: "结果证据",
+      value: evidence,
+      detail: "把能支撑论文的指标留下来",
+    },
+  ];
+
+  return (
+    <section className="research-strip overflow-hidden rounded-2xl border px-3 py-3">
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {items.map((item, index) => {
+          const Icon = item.icon;
+
+          return (
+            <div
+              key={item.label}
+              className="grid gap-3 rounded-xl border border-border/60 bg-white/72 p-3 sm:grid-cols-[auto_1fr] sm:items-start"
+            >
+              <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef3fb] text-primary">
+                <Icon className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] font-semibold text-muted-foreground">
+                    0{index + 1}
+                  </span>
+                  <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+                </div>
+                <p className="mt-1 line-clamp-1 font-semibold tracking-tight">{item.value}</p>
+                <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{item.detail}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function ResearchSignal({
   icon: Icon,
   label,
@@ -745,9 +829,9 @@ function ResearchSignal({
 }) {
   return (
     <Link href={href} className="group block">
-      <Card className="h-full border-border/72 bg-white/86 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white hover:shadow-[0_12px_28px_rgba(27,42,56,0.07)]">
+      <Card className="signal-card h-full transition hover:border-primary/25 hover:bg-white">
         <CardContent className="flex h-full items-start gap-3 py-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266] transition group-hover:bg-primary group-hover:text-primary-foreground">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7dff0] bg-[#eef3fb] text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
             <Icon className="size-4" />
           </span>
           <div className="min-w-0">
@@ -777,9 +861,9 @@ function LoopRow({
   return (
     <Link
       href={href}
-      className="grid gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3.5 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
+      className="grid gap-3 rounded-xl border border-border/72 bg-white/78 p-3.5 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
     >
-      <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef4f2] text-primary">
+      <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef3fb] text-primary">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0">

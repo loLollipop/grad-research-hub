@@ -14,6 +14,10 @@
 - AI：Key、Base URL 和模型名可在设置中心维护。
 - 设置：AI 连接、数据导出、部署健康检查和少量高级信息。
 
+## 产品方向
+
+研途 Hub 会优先做“需求大、每天会用”的科研工作流：今日下一步、Zotero 阅读队列、轻量实验日志、课题推进、笔记连接、结果证据和组会/材料/报销提醒。完整调研与优化计划见 [docs/research-driven-optimization-plan.md](docs/research-driven-optimization-plan.md)。
+
 ## 推荐部署方式
 
 推荐部署到一台普通 Linux 服务器，用 Docker Compose 同时启动：

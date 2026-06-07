@@ -29,15 +29,15 @@ const icons = {
 } as const;
 
 const accents: Record<NavIcon, string> = {
-  admin: "text-slate-500",
-  ai: "text-slate-500",
-  data: "text-slate-500",
-  experiments: "text-slate-500",
-  home: "text-slate-500",
-  notes: "text-slate-500",
-  papers: "text-slate-500",
-  projects: "text-slate-500",
-  settings: "text-slate-500",
+  admin: "text-amber-700",
+  ai: "text-violet-700",
+  data: "text-cyan-700",
+  experiments: "text-emerald-700",
+  home: "text-blue-800",
+  notes: "text-stone-700",
+  papers: "text-indigo-700",
+  projects: "text-sky-800",
+  settings: "text-slate-700",
 };
 
 export type NavIcon = keyof typeof icons;
@@ -65,10 +65,10 @@ export function NavLink({
         href={href}
         prefetch={true}
         className={cn(
-          "relative shrink-0 rounded-full border px-3 py-1.5 text-xs transition",
+          "relative shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition",
           active
-            ? "border-primary/25 bg-primary text-primary-foreground shadow-sm"
-            : "border-border/70 bg-white/70 text-muted-foreground hover:border-primary/20 hover:text-primary",
+            ? "border-primary/25 bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(34,69,120,0.14)]"
+            : "border-border/70 bg-white/76 text-muted-foreground hover:border-primary/20 hover:bg-white hover:text-primary",
         )}
       >
         {label}
@@ -83,10 +83,10 @@ export function NavLink({
       prefetch={true}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex min-h-10 items-center gap-2.5 overflow-hidden rounded-lg border px-2.5 py-2 text-sm transition",
+        "group relative flex min-h-10 items-center gap-2.5 overflow-hidden rounded-xl border px-2.5 py-2 text-sm transition",
         active
-          ? "border-primary/16 bg-white/86 font-medium text-sidebar-foreground shadow-[0_8px_18px_rgba(15,23,42,0.055)]"
-          : "border-transparent text-muted-foreground hover:border-sidebar-border/80 hover:bg-white/64 hover:text-sidebar-foreground",
+          ? "border-primary/18 bg-[#eef3fb] font-semibold text-sidebar-foreground shadow-[0_8px_20px_rgba(34,69,120,0.07)]"
+          : "border-transparent text-muted-foreground hover:border-sidebar-border/80 hover:bg-white/72 hover:text-sidebar-foreground",
       )}
     >
       {active ? (
@@ -97,7 +97,7 @@ export function NavLink({
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-md border transition",
             active
-              ? "border-primary/16 bg-primary/9 text-primary"
+              ? "border-primary/18 bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
               : "border-sidebar-border/60 bg-white/56 group-hover:bg-white/78",
             !active && accent,
           )}

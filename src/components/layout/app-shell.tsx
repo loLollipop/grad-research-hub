@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { CircleDot, Command, GraduationCap, Search, Sparkles, TimerReset } from "lucide-react";
+import {
+  BookOpenText,
+  CircleDot,
+  Command,
+  FlaskConical,
+  GraduationCap,
+  Search,
+  Sparkles,
+  TimerReset,
+} from "lucide-react";
 
 import { quickCapture } from "@/lib/actions";
 import { NavLink } from "@/components/layout/nav-link";
@@ -36,10 +45,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </Link>
 
-        <div className="mt-4 rounded-xl border border-sidebar-border/80 bg-white/58 p-2">
-          <div className="flex items-center gap-2 rounded-lg border border-sidebar-border/75 bg-white/78 px-2.5 py-2 text-xs text-muted-foreground">
+        <div className="mt-4 rounded-2xl border border-sidebar-border/80 bg-white/58 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)]">
+          <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/75 bg-white/82 px-2.5 py-2 text-xs text-muted-foreground">
             <Command className="size-3.5 text-sidebar-primary" />
             <span className="truncate">打开后先看下一步</span>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <span className="flex items-center gap-1.5 rounded-xl bg-[#edf5f8] px-2 py-1.5 text-[11px] text-[#315266]">
+              <BookOpenText className="size-3.5" />
+              文献
+            </span>
+            <span className="flex items-center gap-1.5 rounded-xl bg-[#eef7f3] px-2 py-1.5 text-[11px] text-[#2f6655]">
+              <FlaskConical className="size-3.5" />
+              实验
+            </span>
           </div>
         </div>
 
@@ -59,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-xl border border-sidebar-border/80 bg-white/66 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)]">
+        <div className="mt-auto rounded-2xl border border-sidebar-border/80 bg-white/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_10px_24px_rgba(34,48,71,0.045)]">
           <div className="flex items-center gap-2">
             <TimerReset className="size-4 text-sidebar-primary" />
             <p className="text-xs font-semibold text-sidebar-foreground">今天只做三件事</p>
@@ -91,16 +110,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
-                  placeholder="快速捕捉..."
-                  className="h-9 rounded-xl border-border/75 bg-white/95 pl-8 text-sm shadow-[0_1px_1px_rgba(15,23,42,0.04)] md:h-10"
+                  placeholder="快速捕捉：想法、待办、组会提醒..."
+                  className="h-9 rounded-2xl border-border/75 bg-white/95 pl-8 text-sm shadow-[0_1px_1px_rgba(15,23,42,0.04)] md:h-10"
                 />
               </div>
-              <Button type="submit" className="h-9 shrink-0 px-3 md:h-10 md:px-4">
+              <Button type="submit" className="h-9 shrink-0 rounded-2xl px-3 md:h-10 md:px-4">
                 <Sparkles className="size-4" />
                 捕捉
               </Button>
             </form>
-            <div className="hidden items-center gap-2 rounded-xl border bg-white/76 px-3 py-2 text-xs text-muted-foreground shadow-sm xl:flex">
+            <div className="hidden items-center gap-2 rounded-2xl border bg-white/76 px-3 py-2 text-xs text-muted-foreground shadow-sm xl:flex">
               <CircleDot className="size-3 text-primary" />
               <span>本地数据 · 自托管</span>
             </div>

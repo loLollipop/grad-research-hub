@@ -10,15 +10,15 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="surface-lift flex flex-col gap-4 rounded-2xl px-5 py-5 md:flex-row md:items-end md:justify-between">
+    <div className="dashboard-hero flex flex-col gap-4 rounded-2xl border border-border/70 px-5 py-5 shadow-[0_14px_34px_rgba(34,48,71,0.06)] md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
           {eyebrow}
         </p>
-        <h1 className="mt-2 text-[1.85rem] font-semibold leading-tight tracking-tight text-foreground">
+        <h1 className="mt-2 text-[1.85rem] font-semibold leading-tight tracking-tight text-[#172b44]">
           {title}
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#53687d]">
           {description}
         </p>
       </div>
