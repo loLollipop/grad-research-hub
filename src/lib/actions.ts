@@ -17,6 +17,7 @@ import { checkAiConnection } from "@/lib/ai";
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
 import { prisma } from "@/lib/db";
 import { splitTags, tagsToString } from "@/lib/format";
+import { getMeetingBriefPeriod, type MeetingBriefScope } from "@/lib/meeting-brief";
 import {
   adminItemSchema,
   aiSettingsSchema,
@@ -75,18 +76,6 @@ function parseJsonObject(value: FormDataEntryValue | null) {
   } catch {
     return {};
   }
-}
-
-function startOfLocalDay(value: Date) {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-function addDays(value: Date, days: number) {
-  const date = new Date(value);
-  date.setDate(date.getDate() + days);
-  return date;
 }
 
 function resultFormData(formData: FormData) {
@@ -665,16 +654,29 @@ export async function quickCapture(formData: FormData) {
 }
 
 export async function createMeetingBriefNote(formData: FormData) {
-  const scope = String(formData.get("scope") ?? "week");
+  const rawScope = String(formData.get("scope") ?? "week");
+  const scope: MeetingBriefScope = rawScope === "today" ? "today" : "week";
   const now = new Date();
-  const today = startOfLocalDay(now);
-  const end = scope === "today" ? addDays(today, 1) : addDays(today, 8);
+  const period = getMeetingBriefPeriod(now, scope);
+
+  const existingNote = await prisma.note.findFirst({
+    where: {
+      folder: "组会",
+      content: { contains: period.marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existingNote) {
+    redirect(`/notes?note=${existingNote.id}`);
+  }
 
   const [tasks, adminItems, experiments, results, papers] = await Promise.all([
     prisma.task.findMany({
       where: {
         status: { not: "done" },
-        OR: [{ priority: "high" }, { dueDate: { lt: end } }],
+        OR: [{ priority: "high" }, { dueDate: { lt: period.endExclusive } }],
       },
       orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
       take: 10,
@@ -683,7 +685,7 @@ export async function createMeetingBriefNote(formData: FormData) {
     prisma.adminItem.findMany({
       where: {
         status: { not: "done" },
-        OR: [{ dueDate: { lt: end } }, { type: "meeting" }],
+        OR: [{ dueDate: { lt: period.endExclusive } }, { type: "meeting" }],
       },
       orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
       take: 8,
@@ -707,10 +709,11 @@ export async function createMeetingBriefNote(formData: FormData) {
 
   const note = await prisma.note.create({
     data: {
-      title: `组会准备 ${now.toISOString().slice(0, 10)}`,
+      title: period.title,
       folder: "组会",
       content: meetingBriefMarkdown({
         generatedAt: now,
+        period,
         tasks,
         adminItems,
         experiments,
@@ -1009,6 +1012,7 @@ type MeetingBriefResult = Result & {
 
 function meetingBriefMarkdown({
   generatedAt,
+  period,
   tasks,
   adminItems,
   experiments,
@@ -1016,6 +1020,7 @@ function meetingBriefMarkdown({
   papers,
 }: {
   generatedAt: Date;
+  period: ReturnType<typeof getMeetingBriefPeriod>;
   tasks: MeetingBriefTask[];
   adminItems: AdminItem[];
   experiments: MeetingBriefExperiment[];
@@ -1023,9 +1028,12 @@ function meetingBriefMarkdown({
   papers: Paper[];
 }) {
   const lines = [
-    `# 组会准备 ${generatedAt.toISOString().slice(0, 10)}`,
+    period.marker,
+    "",
+    `# ${period.title}`,
     "",
     `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
+    `覆盖范围：${period.shortLabel}`,
     "",
     "> 自动整理自研途 Hub。先改“本周最需要讲清楚”的三行，再补细节。",
     "",

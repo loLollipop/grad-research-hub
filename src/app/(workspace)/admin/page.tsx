@@ -12,6 +12,7 @@ import {
   Trash2,
   UsersRound,
 } from "lucide-react";
+import Link from "next/link";
 import type { AdminItem, Prisma } from "@prisma/client";
 
 import {
@@ -29,10 +30,11 @@ import { Field } from "@/components/shared/field";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { TagList } from "@/components/shared/tag-list";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { getMeetingBriefPeriod } from "@/lib/meeting-brief";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,7 @@ export default async function AdminPage({ searchParams }: Props) {
   const q = first(params.q)?.trim();
   const type = first(params.type);
   const status = first(params.status);
+  const meetingBriefPeriod = getMeetingBriefPeriod();
 
   const where: Prisma.AdminItemWhereInput = {};
   if (q) {
@@ -73,13 +76,21 @@ export default async function AdminPage({ searchParams }: Props) {
     where.status = status;
   }
 
-  const [items, typeCounts, statusCounts] = await Promise.all([
+  const [items, typeCounts, statusCounts, currentMeetingBrief] = await Promise.all([
     prisma.adminItem.findMany({
       where,
       orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
     }),
     prisma.adminItem.groupBy({ by: ["type"], _count: true }),
     prisma.adminItem.groupBy({ by: ["status"], _count: true }),
+    prisma.note.findFirst({
+      where: {
+        folder: "组会",
+        content: { contains: meetingBriefPeriod.marker, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, updatedAt: true },
+    }),
   ]);
 
   const openItems = items.filter((item) => item.status !== "done");
@@ -126,13 +137,20 @@ export default async function AdminPage({ searchParams }: Props) {
               >
                 <AdminItemForm action={createAdminItem} />
               </CreateDialog>
-              <form action={createMeetingBriefNote}>
-                <input type="hidden" name="scope" value="week" />
-                <SubmitButton variant="outline">
+              {currentMeetingBrief ? (
+                <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentMeetingBrief.id}`}>
                   <FileText className="size-4" />
-                  生成组会草稿
-                </SubmitButton>
-              </form>
+                  继续组会草稿
+                </Link>
+              ) : (
+                <form action={createMeetingBriefNote}>
+                  <input type="hidden" name="scope" value="week" />
+                  <SubmitButton variant="outline">
+                    <FileText className="size-4" />
+                    生成组会草稿
+                  </SubmitButton>
+                </form>
+              )}
             </div>
           </div>
 
@@ -203,18 +221,29 @@ export default async function AdminPage({ searchParams }: Props) {
         <div className="grid gap-3">
           <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#173042]">组会前快速整理</p>
+              <p className="text-sm font-semibold text-[#173042]">
+                {currentMeetingBrief ? "本周组会草稿已经准备好" : "组会前快速整理"}
+              </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                自动把近期任务、事务、实验、结果和待读文献汇成一篇组会笔记，生成后直接编辑。
+                {currentMeetingBrief
+                  ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
+                  : "自动把近期任务、事务、实验、结果和待读文献汇成一篇组会笔记，生成后直接编辑。"}
               </p>
             </div>
-            <form action={createMeetingBriefNote}>
-              <input type="hidden" name="scope" value="week" />
-              <SubmitButton variant="default" className="w-fit">
+            {currentMeetingBrief ? (
+              <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentMeetingBrief.id}`}>
                 <FileText className="size-4" />
-                生成准备笔记
-              </SubmitButton>
-            </form>
+                继续编辑草稿
+              </Link>
+            ) : (
+              <form action={createMeetingBriefNote}>
+                <input type="hidden" name="scope" value="week" />
+                <SubmitButton variant="default" className="w-fit">
+                  <FileText className="size-4" />
+                  生成准备笔记
+                </SubmitButton>
+              </form>
+            )}
           </div>
 
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] md:grid-cols-[1fr_150px_150px_auto]">

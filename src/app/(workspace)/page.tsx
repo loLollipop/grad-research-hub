@@ -29,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createMeetingBriefNote } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { daysUntil, formatDate, formatDateTime, parseJson, statusLabel } from "@/lib/format";
+import { getMeetingBriefPeriod } from "@/lib/meeting-brief";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ type QueueItem = {
 };
 
 export default async function DashboardPage() {
+  const meetingBriefPeriod = getMeetingBriefPeriod();
   const [
     taskCounts,
     upcomingTasks,
@@ -52,6 +54,7 @@ export default async function DashboardPage() {
     adminItems,
     projects,
     results,
+    currentMeetingBrief,
     totalRecords,
   ] = await Promise.all([
     prisma.task.groupBy({ by: ["status"], _count: true }),
@@ -95,6 +98,14 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" },
       take: 5,
       include: { experiment: true, dataset: true },
+    }),
+    prisma.note.findFirst({
+      where: {
+        folder: "组会",
+        content: { contains: meetingBriefPeriod.marker, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, updatedAt: true },
     }),
     Promise.all([
       prisma.paper.count(),
@@ -237,22 +248,35 @@ export default async function DashboardPage() {
 
       <section className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#173042]">开组会前先生成一版草稿</p>
+          <p className="text-sm font-semibold text-[#173042]">
+            {currentMeetingBrief ? "本周组会草稿已经准备好" : "开组会前先生成一版草稿"}
+          </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            自动汇总本周高优先级任务、临近事务、最近实验、结果证据和待读文献，生成后继续在笔记页修改。
+            {currentMeetingBrief
+              ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
+              : "自动汇总本周高优先级任务、临近事务、最近实验、结果证据和待读文献，生成后继续在笔记页修改。"}
           </p>
         </div>
-        <form action={createMeetingBriefNote} className="flex flex-wrap gap-2">
-          <input type="hidden" name="scope" value="week" />
-          <SubmitButton variant="default" className="w-fit">
-            <FileText className="size-4" />
-            生成组会准备
-          </SubmitButton>
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          {currentMeetingBrief ? (
+            <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentMeetingBrief.id}`}>
+              <FileText className="size-4" />
+              继续编辑草稿
+            </Link>
+          ) : (
+            <form action={createMeetingBriefNote}>
+              <input type="hidden" name="scope" value="week" />
+              <SubmitButton variant="default" className="w-fit">
+                <FileText className="size-4" />
+                生成组会准备
+              </SubmitButton>
+            </form>
+          )}
           <Link className={buttonVariants({ variant: "outline" })} href="/notes?folder=组会">
             <NotebookPen className="size-4" />
             查看组会笔记
           </Link>
-        </form>
+        </div>
       </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
