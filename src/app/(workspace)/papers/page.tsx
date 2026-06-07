@@ -10,6 +10,8 @@ import {
   Search,
   Settings,
   Trash2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import type { Paper, Prisma } from "@prisma/client";
 
@@ -37,7 +39,14 @@ import { Textarea } from "@/components/ui/textarea";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ q?: string; status?: string; category?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    category?: string;
+    sync?: string;
+    count?: string;
+    message?: string;
+  }>;
 };
 
 function valueOf(value: string | string[] | undefined) {
@@ -49,6 +58,9 @@ export default async function PapersPage({ searchParams }: Props) {
   const q = valueOf(params.q)?.trim();
   const status = valueOf(params.status);
   const category = valueOf(params.category)?.trim();
+  const sync = valueOf(params.sync);
+  const syncedCount = Number(valueOf(params.count) ?? 0);
+  const syncMessage = valueOf(params.message);
   const zotero = await getZoteroConfigStatus();
 
   const where: Prisma.PaperWhereInput = {};
@@ -155,6 +167,29 @@ export default async function PapersPage({ searchParams }: Props) {
         </Card>
       ) : null}
 
+      {sync === "success" ? (
+        <SyncNotice
+          tone="success"
+          title="Zotero 同步完成"
+          description={
+            syncedCount > 0
+              ? `已同步 ${syncedCount} 条文献。重复条目会自动更新，不会重复创建。`
+              : "Zotero 返回了 0 条可同步文献。可以检查 Collection Key、同步数量或 Zotero 集合内容。"
+          }
+        />
+      ) : null}
+
+      {sync === "error" ? (
+        <SyncNotice
+          tone="error"
+          title="Zotero 同步失败"
+          description={
+            syncMessage ||
+            "请检查 API Key、Library ID、库类型、Collection Key 和服务器网络。"
+          }
+        />
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
         <aside className="grid content-start gap-4">
           <Card className="workbench-card">
@@ -233,6 +268,53 @@ export default async function PapersPage({ searchParams }: Props) {
         </div>
       </section>
     </div>
+  );
+}
+
+function SyncNotice({
+  tone,
+  title,
+  description,
+}: {
+  tone: "success" | "error";
+  title: string;
+  description: string;
+}) {
+  const Icon = tone === "success" ? CheckCircle2 : AlertCircle;
+
+  return (
+    <Card
+      className={
+        tone === "success"
+          ? "border-emerald-200 bg-[#eefaf4] shadow-sm"
+          : "border-rose-200 bg-[#fff1f2] shadow-sm"
+      }
+    >
+      <CardContent className="flex flex-col gap-3 py-4 text-sm md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-3">
+          <span
+            className={
+              tone === "success"
+                ? "flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"
+                : "flex size-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700"
+            }
+          >
+            <Icon className="size-4" />
+          </span>
+          <div>
+            <p className={tone === "success" ? "font-medium text-emerald-950" : "font-medium text-rose-950"}>
+              {title}
+            </p>
+            <p className={tone === "success" ? "mt-1 text-emerald-900/80" : "mt-1 text-rose-900/80"}>
+              {description}
+            </p>
+          </div>
+        </div>
+        <Link className={buttonVariants({ variant: "outline" })} href="/papers">
+          关闭提示
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 

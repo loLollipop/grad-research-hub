@@ -187,7 +187,14 @@ export async function updatePaperStatus(formData: FormData) {
 }
 
 export async function syncZoteroPapers() {
-  const papers = await fetchZoteroPapers();
+  let papers;
+
+  try {
+    papers = await fetchZoteroPapers();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Zotero 同步失败。";
+    redirect(`/papers?sync=error&message=${encodeURIComponent(message)}`);
+  }
 
   await Promise.all(
     papers.map((paper) =>
@@ -217,6 +224,7 @@ export async function syncZoteroPapers() {
   revalidatePath("/");
   revalidatePath("/papers");
   revalidatePath("/settings");
+  redirect(`/papers?sync=success&count=${papers.length}`);
 }
 
 export async function createProject(formData: FormData) {
