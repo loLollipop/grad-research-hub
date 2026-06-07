@@ -340,23 +340,23 @@ export default async function DashboardPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/70 p-4 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:p-5">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-stretch">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 p-4 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:p-5">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-stretch">
           <div className="cockpit-panel min-w-0 rounded-2xl border p-4 md:p-5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <Sparkles className="size-3.5" />
-                今日 cockpit
+                今日指挥台
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 {dailyPlanPeriod.shortLabel}
               </span>
             </div>
             <p className="mt-5 text-xs font-medium text-muted-foreground">今天最值得处理</p>
-            <h1 className="mt-2 max-w-4xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.6rem]">
+            <h1 className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
               {focusItem?.title ?? "先建立第一条任务或实验记录"}
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
               {focusItem
                 ? `${focusItem.kind} · ${focusItem.meta} · ${dueText(focusItem.dueDate)}。先推进这一项，再补实验、文献或结果证据。`
                 : "当前还没有可排序的任务或事务。先用快速捕捉写下一件真实要做的事，首页就会开始帮你收口。"}
@@ -392,18 +392,36 @@ export default async function DashboardPage() {
               </form>
             </div>
 
+            <div className="mt-5 grid gap-2 rounded-2xl bg-[#162235] p-3 text-white shadow-[0_18px_36px_rgba(22,34,53,0.15)] md:grid-cols-3">
+              <FocusStackItem
+                index="01"
+                title={focusItem?.title ?? "写下第一件要做的事"}
+                detail={focusItem ? dueText(focusItem.dueDate) : "快速捕捉即可开始"}
+              />
+              <FocusStackItem
+                index="02"
+                title={closingItems[0]?.title ?? "没有明显收口风险"}
+                detail={closingItems[0]?.action ?? "直接推进下一步"}
+              />
+              <FocusStackItem
+                index="03"
+                title={recentPapers[0]?.title ?? "同步 Zotero 文献"}
+                detail={`${readingPapers + unreadPapers} 篇待读/读中`}
+              />
+            </div>
+
             <div className="mt-5 grid gap-3 rounded-xl border border-white/72 bg-white/58 p-3 sm:grid-cols-[auto_1fr] sm:items-center">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-[#173042] text-white shadow-sm">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-[#162235] text-white shadow-sm">
                 <TimerReset className="size-5" />
               </span>
               <div className="min-w-0">
                 <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                   <span>任务完成度</span>
-                  <span className="font-medium text-[#173042]">{completion}%</span>
+                  <span className="font-medium text-[#16263a]">{completion}%</span>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/85">
                   <div
-                    className="h-full rounded-full bg-[#315266]"
+                    className="h-full rounded-full bg-[#365a7d]"
                     style={{ width: `${Math.max(4, completion)}%` }}
                   />
                 </div>
@@ -414,8 +432,8 @@ export default async function DashboardPage() {
           <div className="cockpit-panel grid content-start gap-3 rounded-2xl border p-3">
             <div className="flex items-center justify-between gap-3 px-1">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">实时信号</p>
-                <h2 className="mt-1 text-base font-semibold text-[#173042]">开工前看一眼</h2>
+                <p className="text-xs font-medium text-muted-foreground">研究流信号</p>
+                <h2 className="mt-1 text-base font-semibold text-[#16263a]">开工前看一眼</h2>
               </div>
               <span className="rounded-full border border-white/70 bg-white/72 px-2.5 py-1 text-[11px] text-muted-foreground">
                 自托管
@@ -460,9 +478,9 @@ export default async function DashboardPage() {
         evidence={`${manuscriptReady} 条可写入`}
       />
 
-      <section className="grid gap-3 rounded-2xl border border-border/70 bg-white/68 p-3 shadow-[0_8px_18px_rgba(27,42,56,0.035)] lg:grid-cols-[1fr_auto] lg:items-center">
+      <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/72 p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)] lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#173042]">
+          <p className="text-sm font-semibold text-[#16263a]">
             {currentMeetingBrief ? "本周组会草稿已经准备好" : "开组会前先生成一版草稿"}
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -722,22 +740,22 @@ export default async function DashboardPage() {
 function FirstRunDashboard() {
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.92fr] xl:items-end">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <Sparkles className="size-3.5" />
-                10 分钟开箱
+                开箱指挥台
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 先连文献 · 再建课题 · 留下第一条记录
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2.05rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.62rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
               先别配置一堆东西，从三件小事开始。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
               研途 Hub 的第一天不需要完整迁移资料。先连接 Zotero 或手动补一篇文献，
               建一个正在做的课题，再写下第一条实验/笔记，首页就会开始帮你排序。
             </p>
@@ -757,29 +775,37 @@ function FirstRunDashboard() {
             </div>
           </div>
 
-          <Card className="border-white/72 bg-white/76 shadow-[0_16px_34px_rgba(27,42,56,0.08)] backdrop-blur">
-            <CardContent className="grid gap-3 py-4">
-              <p className="text-xs font-medium text-muted-foreground">推荐顺序</p>
-              <FirstRunStep
-                index="01"
-                title="设置访问密码、Zotero 和 AI Key"
-                detail="高频变动项都在设置中心，不用回服务器改。"
-                href="/settings"
-              />
-              <FirstRunStep
-                index="02"
-                title="同步 Zotero 或补一篇临时文献"
-                detail="文献不要重复录，阅读状态交给这里。"
-                href="/papers"
-              />
-              <FirstRunStep
-                index="03"
-                title="创建课题和下一步任务"
-                detail="首页会从任务和事务里自动生成今日队列。"
-                href="/projects"
-              />
-            </CardContent>
-          </Card>
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <TimerReset className="size-3.5" />
+                10 分钟开箱顺序
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                <FirstRunStep
+                  index="01"
+                  title="设置访问密码、Zotero 和 AI Key"
+                  detail="高频变动项都在设置中心，不用回服务器改。"
+                  href="/settings"
+                />
+                <FirstRunStep
+                  index="02"
+                  title="同步 Zotero 或补一篇临时文献"
+                  detail="文献不要重复录，阅读状态交给这里。"
+                  href="/papers"
+                />
+                <FirstRunStep
+                  index="03"
+                  title="创建课题和下一步任务"
+                  detail="首页会从任务和事务里自动生成今日队列。"
+                  href="/projects"
+                />
+              </div>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-white/62">
+              先让工作台跑起来，一周后再决定哪些历史资料值得迁移。
+            </p>
+          </div>
         </div>
       </section>
 
@@ -869,14 +895,14 @@ function FirstRunStep({
   return (
     <Link
       href={href}
-      className="grid gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
+      className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.07] p-3 transition hover:border-white/20 hover:bg-white/[0.1] sm:grid-cols-[auto_1fr_auto] sm:items-center"
     >
-      <span className="font-mono text-xs font-semibold text-primary">{index}</span>
+      <span className="font-mono text-xs font-semibold text-white/50">{index}</span>
       <span className="min-w-0">
-        <span className="block font-medium">{title}</span>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
+        <span className="block font-medium text-white">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-white/58">{detail}</span>
       </span>
-      <ArrowRight className="hidden size-4 text-muted-foreground sm:block" />
+      <ArrowRight className="hidden size-4 text-white/45 sm:block" />
     </Link>
   );
 }
@@ -929,6 +955,27 @@ function ChecklistRow({ title, detail }: { title: string; detail: string }) {
   );
 }
 
+function FocusStackItem({
+  index,
+  title,
+  detail,
+}: {
+  index: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/45">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
+  );
+}
+
 function CockpitRow({
   icon: Icon,
   label,
@@ -945,16 +992,16 @@ function CockpitRow({
   return (
     <Link
       href={href}
-      className="grid gap-3 rounded-xl border border-white/72 bg-white/66 p-3 transition hover:border-primary/25 hover:bg-white/88 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+      className="grid gap-3 rounded-xl border border-white/72 bg-white/68 p-3 transition hover:border-primary/25 hover:bg-white/90 sm:grid-cols-[auto_1fr_auto] sm:items-center"
     >
-      <span className="flex size-9 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
+      <span className="flex size-9 items-center justify-center rounded-xl border border-[#d8e5ee] bg-[#eef4fb] text-[#365a7d]">
         <Icon className="size-4" />
       </span>
       <span className="min-w-0">
         <span className="block text-xs font-medium text-muted-foreground">{label}</span>
-        <span className="mt-1 block line-clamp-1 text-sm font-semibold text-[#173042]">{detail}</span>
+        <span className="mt-1 block line-clamp-1 text-sm font-semibold text-[#16263a]">{detail}</span>
       </span>
-      <span className="w-fit rounded-full border border-white/80 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#315266]">
+      <span className="w-fit rounded-full border border-white/80 bg-white/78 px-2.5 py-1 text-xs font-medium text-[#365a7d]">
         {value}
       </span>
     </Link>
@@ -1008,9 +1055,9 @@ function ResearchRhythm({
           return (
             <div
               key={item.label}
-              className="grid gap-3 rounded-xl border border-border/60 bg-white/72 p-3 sm:grid-cols-[auto_1fr] sm:items-start"
+              className="grid gap-3 rounded-xl border border-border/55 bg-white/70 p-3 sm:grid-cols-[auto_1fr] sm:items-start"
             >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef3fb] text-primary">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef4fb] text-[#365a7d]">
                 <Icon className="size-4" />
               </span>
               <div className="min-w-0">
@@ -1048,7 +1095,7 @@ function ResearchSignal({
     <Link href={href} className="group block">
       <Card className="signal-card h-full transition hover:border-primary/25 hover:bg-white">
         <CardContent className="flex h-full items-start gap-3 py-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7dff0] bg-[#eef3fb] text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d8e5ee] bg-[#eef4fb] text-[#365a7d] transition group-hover:bg-primary group-hover:text-primary-foreground">
             <Icon className="size-4" />
           </span>
           <div className="min-w-0">
@@ -1064,10 +1111,10 @@ function ResearchSignal({
 
 function ClosingRadar({ items }: { items: ClosingItem[] }) {
   return (
-    <section className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(246,249,249,0.86))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.04)]">
+    <section className="grid gap-3 rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(247,250,253,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.036)]">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <p className="flex items-center gap-2 text-sm font-semibold text-[#173042]">
+          <p className="flex items-center gap-2 text-sm font-semibold text-[#16263a]">
             <TimerReset className="size-4 text-primary" />
             收口提醒
           </p>
@@ -1086,7 +1133,7 @@ function ClosingRadar({ items }: { items: ClosingItem[] }) {
             <Link
               key={item.id}
               href={item.href}
-              className="group grid gap-3 rounded-xl border border-border/70 bg-white/76 p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)] sm:grid-cols-[auto_1fr_auto] sm:items-center"
+              className="group grid gap-3 rounded-xl border border-border/65 bg-white/76 p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.045)] sm:grid-cols-[auto_1fr_auto] sm:items-center"
             >
               <span className={closingToneClass(item.tone)}>{item.kind}</span>
               <span className="min-w-0">

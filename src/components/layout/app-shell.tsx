@@ -3,6 +3,7 @@ import {
   BookOpenText,
   CircleDot,
   Command,
+  FileChartColumn,
   FlaskConical,
   GraduationCap,
   Search,
@@ -34,9 +35,9 @@ const utilityItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="workbench-surface min-h-screen text-foreground">
-      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border px-4 py-4 text-sidebar-foreground shadow-[10px_0_32px_rgba(15,23,42,0.055)] md:flex md:flex-col">
+      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border px-4 py-4 text-sidebar-foreground shadow-[10px_0_32px_rgba(15,23,42,0.045)] md:flex md:flex-col">
         <Link href="/" className="group flex items-center gap-3 rounded-lg px-2 py-2">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,90,120,0.14)] transition group-hover:scale-[1.02]">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.15)] transition group-hover:scale-[1.02]">
             <GraduationCap className="size-5" />
           </span>
           <span className="min-w-0">
@@ -45,20 +46,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </Link>
 
-        <div className="mt-4 rounded-2xl border border-sidebar-border/80 bg-white/58 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)]">
-          <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/75 bg-white/82 px-2.5 py-2 text-xs text-muted-foreground">
+        <div className="mt-4 rounded-2xl border border-sidebar-border/75 bg-white/62 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+          <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/70 bg-white/84 px-2.5 py-2 text-xs text-muted-foreground">
             <Command className="size-3.5 text-sidebar-primary" />
-            <span className="truncate">打开后先看下一步</span>
+            <span className="truncate">先捕捉，再收口</span>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <span className="flex items-center gap-1.5 rounded-xl bg-[#edf5f8] px-2 py-1.5 text-[11px] text-[#315266]">
-              <BookOpenText className="size-3.5" />
-              文献
-            </span>
-            <span className="flex items-center gap-1.5 rounded-xl bg-[#eef7f3] px-2 py-1.5 text-[11px] text-[#2f6655]">
-              <FlaskConical className="size-3.5" />
-              实验
-            </span>
+          <div className="mt-3 grid gap-2">
+            <FlowHint icon={BookOpenText} label="文献" detail="Zotero 同步" />
+            <FlowHint icon={FlaskConical} label="实验" detail="目的与观察" />
+            <FlowHint icon={FileChartColumn} label="成果" detail="能否写进论文" />
           </div>
         </div>
 
@@ -78,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-2xl border border-sidebar-border/80 bg-white/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_10px_24px_rgba(34,48,71,0.045)]">
+        <div className="mt-auto rounded-2xl border border-sidebar-border/75 bg-white/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_10px_24px_rgba(34,48,71,0.04)]">
           <div className="flex items-center gap-2">
             <TimerReset className="size-4 text-sidebar-primary" />
             <p className="text-xs font-semibold text-sidebar-foreground">今天只做三件事</p>
@@ -94,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="md:pl-[17rem]">
-        <header className="sticky top-0 z-30 border-b border-border/75 bg-white/72 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-border/70 bg-white/76 backdrop-blur-xl">
           <div className="flex flex-col gap-2 px-3 py-2 md:min-h-16 md:px-4 md:py-3 lg:flex-row lg:items-center lg:justify-between lg:px-7">
             <div className="flex items-center justify-between gap-3 md:hidden">
               <div className="flex items-center gap-2">
@@ -110,8 +106,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
-                  placeholder="快速捕捉：任务：整理结果 / 实验：复现实验 / 想法..."
-                  className="h-9 rounded-2xl border-border/75 bg-white/95 pl-8 text-sm shadow-[0_1px_1px_rgba(15,23,42,0.04)] md:h-10"
+                  placeholder="快速捕捉：任务：整理结果 / 实验：复现实验 / 文献：补读... "
+                  className="h-9 rounded-2xl border-border/70 bg-white/95 pl-8 text-sm shadow-[0_1px_1px_rgba(15,23,42,0.035)] md:h-10"
                 />
               </div>
               <Button type="submit" className="h-9 shrink-0 rounded-2xl px-3 md:h-10 md:px-4">
@@ -134,6 +130,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+    </div>
+  );
+}
+
+function FlowHint({
+  icon: Icon,
+  label,
+  detail,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-xl border border-sidebar-border/55 bg-white/58 px-2.5 py-2">
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#eef4fb] text-sidebar-primary">
+          <Icon className="size-3.5" />
+        </span>
+        <span className="truncate text-xs font-medium text-sidebar-foreground">{label}</span>
+      </span>
+      <span className="truncate text-[11px] text-muted-foreground">{detail}</span>
     </div>
   );
 }
