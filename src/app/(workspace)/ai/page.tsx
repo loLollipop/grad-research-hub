@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   BookOpenText,
   Bot,
@@ -71,10 +71,10 @@ export default async function AiPage() {
                 周报 · 复盘 · 阅读 · 写作
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               AI 页只做一件事：把研究材料变成可检查的草稿。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               不做万能聊天框，也不替你下结论。先围绕组会提纲、实验复盘、阅读卡片和写作润色，
               把已有笔记整理成可人工核对的结构化草稿。
             </p>
@@ -90,7 +90,7 @@ export default async function AiPage() {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <WandSparkles className="size-3.5" />

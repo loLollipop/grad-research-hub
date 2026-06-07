@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   ClipboardList,
   Beaker,
@@ -128,10 +128,10 @@ export default async function ExperimentsPage({ searchParams }: Props) {
                 目的 · 观察 · 结论 · 下一步
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               每次实验只留下能复盘的东西。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               不把实验记录做成参数仓库。这里更像一个轻量 ELN：用模板帮你写清楚目的、
               方法、观察、结论和下一步，再把项目、文献和结果连起来。
             </p>
@@ -156,7 +156,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <FlaskConical className="size-3.5" />

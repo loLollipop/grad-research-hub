@@ -118,10 +118,10 @@ export default async function SettingsPage({ searchParams }: Props) {
                 AI · Zotero · 访问 · 备份
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               设置页只放会经常改的连接，不把部署细节塞给用户。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               AI Key、Zotero、访问密码和数据导出在这里处理；数据库、端口、加密密钥等底层部署项继续放在服务器和高级信息里。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export default async function SettingsPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <KeyRound className="size-3.5" />

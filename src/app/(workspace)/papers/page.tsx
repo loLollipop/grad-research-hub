@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   BookOpenCheck,
   Edit3,
@@ -136,10 +136,10 @@ export default async function PapersPage({ searchParams }: Props) {
                 同步为主 · 手动兜底
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               文献不用重复录，重点放在读到哪一步。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               Zotero 继续作为文献库，研途 Hub 只接管阅读状态、筛选队列、标签和读后笔记。
               需要临时材料时再补录，避免把管理文献变成新的负担。
             </p>
@@ -176,7 +176,7 @@ export default async function PapersPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <BookOpenCheck className="size-3.5" />

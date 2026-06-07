@@ -6,6 +6,7 @@ import {
   FileChartColumn,
   FlaskConical,
   GraduationCap,
+  Layers3,
   Search,
   Sparkles,
   TimerReset,
@@ -33,11 +34,13 @@ const utilityItems = [
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const mobileItems = [...navItems, ...utilityItems];
+
   return (
     <div className="workbench-surface min-h-screen text-foreground">
-      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border px-4 py-4 text-sidebar-foreground shadow-[10px_0_32px_rgba(15,23,42,0.045)] md:flex md:flex-col">
-        <Link href="/" className="group flex items-center gap-3 rounded-lg px-2 py-2">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.15)] transition group-hover:scale-[1.02]">
+      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border/80 px-4 py-4 text-sidebar-foreground shadow-[10px_0_32px_rgba(15,23,42,0.035)] md:flex md:flex-col">
+        <Link href="/" className="group flex items-center gap-3 rounded-xl px-2 py-2">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.13)] transition group-hover:scale-[1.02]">
             <GraduationCap className="size-5" />
           </span>
           <span className="min-w-0">
@@ -46,8 +49,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </Link>
 
-        <div className="mt-4 rounded-2xl border border-sidebar-border/75 bg-white/62 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
-          <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/70 bg-white/84 px-2.5 py-2 text-xs text-muted-foreground">
+        <div className="mt-4 rounded-2xl border border-sidebar-border/70 bg-white/64 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_24px_rgba(34,48,71,0.026)]">
+          <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/65 bg-white/86 px-2.5 py-2 text-xs text-muted-foreground">
             <Command className="size-3.5 text-sidebar-primary" />
             <span className="truncate">先捕捉，再收口</span>
           </div>
@@ -59,8 +62,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <Separator className="my-4 bg-sidebar-border/80" />
-        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/75">
-          工作流
+        <p className="mb-2 flex items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/75">
+          <Layers3 className="size-3" />
+          研究流
         </p>
         <nav className="grid gap-1.5">
           {navItems.map((item) => (
@@ -74,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-2xl border border-sidebar-border/75 bg-white/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_10px_24px_rgba(34,48,71,0.04)]">
+        <div className="mt-auto rounded-2xl border border-sidebar-border/70 bg-white/72 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_22px_rgba(34,48,71,0.032)]">
           <div className="flex items-center gap-2">
             <TimerReset className="size-4 text-sidebar-primary" />
             <p className="text-xs font-semibold text-sidebar-foreground">今天只做三件事</p>
@@ -90,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="md:pl-[17rem]">
-        <header className="sticky top-0 z-30 border-b border-border/70 bg-white/76 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-border/70 bg-white/78 backdrop-blur-xl">
           <div className="flex flex-col gap-2 px-3 py-2 md:min-h-16 md:px-4 md:py-3 lg:flex-row lg:items-center lg:justify-between lg:px-7">
             <div className="flex items-center justify-between gap-3 md:hidden">
               <div className="flex items-center gap-2">
@@ -101,16 +105,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 自托管
               </div>
             </div>
-            <form action={quickCapture} className="flex w-full max-w-3xl items-center gap-1.5 md:gap-2">
+            <form action={quickCapture} className="flex w-full max-w-3xl items-center gap-1.5 rounded-2xl border border-border/60 bg-white/62 p-1 shadow-[0_1px_1px_rgba(15,23,42,0.025),0_10px_24px_rgba(34,48,71,0.032)] md:gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
                   placeholder="快速捕捉：任务：整理结果 / 实验：复现实验 / 文献：补读... "
-                  className="h-9 rounded-2xl border-border/70 bg-white/95 pl-8 text-sm shadow-[0_1px_1px_rgba(15,23,42,0.035)] md:h-10"
+                  className="h-9 rounded-xl border-transparent bg-white/0 pl-8 text-sm shadow-none focus-visible:bg-white/88 md:h-10"
                 />
               </div>
-              <Button type="submit" className="h-9 shrink-0 rounded-2xl px-3 md:h-10 md:px-4">
+              <Button type="submit" className="h-9 shrink-0 rounded-xl px-3 md:h-10 md:px-4">
                 <Sparkles className="size-4" />
                 捕捉
               </Button>
@@ -120,7 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span>本地数据 · 自托管</span>
             </div>
             <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-0.5 md:hidden">
-              {navItems.map((item) => (
+              {mobileItems.map((item) => (
                 <NavLink key={item.href} href={item.href} label={item.label} compact />
               ))}
             </div>

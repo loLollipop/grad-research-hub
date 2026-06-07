@@ -1,4 +1,4 @@
-import {
+﻿import {
   ArrowRight,
   BarChart3,
   ClipboardList,
@@ -215,10 +215,10 @@ export default async function DataPage({ searchParams }: Props) {
                 指标 · 复现 · 论文素材
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               成果页只回答一件事：这条结果能不能支撑结论。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               不把这里做成数据仓库，只保留关键指标、复现状态、图表路径和一句话结论。
               结果先变成可信证据，再进入周报、组会和论文素材。
             </p>
@@ -261,7 +261,7 @@ export default async function DataPage({ searchParams }: Props) {
             ) : null}
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <Layers3 className="size-3.5" />

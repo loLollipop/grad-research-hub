@@ -1,4 +1,4 @@
-import {
+﻿import {
   CalendarClock,
   ClipboardList,
   Clock3,
@@ -160,10 +160,10 @@ export default async function AdminPage({ searchParams }: Props) {
                 组会 · 材料 · 报销 · 截止
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               事务页只做一件事：别让小事打断科研节奏。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               只登记真正会偷走注意力的事：组会地点、材料截止、报销进度和学院通知。
               这里优先告诉你今天要处理什么，处理完就回到科研主线。
             </p>
@@ -194,7 +194,7 @@ export default async function AdminPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <Clock3 className="size-3.5" />

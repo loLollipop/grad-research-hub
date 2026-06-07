@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   ArrowRight,
   BookOpenText,
@@ -353,10 +353,10 @@ export default async function DashboardPage() {
               </span>
             </div>
             <p className="mt-5 text-xs font-medium text-muted-foreground">今天最值得处理</p>
-            <h1 className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               {focusItem?.title ?? "先建立第一条任务或实验记录"}
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               {focusItem
                 ? `${focusItem.kind} · ${focusItem.meta} · ${dueText(focusItem.dueDate)}。先推进这一项，再补实验、文献或结果证据。`
                 : "当前还没有可排序的任务或事务。先用快速捕捉写下一件真实要做的事，首页就会开始帮你收口。"}
@@ -392,7 +392,7 @@ export default async function DashboardPage() {
               </form>
             </div>
 
-            <div className="mt-5 grid gap-2 rounded-2xl bg-[#162235] p-3 text-white shadow-[0_18px_36px_rgba(22,34,53,0.15)] md:grid-cols-3">
+            <div className="mt-5 grid gap-2 rounded-2xl action-stack p-3 text-white shadow-[0_18px_36px_rgba(22,34,53,0.15)] md:grid-cols-3">
               <FocusStackItem
                 index="01"
                 title={focusItem?.title ?? "写下第一件要做的事"}
@@ -411,13 +411,13 @@ export default async function DashboardPage() {
             </div>
 
             <div className="mt-5 grid gap-3 rounded-xl border border-white/72 bg-white/58 p-3 sm:grid-cols-[auto_1fr] sm:items-center">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-[#162235] text-white shadow-sm">
+              <span className="flex size-11 items-center justify-center rounded-xl ink-tile text-white shadow-sm">
                 <TimerReset className="size-5" />
               </span>
               <div className="min-w-0">
                 <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                   <span>任务完成度</span>
-                  <span className="font-medium text-[#16263a]">{completion}%</span>
+                  <span className="font-medium hero-title">{completion}%</span>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/85">
                   <div
@@ -433,7 +433,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between gap-3 px-1">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">研究流信号</p>
-                <h2 className="mt-1 text-base font-semibold text-[#16263a]">开工前看一眼</h2>
+                <h2 className="mt-1 text-base font-semibold hero-title">开工前看一眼</h2>
               </div>
               <span className="rounded-full border border-white/70 bg-white/72 px-2.5 py-1 text-[11px] text-muted-foreground">
                 自托管
@@ -480,7 +480,7 @@ export default async function DashboardPage() {
 
       <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/72 p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)] lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#16263a]">
+          <p className="text-sm font-semibold hero-title">
             {currentMeetingBrief ? "本周组会草稿已经准备好" : "开组会前先生成一版草稿"}
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -752,10 +752,10 @@ function FirstRunDashboard() {
                 先连文献 · 再建课题 · 留下第一条记录
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               先别配置一堆东西，从三件小事开始。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               研途 Hub 的第一天不需要完整迁移资料。先连接 Zotero 或手动补一篇文献，
               建一个正在做的课题，再写下第一条实验/笔记，首页就会开始帮你排序。
             </p>
@@ -775,7 +775,7 @@ function FirstRunDashboard() {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <TimerReset className="size-3.5" />
@@ -999,7 +999,7 @@ function CockpitRow({
       </span>
       <span className="min-w-0">
         <span className="block text-xs font-medium text-muted-foreground">{label}</span>
-        <span className="mt-1 block line-clamp-1 text-sm font-semibold text-[#16263a]">{detail}</span>
+        <span className="mt-1 block line-clamp-1 text-sm font-semibold hero-title">{detail}</span>
       </span>
       <span className="w-fit rounded-full border border-white/80 bg-white/78 px-2.5 py-1 text-xs font-medium text-[#365a7d]">
         {value}
@@ -1114,7 +1114,7 @@ function ClosingRadar({ items }: { items: ClosingItem[] }) {
     <section className="grid gap-3 rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(247,250,253,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.036)]">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <p className="flex items-center gap-2 text-sm font-semibold text-[#16263a]">
+          <p className="flex items-center gap-2 text-sm font-semibold hero-title">
             <TimerReset className="size-4 text-primary" />
             收口提醒
           </p>

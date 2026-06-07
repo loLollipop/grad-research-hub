@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   ArrowRight,
   BookOpenText,
@@ -218,10 +218,10 @@ export default async function NotesPage({ searchParams }: Props) {
                 阅读 · 实验 · 组会 · 写作
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               笔记页只做一件事：把碎片变成可继续推进的材料。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               这里承接 Zotero 阅读、实验复盘、结果证据和组会草稿。左侧快速找材料，
               右侧专心写作，用 `[[双链]]` 和待办清单把想法接回项目任务。
             </p>
@@ -237,7 +237,7 @@ export default async function NotesPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <BookOpenText className="size-3.5" />

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   AlertCircle,
   ArrowRight,
@@ -220,10 +220,10 @@ export default async function ProjectsPage({ searchParams }: Props) {
                 阶段 · 里程碑 · 下一步
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               项目页只回答一个问题：下一步推进什么。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               课题可以很复杂，但每天推进不该复杂。这里把项目压成路线图、里程碑和任务队列，
               少填字段，多看状态，让你打开后直接进入行动。
             </p>
@@ -266,7 +266,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
               <p className="flex items-center gap-2 text-xs font-medium text-white/68">
                 <FolderKanban className="size-3.5" />
