@@ -1,8 +1,10 @@
 import Link from "next/link";
 import {
+  AlertCircle,
   ArrowRight,
   Beaker,
   CalendarClock,
+  CheckCircle2,
   Edit3,
   Flag,
   FolderKanban,
@@ -29,6 +31,7 @@ import {
   updateMilestone,
   updateProject,
   updateTask,
+  updateTaskStatuses,
 } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import {
@@ -56,6 +59,9 @@ type Props = {
     status?: string;
     priority?: string;
     scope?: string;
+    taskBulk?: string;
+    taskBulkCount?: string;
+    taskBulkStatus?: string;
   }>;
 };
 
@@ -91,8 +97,18 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const priority = valueOf(params.priority);
   const rawScope = valueOf(params.scope);
   const scope = rawScope && ["today", "week"].includes(rawScope) ? rawScope : undefined;
+  const taskBulk = valueOf(params.taskBulk);
+  const taskBulkCount = Number(valueOf(params.taskBulkCount) ?? 0);
+  const taskBulkStatus = valueOf(params.taskBulkStatus);
   const activeFilterCount = [q, projectId, status, priority, scope].filter(Boolean).length;
   const currentFilters = { q, project: projectId, status, priority, scope };
+  const currentQuery = new URLSearchParams();
+  if (q) currentQuery.set("q", q);
+  if (projectId) currentQuery.set("project", projectId);
+  if (status) currentQuery.set("status", status);
+  if (priority) currentQuery.set("priority", priority);
+  if (scope) currentQuery.set("scope", scope);
+  const returnTo = currentQuery.size ? `/projects?${currentQuery.toString()}` : "/projects";
   const todayStart = startOfDay(new Date());
   const tomorrowStart = addDays(todayStart, 1);
   const weekEnd = addDays(todayStart, 8);
@@ -295,9 +311,15 @@ export default async function ProjectsPage({ searchParams }: Props) {
               </Link>
               <Link
                 href={projectsHref(currentFilters, { scope: "today" })}
-                className={scopePillClass(scope === "today")}
+                className={scopePillClass(scope === "today" && !(priority === "high" && !status))}
               >
                 今天
+              </Link>
+              <Link
+                href={projectsHref(currentFilters, { scope: "today", priority: "high", status: undefined })}
+                className={scopePillClass(scope === "today" && priority === "high" && !status)}
+              >
+                今天高优先级
               </Link>
               <Link
                 href={projectsHref(currentFilters, { scope: "week" })}
@@ -307,6 +329,24 @@ export default async function ProjectsPage({ searchParams }: Props) {
               </Link>
             </div>
           </div>
+
+          {taskBulk === "success" ? (
+            <TaskBulkNotice
+              href={returnTo}
+              tone="success"
+              title="任务状态已批量更新"
+              description={`已将 ${taskBulkCount} 个任务标记为“${taskStatusLabel(taskBulkStatus ?? "")}”。`}
+            />
+          ) : null}
+
+          {taskBulk === "empty" ? (
+            <TaskBulkNotice
+              href={returnTo}
+              tone="error"
+              title="没有选中任务"
+              description="先勾选要处理的任务，再批量更新状态。"
+            />
+          ) : null}
 
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_170px_130px_130px_auto]">
             <div className="relative">
@@ -351,7 +391,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
             </Button>
           </form>
 
-          <div className="flex flex-col gap-2 rounded-2xl border border-border/72 bg-white/78 p-3 text-sm shadow-[0_10px_24px_rgba(34,48,71,0.04)] md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 rounded-2xl border border-border/72 bg-white/78 p-3 text-sm shadow-[0_10px_24px_rgba(34,48,71,0.04)] xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">当前任务 {tasks.length} 个</span>
               {selectedProjectTitle ? (
@@ -375,19 +415,36 @@ export default async function ProjectsPage({ searchParams }: Props) {
                 </span>
               ) : null}
             </div>
-            {activeFilterCount ? (
-              <Link
-                href="/projects"
-                className="inline-flex w-fit items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
-              >
-                <X className="size-3" />
-                清除 {activeFilterCount} 个筛选
-              </Link>
-            ) : (
-              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
-                未筛选
-              </span>
-            )}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
+              {activeFilterCount ? (
+                <Link
+                  href="/projects"
+                  className="inline-flex w-fit items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+                >
+                  <X className="size-3" />
+                  清除 {activeFilterCount} 个筛选
+                </Link>
+              ) : (
+                <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  未筛选
+                </span>
+              )}
+              <form id="task-bulk-form" action={updateTaskStatuses} className="flex flex-wrap gap-2">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <select
+                  name="status"
+                  defaultValue="done"
+                  className="h-9 rounded-lg border bg-background px-2 text-sm"
+                >
+                  <option value="todo">标为待办</option>
+                  <option value="doing">标为进行中</option>
+                  <option value="done">标为完成</option>
+                </select>
+                <SubmitButton variant="outline" className="w-fit">
+                  批量更新
+                </SubmitButton>
+              </form>
+            </div>
           </div>
 
           <section className="grid gap-3 lg:grid-cols-3">
@@ -476,6 +533,58 @@ function SignalCard({
   );
 }
 
+function TaskBulkNotice({
+  tone,
+  title,
+  description,
+  href,
+}: {
+  tone: "success" | "error";
+  title: string;
+  description: string;
+  href: string;
+}) {
+  const Icon = tone === "success" ? CheckCircle2 : AlertCircle;
+
+  return (
+    <Card
+      className={
+        tone === "success"
+          ? "border-emerald-200 bg-[#eefaf4] shadow-sm"
+          : "border-rose-200 bg-[#fff1f2] shadow-sm"
+      }
+    >
+      <CardContent className="flex flex-col gap-3 py-4 text-sm md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-3">
+          <span
+            className={
+              tone === "success"
+                ? "flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"
+                : "flex size-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700"
+            }
+          >
+            <Icon className="size-4" />
+          </span>
+          <div>
+            <p className={tone === "success" ? "font-medium text-emerald-950" : "font-medium text-rose-950"}>
+              {title}
+            </p>
+            <p className={tone === "success" ? "mt-1 text-emerald-900/80" : "mt-1 text-rose-900/80"}>
+              {description}
+            </p>
+          </div>
+        </div>
+        <Link
+          href={href}
+          className="inline-flex h-9 w-fit items-center rounded-lg border border-border/72 bg-white/82 px-3 text-sm font-medium transition hover:border-primary/30 hover:text-primary"
+        >
+          关闭提示
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
 function NextTaskRow({
   task,
   milestones,
@@ -515,11 +624,21 @@ function TaskCard({
   return (
     <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)]">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="line-clamp-2 font-medium leading-snug">{task.title}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-            {task.milestone?.project.title ?? "独立任务"} · {formatDate(task.dueDate)}
-          </p>
+        <div className="flex min-w-0 gap-2">
+          <input
+            form="task-bulk-form"
+            type="checkbox"
+            name="ids"
+            value={task.id}
+            aria-label={`选择任务：${task.title}`}
+            className="mt-1 size-4 shrink-0 rounded border-border text-primary accent-[var(--primary)]"
+          />
+          <div className="min-w-0">
+            <p className="line-clamp-2 font-medium leading-snug">{task.title}</p>
+            <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+              {task.milestone?.project.title ?? "独立任务"} · {formatDate(task.dueDate)}
+            </p>
+          </div>
         </div>
         <StatusBadge value={task.priority} kind="priority" />
       </div>

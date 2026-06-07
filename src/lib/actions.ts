@@ -258,6 +258,10 @@ function safePapersReturnTo(value: string) {
   return value.startsWith("/papers") ? value : "/papers";
 }
 
+function safeProjectsReturnTo(value: string) {
+  return value.startsWith("/projects") ? value : "/projects";
+}
+
 export async function createProject(formData: FormData) {
   const parsed = projectSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
@@ -381,6 +385,30 @@ export async function setTaskStatus(formData: FormData) {
   await prisma.task.update({ where: { id }, data: { status } });
   revalidatePath("/");
   revalidatePath("/projects");
+}
+
+export async function updateTaskStatuses(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean);
+  const status = String(formData.get("status") ?? "done");
+  const returnTo = safeProjectsReturnTo(String(formData.get("returnTo") ?? "/projects"));
+
+  if (!ids.length || !["todo", "doing", "done"].includes(status)) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}taskBulk=empty`);
+  }
+
+  await prisma.task.updateMany({
+    where: { id: { in: ids } },
+    data: { status },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/projects");
+  redirect(
+    `${returnTo}${returnTo.includes("?") ? "&" : "?"}taskBulk=success&taskBulkCount=${ids.length}&taskBulkStatus=${status}`,
+  );
 }
 
 export async function createExperimentFromTask(formData: FormData) {
