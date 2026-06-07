@@ -11,6 +11,7 @@ import {
   FileChartColumn,
   FlaskConical,
   FolderKanban,
+  History,
   Lightbulb,
   NotebookPen,
   PenLine,
@@ -22,13 +23,11 @@ import {
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { SubmitButton } from "@/components/shared/submit-button";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { TagList } from "@/components/shared/tag-list";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createMeetingBriefNote } from "@/lib/actions";
 import { prisma } from "@/lib/db";
-import { daysUntil, formatDate, formatDateTime, parseJson, statusLabel } from "@/lib/format";
+import { daysUntil, formatDateTime, parseJson, statusLabel } from "@/lib/format";
 import { getMeetingBriefPeriod } from "@/lib/meeting-brief";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +40,16 @@ type QueueItem = {
   dueDate: Date | null;
   meta: string;
   tone: "task" | "admin";
+};
+
+type TimelineItem = {
+  id: string;
+  title: string;
+  href: string;
+  kind: "文献" | "实验" | "结果" | "笔记";
+  meta: string;
+  updatedAt: Date;
+  tone: "paper" | "experiment" | "result" | "note";
 };
 
 export default async function DashboardPage() {
@@ -167,6 +176,51 @@ export default async function DashboardPage() {
     .slice(0, 7);
 
   const focusItem = queue[0];
+  const timeline = [
+    ...recentExperiments.map<TimelineItem>((experiment) => ({
+      id: experiment.id,
+      title: experiment.title,
+      href: "/experiments",
+      kind: "实验",
+      meta: `${statusLabel(experiment.status)} · ${experiment.project?.title ?? "未关联项目"} · 结果 ${experiment.results.length} 条`,
+      updatedAt: experiment.updatedAt,
+      tone: "experiment",
+    })),
+    ...results.map<TimelineItem>((result) => {
+      const metrics = parseJson<Record<string, number | string>>(result.metrics, {});
+      const firstMetric = Object.entries(metrics)[0];
+
+      return {
+        id: result.id,
+        title: result.title,
+        href: "/data",
+        kind: "结果",
+        meta: `${result.experiment?.title ?? "未关联实验"} · ${firstMetric ? `${firstMetric[0]} ${firstMetric[1]}` : "无指标"}`,
+        updatedAt: result.updatedAt,
+        tone: "result",
+      };
+    }),
+    ...recentNotes.map<TimelineItem>((note) => ({
+      id: note.id,
+      title: note.title,
+      href: `/notes?note=${note.id}`,
+      kind: "笔记",
+      meta: `${note.folder} · ${parseTagsPreview(note.tags)}`,
+      updatedAt: note.updatedAt,
+      tone: "note",
+    })),
+    ...recentPapers.map<TimelineItem>((paper) => ({
+      id: paper.id,
+      title: paper.title,
+      href: "/papers",
+      kind: "文献",
+      meta: `${paper.year ?? "年份未知"} · ${statusLabel(paper.readStatus)}`,
+      updatedAt: paper.updatedAt,
+      tone: "paper",
+    })),
+  ]
+    .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
+    .slice(0, 8);
 
   return (
     <div className="grid gap-5">
@@ -411,96 +465,9 @@ export default async function DashboardPage() {
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="workbench-card">
-          <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="flex items-center gap-2">
-                <FlaskConical className="size-4 text-primary" />
-                最近实验
-              </CardTitle>
-              <Link href="/experiments" className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-                实验记录
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            {recentExperiments.length ? (
-              recentExperiments.map((experiment) => (
-                <div key={experiment.id} className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{experiment.title}</p>
-                    <StatusBadge value={experiment.status} />
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {experiment.project?.title ?? "未关联项目"} · 更新 {formatDateTime(experiment.updatedAt)}
-                  </p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    已登记结果 {experiment.results.length} 条
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">还没有实验记录。</p>
-            )}
-          </CardContent>
-        </Card>
+      <section className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
+        <ResearchTimeline items={timeline} />
 
-        <Card className="workbench-card">
-          <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="flex items-center gap-2">
-                <BookOpenText className="size-4 text-primary" />
-                文献与笔记
-              </CardTitle>
-              <Link href="/papers" className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-                文献台
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-3 lg:grid-cols-2">
-            <div className="grid content-start gap-2">
-              {recentPapers.length ? (
-                recentPapers.slice(0, 3).map((paper) => (
-                  <div key={paper.id} className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3.5">
-                    <p className="line-clamp-2 font-medium">{paper.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {paper.year ?? "年份未知"} · {statusLabel(paper.readStatus)}
-                    </p>
-                    <div className="mt-2">
-                      <TagList value={paper.tags} />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">同步 Zotero 后显示最近文献。</p>
-              )}
-            </div>
-            <div className="grid content-start gap-2">
-              {recentNotes.length ? (
-                recentNotes.slice(0, 3).map((note) => (
-                  <Link
-                    key={note.id}
-                    href={`/notes?note=${note.id}`}
-                    className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3.5 transition hover:border-primary/25 hover:bg-white"
-                  >
-                    <p className="line-clamp-1 font-medium">{note.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {note.folder} · 更新 {formatDate(note.updatedAt)}
-                    </p>
-                  </Link>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">用顶部快速捕捉记录灵感。</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2">
         <Card className="workbench-card">
           <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
             <CardTitle className="flex items-center gap-2">
@@ -546,7 +513,9 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
+      </section>
 
+      <section className="grid gap-4">
         <Card className="workbench-card">
           <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
             <CardTitle className="flex items-center gap-2">
@@ -930,6 +899,93 @@ function LoopRow({
       <ArrowRight className="hidden size-4 text-muted-foreground sm:block" />
     </Link>
   );
+}
+
+function ResearchTimeline({ items }: { items: TimelineItem[] }) {
+  return (
+    <Card className="workbench-card overflow-hidden">
+      <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="flex items-center gap-2">
+            <History className="size-4 text-primary" />
+            研究时间线
+          </CardTitle>
+          <Link href="/notes?folder=组会" className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+            用于组会回顾
+            <ArrowRight className="size-3.5" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {items.length ? (
+          <div className="grid gap-2">
+            {items.map((item) => {
+              const Icon = timelineIcon(item.tone);
+
+              return (
+                <Link
+                  key={`${item.tone}-${item.id}`}
+                  href={item.href}
+                  className="group grid gap-3 rounded-xl border border-border/70 bg-[#fbfcfd]/88 p-3.5 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_26px_rgba(27,42,56,0.055)] sm:grid-cols-[auto_1fr_auto] sm:items-center"
+                >
+                  <span className={timelineIconClass(item.tone)}>
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="line-clamp-1 font-medium">{item.title}</span>
+                      <span className="rounded-md border bg-white/82 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                        {item.kind}
+                      </span>
+                    </span>
+                    <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">
+                      {item.meta}
+                    </span>
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">
+                    {formatDateTime(item.updatedAt)}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyState
+            icon={History}
+            title="暂无研究时间线"
+            description="同步文献、记录实验、写笔记或登记结果后，这里会自动串成可回顾的轨迹。"
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function timelineIcon(tone: TimelineItem["tone"]) {
+  const icons = {
+    paper: BookOpenText,
+    experiment: FlaskConical,
+    result: FileChartColumn,
+    note: PenLine,
+  };
+
+  return icons[tone];
+}
+
+function timelineIconClass(tone: TimelineItem["tone"]) {
+  const classes = {
+    paper: "flex size-9 items-center justify-center rounded-xl bg-[#eef3fb] text-primary",
+    experiment: "flex size-9 items-center justify-center rounded-xl bg-[#eef7f3] text-[#2f6655]",
+    result: "flex size-9 items-center justify-center rounded-xl bg-[#f7f1df] text-[#7a5a2f]",
+    note: "flex size-9 items-center justify-center rounded-xl bg-[#f3eef9] text-[#5d4d80]",
+  };
+
+  return classes[tone];
+}
+
+function parseTagsPreview(value: string) {
+  const tags = parseJson<string[]>(value, []);
+  return tags.length ? tags.slice(0, 2).join(" / ") : "无标签";
 }
 
 function dueText(value: Date | null) {
