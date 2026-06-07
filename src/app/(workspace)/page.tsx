@@ -77,19 +77,19 @@ export default async function DashboardPage() {
           label="待处理"
           value={`${openTasks} 个`}
           detail={totalTasks ? `已完成 ${done} / ${totalTasks}` : "还没有任务"}
-          accent="blue"
+          accent="strong"
         />
         <TodayCard
           label="下一件事"
           value={upcomingTasks[0]?.title ?? "暂无"}
           detail={upcomingTasks[0] ? dueText(upcomingTasks[0].dueDate) : "可以先去项目页建任务"}
-          accent="amber"
+          accent="medium"
         />
         <TodayCard
           label="最近实验"
           value={recentExperiments[0]?.title ?? "暂无"}
           detail={recentExperiments[0]?.project?.title ?? "保持记录节奏"}
-          accent="teal"
+          accent="soft"
         />
       </section>
 
@@ -143,16 +143,16 @@ export default async function DashboardPage() {
         </Card>
 
         <div className="grid gap-4">
-          <Card className="overflow-hidden bg-[#172033] text-white ring-[#172033]">
+          <Card className="overflow-hidden border-primary/14 bg-[linear-gradient(180deg,#ffffff_0%,#f5f8f8_100%)]">
             <CardContent className="py-4">
-              <p className="text-xs font-medium text-white/58">任务完成度</p>
+              <p className="text-xs font-medium text-muted-foreground">任务完成度</p>
               <div className="mt-3 flex items-end justify-between gap-3">
                 <p className="text-3xl font-semibold tracking-tight">{completion}%</p>
-                <p className="pb-1 text-xs text-white/54">{done} / {totalTasks || 0}</p>
+                <p className="pb-1 text-xs text-muted-foreground">{done} / {totalTasks || 0}</p>
               </div>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/12">
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#2dd4bf,#60a5fa)]"
+                  className="h-full rounded-full bg-primary/70"
                   style={{ width: `${completion}%` }}
                 />
               </div>
@@ -228,18 +228,18 @@ function TodayCard({
   label: string;
   value: string;
   detail: string;
-  accent: "blue" | "amber" | "teal";
+  accent: "strong" | "medium" | "soft";
 }) {
   const accents = {
-    blue: "from-blue-500/14 to-cyan-500/6 text-blue-700",
-    amber: "from-amber-500/16 to-orange-500/6 text-amber-800",
-    teal: "from-teal-500/14 to-emerald-500/6 text-teal-800",
+    strong: "bg-primary/56",
+    medium: "bg-primary/34",
+    soft: "bg-primary/20",
   };
 
   return (
     <Card className="bg-white/95">
       <CardContent className="py-4">
-        <div className={`mb-3 h-1.5 w-12 rounded-full bg-gradient-to-r ${accents[accent]}`} />
+        <div className={`mb-3 h-1.5 w-12 rounded-full ${accents[accent]}`} />
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <p className="mt-1 line-clamp-1 text-xl font-semibold tracking-tight">{value}</p>
         <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>

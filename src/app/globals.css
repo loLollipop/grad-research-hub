@@ -49,38 +49,38 @@
 }
 
 :root {
-  --background: oklch(0.972 0.009 218);
-  --foreground: oklch(0.18 0.026 238);
+  --background: oklch(0.974 0.006 94);
+  --foreground: oklch(0.205 0.018 235);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.026 238);
+  --card-foreground: oklch(0.205 0.018 235);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.026 238);
-  --primary: oklch(0.43 0.102 232);
-  --primary-foreground: oklch(0.99 0.005 210);
-  --secondary: oklch(0.93 0.015 224);
-  --secondary-foreground: oklch(0.24 0.038 230);
-  --muted: oklch(0.945 0.012 225);
-  --muted-foreground: oklch(0.46 0.026 235);
-  --accent: oklch(0.78 0.12 168);
-  --accent-foreground: oklch(0.18 0.04 190);
+  --popover-foreground: oklch(0.205 0.018 235);
+  --primary: oklch(0.43 0.058 207);
+  --primary-foreground: oklch(0.99 0.004 96);
+  --secondary: oklch(0.932 0.009 213);
+  --secondary-foreground: oklch(0.265 0.022 225);
+  --muted: oklch(0.948 0.007 210);
+  --muted-foreground: oklch(0.47 0.018 230);
+  --accent: oklch(0.73 0.055 171);
+  --accent-foreground: oklch(0.24 0.03 190);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.875 0.014 226);
-  --input: oklch(0.87 0.014 226);
-  --ring: oklch(0.55 0.09 232);
-  --chart-1: oklch(0.48 0.12 232);
-  --chart-2: oklch(0.62 0.13 168);
-  --chart-3: oklch(0.72 0.14 82);
-  --chart-4: oklch(0.58 0.15 26);
-  --chart-5: oklch(0.52 0.1 286);
+  --border: oklch(0.885 0.007 218);
+  --input: oklch(0.878 0.008 218);
+  --ring: oklch(0.56 0.052 207);
+  --chart-1: oklch(0.5 0.07 207);
+  --chart-2: oklch(0.58 0.065 171);
+  --chart-3: oklch(0.66 0.07 82);
+  --chart-4: oklch(0.58 0.075 32);
+  --chart-5: oklch(0.52 0.052 278);
   --radius: 0.5rem;
-  --sidebar: oklch(0.205 0.026 238);
-  --sidebar-foreground: oklch(0.93 0.012 224);
-  --sidebar-primary: oklch(0.77 0.12 168);
-  --sidebar-primary-foreground: oklch(0.985 0.006 95);
-  --sidebar-accent: oklch(0.285 0.03 238);
-  --sidebar-accent-foreground: oklch(0.96 0.008 224);
-  --sidebar-border: oklch(0.32 0.03 238);
-  --sidebar-ring: oklch(0.72 0.1 168);
+  --sidebar: oklch(0.965 0.007 98);
+  --sidebar-foreground: oklch(0.285 0.02 230);
+  --sidebar-primary: oklch(0.43 0.058 207);
+  --sidebar-primary-foreground: oklch(0.99 0.004 96);
+  --sidebar-accent: oklch(0.925 0.012 210);
+  --sidebar-accent-foreground: oklch(0.25 0.022 225);
+  --sidebar-border: oklch(0.875 0.008 210);
+  --sidebar-ring: oklch(0.56 0.052 207);
 }
 
 .dark {
@@ -139,9 +139,9 @@
 @layer utilities {
   .workbench-surface {
     background:
-      linear-gradient(color-mix(in oklch, var(--border), transparent 72%) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklch, var(--border), transparent 78%) 1px, transparent 1px),
-      linear-gradient(180deg, oklch(0.992 0.004 210) 0%, var(--background) 44%, oklch(0.955 0.012 224) 100%);
+      linear-gradient(color-mix(in oklch, var(--border), transparent 86%) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--border), transparent 90%) 1px, transparent 1px),
+      linear-gradient(180deg, oklch(0.992 0.003 96) 0%, var(--background) 48%, oklch(0.958 0.008 108) 100%);
     background-size:
       32px 32px,
       32px 32px,
@@ -149,7 +149,7 @@
   }
 
   .workbench-card {
-    @apply border-border/80 bg-white/94 shadow-[0_1px_1px_rgba(15,23,42,0.04),0_18px_46px_rgba(15,23,42,0.08)];
+    @apply border-border/80 bg-white/94 shadow-[0_1px_1px_rgba(15,23,42,0.035),0_16px_36px_rgba(15,23,42,0.055)];
   }
 
   .workbench-panel {
@@ -158,8 +158,8 @@
 
   .sidebar-panel {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
-      color-mix(in oklch, var(--sidebar), black 4%);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.5)),
+      var(--sidebar);
   }
 
   .fine-divider {
@@ -167,7 +167,7 @@
   }
 
   .surface-lift {
-    @apply border border-border/80 bg-white/88 shadow-[0_1px_1px_rgba(15,23,42,0.04),0_12px_32px_rgba(15,23,42,0.06)];
+    @apply border border-border/80 bg-white/88 shadow-[0_1px_1px_rgba(15,23,42,0.035),0_10px_28px_rgba(15,23,42,0.045)];
   }
 
   .workspace-page {

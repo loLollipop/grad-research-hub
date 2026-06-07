@@ -29,15 +29,15 @@ const icons = {
 } as const;
 
 const accents: Record<NavIcon, string> = {
-  admin: "text-amber-300",
-  ai: "text-violet-300",
-  data: "text-cyan-300",
-  experiments: "text-teal-300",
-  home: "text-slate-200",
-  notes: "text-indigo-300",
-  papers: "text-blue-300",
-  projects: "text-emerald-300",
-  settings: "text-slate-200",
+  admin: "text-slate-500",
+  ai: "text-slate-500",
+  data: "text-slate-500",
+  experiments: "text-slate-500",
+  home: "text-slate-500",
+  notes: "text-slate-500",
+  papers: "text-slate-500",
+  projects: "text-slate-500",
+  settings: "text-slate-500",
 };
 
 export type NavIcon = keyof typeof icons;
@@ -85,8 +85,8 @@ export function NavLink({
       className={cn(
         "group relative flex min-h-10 items-center gap-2.5 overflow-hidden rounded-lg border px-2.5 py-2 text-sm transition",
         active
-          ? "border-white/12 bg-white/[0.105] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(0,0,0,0.18)]"
-          : "border-transparent text-sidebar-foreground/62 hover:border-white/8 hover:bg-white/[0.06] hover:text-white",
+          ? "border-primary/16 bg-white/86 font-medium text-sidebar-foreground shadow-[0_8px_18px_rgba(15,23,42,0.055)]"
+          : "border-transparent text-muted-foreground hover:border-sidebar-border/80 hover:bg-white/64 hover:text-sidebar-foreground",
       )}
     >
       {active ? (
@@ -97,8 +97,8 @@ export function NavLink({
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-md border transition",
             active
-              ? "border-sidebar-primary/25 bg-sidebar-primary/14 text-sidebar-primary"
-              : "border-white/6 bg-white/[0.045] group-hover:bg-white/[0.075]",
+              ? "border-primary/16 bg-primary/9 text-primary"
+              : "border-sidebar-border/60 bg-white/56 group-hover:bg-white/78",
             !active && accent,
           )}
         >
