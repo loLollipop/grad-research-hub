@@ -780,6 +780,47 @@ export async function createTaskFromResult(formData: FormData) {
   redirect("/projects?priority=high&status=todo");
 }
 
+export async function appendResultToExperiment(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const result = await prisma.result.findUnique({
+    where: { id },
+    include: {
+      dataset: true,
+      experiment: true,
+    },
+  });
+
+  if (!result?.experiment) return;
+
+  const marker = `<!-- result:${result.id} -->`;
+  if (result.experiment.content.includes(marker)) {
+    redirect(experimentResultTarget(result.experiment.projectId, result.experiment.status));
+  }
+
+  await prisma.experiment.update({
+    where: { id: result.experiment.id },
+    data: {
+      content: [result.experiment.content.trim(), resultExperimentSection(result, marker)]
+        .filter(Boolean)
+        .join("\n\n"),
+      status: result.experiment.status === "running" ? "completed" : result.experiment.status,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/experiments");
+  revalidatePath("/data");
+
+  redirect(
+    experimentResultTarget(
+      result.experiment.projectId,
+      result.experiment.status === "running" ? "completed" : result.experiment.status,
+    ),
+  );
+}
+
 function resultBriefMarkdown(
   results: Array<{
     title: string;
@@ -882,6 +923,49 @@ function resultTaskDescription(result: {
     "- [ ] 确认图表路径和结果文件可打开",
     "- [ ] 把结论写成一两句话，供组会/论文使用",
   ].join("\n");
+}
+
+function resultExperimentSection(
+  result: {
+    id: string;
+    title: string;
+    metrics: string;
+    config: string;
+    artifactPath: string | null;
+    notes: string | null;
+    updatedAt: Date;
+    dataset: { name: string } | null;
+  },
+  marker: string,
+) {
+  const config = parseJsonObjectText(result.config);
+  const metrics = parseJsonObjectText(result.metrics);
+  const metricText = Object.entries(metrics)
+    .filter(([, value]) => String(value).trim())
+    .slice(0, 6)
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join("；") || "未填写核心指标";
+
+  return [
+    marker,
+    "## 结果回填",
+    "",
+    `- 结果：${result.title}`,
+    `- 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+    `- 核心指标：${metricText}`,
+    `- 复现状态：${reproducibilityText(String(config.reproducibility ?? "unknown"))}`,
+    `- 图表或结果文件：${result.artifactPath || "待补"}`,
+    `- 更新时间：${result.updatedAt.toISOString().slice(0, 10)}`,
+    `- 结论 / 下一步：${result.notes?.trim() || "待补充"}`,
+  ].join("\n");
+}
+
+function experimentResultTarget(projectId: string | null, status: string) {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project", projectId);
+  if (status) params.set("status", status);
+  const query = params.toString();
+  return query ? `/experiments?${query}` : "/experiments";
 }
 
 function parseJsonObjectText(value: string) {

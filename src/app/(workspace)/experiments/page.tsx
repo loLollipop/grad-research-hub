@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import {
+  appendResultToExperiment,
   createExperiment,
   createExperimentReviewTask,
   deleteExperiment,
@@ -437,15 +438,7 @@ function ExperimentCard({
             label="关联论文"
             value={linkedPapers || "暂无"}
           />
-          <InfoBlock
-            icon={FileChartColumn}
-            label="结果记录"
-            value={
-              experiment.results.length
-                ? `${experiment.results.length} 条：${experiment.results[0]?.title}`
-                : "暂无"
-            }
-          />
+          <ExperimentResultActions experiment={experiment} />
         </div>
 
         <div className="flex flex-col gap-3 border-t border-border/65 pt-3 md:flex-row md:items-center md:justify-between">
@@ -470,6 +463,41 @@ function ExperimentCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ExperimentResultActions({ experiment }: { experiment: ExperimentFull }) {
+  return (
+    <div className="flex gap-3 rounded-xl border border-border/72 bg-white/70 p-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#eef4f2] text-primary">
+        <FileChartColumn className="size-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-muted-foreground">结果记录</p>
+        {experiment.results.length ? (
+          <div className="mt-2 grid gap-2">
+            {experiment.results.slice(0, 3).map((result) => (
+              <div key={result.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="min-w-0 flex-1 truncate text-sm">{result.title}</span>
+                <form action={appendResultToExperiment}>
+                  <input type="hidden" name="id" value={result.id} />
+                  <Button type="submit" variant="outline" size="sm">
+                    回填正文
+                  </Button>
+                </form>
+              </div>
+            ))}
+            {experiment.results.length > 3 ? (
+              <p className="text-xs text-muted-foreground">
+                还有 {experiment.results.length - 3} 条结果，可到成果页查看。
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <p className="mt-1 text-sm">暂无</p>
+        )}
+      </div>
+    </div>
   );
 }
 
