@@ -1,5 +1,7 @@
 ﻿import {
+  AlertCircle,
   Bot,
+  CheckCircle2,
   Database,
   Download,
   FileText,
@@ -10,7 +12,13 @@
   UploadCloud,
 } from "lucide-react";
 
-import { updateAccessSettings, updateAiSettings, updateZoteroSettings } from "@/lib/actions";
+import {
+  testAiSettings,
+  testZoteroSettings,
+  updateAccessSettings,
+  updateAiSettings,
+  updateZoteroSettings,
+} from "@/lib/actions";
 import { Field } from "@/components/shared/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { SubmitButton } from "@/components/shared/submit-button";
@@ -28,7 +36,25 @@ import { getAccessSettings, getAiSettings, getZoteroSettings } from "@/lib/setti
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+type Props = {
+  searchParams: Promise<{
+    section?: string;
+    status?: string;
+    message?: string;
+  }>;
+};
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function SettingsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const feedback = {
+    section: valueOf(params.section),
+    status: valueOf(params.status),
+    message: valueOf(params.message),
+  };
   const [zotero, aiSettings, accessSettings, counts] = await Promise.all([
     getZoteroSettings(),
     getAiSettings(),
@@ -70,6 +96,8 @@ export default async function SettingsPage() {
         }
       />
 
+      <SettingsFeedback {...feedback} />
+
       <section className="grid gap-3 md:grid-cols-4">
         <HealthCard label="数据库" ready={databaseReady} detail="保存所有研究记录" icon={Database} />
         <HealthCard label="访问保护" ready={accessReady} detail="公开部署前建议开启" icon={ShieldCheck} />
@@ -78,7 +106,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">
-        <Card className="bg-white/95">
+        <Card className="workbench-card bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="size-4" />
@@ -91,7 +119,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/95">
+        <Card className="workbench-card bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UploadCloud className="size-4" />
@@ -104,7 +132,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/95">
+        <Card className="workbench-card bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="size-4" />
@@ -121,7 +149,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card className="bg-white/95">
+        <Card className="workbench-card bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KeyRound className="size-4" />
@@ -136,7 +164,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/95">
+        <Card className="workbench-card bg-white/95">
           <CardHeader>
             <CardTitle>备份</CardTitle>
             <CardDescription>搬家、重部署或整理资料前导出一次。</CardDescription>
@@ -246,7 +274,12 @@ function AiSettingsForm({
       <p className="text-xs text-muted-foreground">
         Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
       </p>
-      <SubmitButton className="w-fit">保存 AI 连接</SubmitButton>
+      <div className="flex flex-wrap gap-2">
+        <SubmitButton className="w-fit">保存 AI 连接</SubmitButton>
+        <SubmitButton formAction={testAiSettings} variant="outline" className="w-fit">
+          测试当前配置
+        </SubmitButton>
+      </div>
     </form>
   );
 }
@@ -298,7 +331,12 @@ function ZoteroSettingsForm({
       <p className="text-xs text-muted-foreground">
         API Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
       </p>
-      <SubmitButton className="w-fit">保存 Zotero</SubmitButton>
+      <div className="flex flex-wrap gap-2">
+        <SubmitButton className="w-fit">保存 Zotero</SubmitButton>
+        <SubmitButton formAction={testZoteroSettings} variant="outline" className="w-fit">
+          测试当前配置
+        </SubmitButton>
+      </div>
     </form>
   );
 }
@@ -329,6 +367,46 @@ function AccessSettingsForm() {
   );
 }
 
+function SettingsFeedback({
+  section,
+  status,
+  message,
+}: {
+  section?: string;
+  status?: string;
+  message?: string;
+}) {
+  if (!section || !status || !message) {
+    return null;
+  }
+
+  const success = status === "success";
+  const warning = status === "warning";
+  const Icon = success ? CheckCircle2 : AlertCircle;
+
+  return (
+    <div
+      className={
+        success
+          ? "rounded-2xl border border-emerald-200 bg-emerald-50/92 px-4 py-3 text-sm text-emerald-900"
+          : warning
+            ? "rounded-2xl border border-amber-200 bg-amber-50/92 px-4 py-3 text-sm text-amber-950"
+            : "rounded-2xl border border-rose-200 bg-rose-50/92 px-4 py-3 text-sm text-rose-950"
+      }
+    >
+      <div className="flex items-start gap-3">
+        <Icon className="mt-0.5 size-4 shrink-0" />
+        <div className="min-w-0">
+          <p className="font-medium">
+            {section === "zotero" ? "Zotero 测试结果" : "AI 测试结果"}
+          </p>
+          <p className="mt-1 break-words leading-6">{message}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HealthCard({
   label,
   ready,
@@ -341,7 +419,7 @@ function HealthCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <Card className="bg-white/95">
+    <Card className="signal-card bg-white/95">
       <CardContent className="flex items-center justify-between gap-3 py-4">
         <div>
           <p className="text-sm font-medium">{label}</p>

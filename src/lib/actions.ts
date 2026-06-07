@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { checkAiConnection } from "@/lib/ai";
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
 import { prisma } from "@/lib/db";
 import { splitTags, tagsToString } from "@/lib/format";
@@ -22,9 +23,11 @@ import {
   saveAccessPassword,
   saveAiSettings,
   saveZoteroSettings,
+  getAiRuntimeConfig,
+  getZoteroRuntimeConfig,
   verifyAccessPasswordInput,
 } from "@/lib/settings";
-import { fetchZoteroPapers } from "@/lib/zotero";
+import { checkZoteroConnection, fetchZoteroPapers } from "@/lib/zotero";
 
 function data(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -616,6 +619,22 @@ export async function updateAiSettings(formData: FormData) {
   revalidatePath("/ai");
 }
 
+export async function testAiSettings(formData: FormData) {
+  const parsed = aiSettingsSchema.safeParse(data(formData));
+  if (!parsed.success) fail(parsed.error);
+
+  const current = await getAiRuntimeConfig();
+  const value = parsed.data;
+  const result = await checkAiConnection({
+    provider: value.provider,
+    apiKey: value.apiKey || current.apiKey,
+    baseUrl: value.baseUrl,
+    model: value.model,
+  });
+
+  redirect(settingsFeedbackUrl("ai", result.status, result.message));
+}
+
 export async function updateAccessSettings(formData: FormData) {
   const parsed = accessSettingsSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
@@ -636,4 +655,31 @@ export async function updateZoteroSettings(formData: FormData) {
   await saveZoteroSettings(parsed.data);
   revalidatePath("/settings");
   revalidatePath("/papers");
+}
+
+export async function testZoteroSettings(formData: FormData) {
+  const parsed = zoteroSettingsSchema.safeParse(data(formData));
+  if (!parsed.success) fail(parsed.error);
+
+  const current = await getZoteroRuntimeConfig();
+  const value = parsed.data;
+  const result = await checkZoteroConnection({
+    apiKey: value.apiKey || current.apiKey,
+    libraryId: value.libraryId,
+    libraryType: value.libraryType,
+    collectionKey: value.collectionKey,
+    syncLimit: value.syncLimit,
+  });
+
+  redirect(settingsFeedbackUrl("zotero", result.ok ? "success" : "error", result.message));
+}
+
+function settingsFeedbackUrl(section: string, status: string, message: string) {
+  const params = new URLSearchParams({
+    section,
+    status,
+    message,
+  });
+
+  return `/settings?${params.toString()}`;
 }

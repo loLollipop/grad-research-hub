@@ -217,7 +217,16 @@ AI 的 API Key、Base URL 和模型名属于高频变动项，部署后直接在
 - API Key 加密后写入数据库，页面只显示“已配置/未配置”。
 - API Key 输入框留空表示不修改当前 Key。
 - 输入 `CLEAR` 可以清除当前保存的 Key。
+- “测试当前配置”会检查 Key、Base URL 和模型名是否基本可用；MVP 的 AI 助手仍是接口骨架，真实模型调用会在后续版本接入。
 - `APP_ENCRYPTION_KEY` 只建议首次部署时生成一次强随机字符串。部署后更换它会导致旧 AI Key 无法解密。
+
+## 设置中心连接测试
+
+设置页支持直接测试 Zotero 和 AI 配置：
+
+- Zotero 测试会读取当前表单里的 API Key、Library ID、Collection Key 和同步数量，确认能否访问 Zotero Web API。
+- AI 测试会优先使用当前表单里的 Key；如果输入框留空，则使用已保存的 Key。测试不会把 Key 写进 URL，也不会在页面明文展示。
+- 测试成功不等于自动保存。确认配置可用后，再点击对应的保存按钮。
 
 ## 本地开发
 
