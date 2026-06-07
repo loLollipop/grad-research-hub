@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
 import { prisma } from "@/lib/db";
@@ -394,7 +395,7 @@ export async function createNote(formData: FormData) {
   const parsed = noteSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
 
-  await prisma.note.create({
+  const note = await prisma.note.create({
     data: {
       ...parsed.data,
       tags: tagsToString(splitTags(formData.get("tags"))),
@@ -403,6 +404,7 @@ export async function createNote(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
 }
 
 export async function updateNote(formData: FormData) {
@@ -429,6 +431,7 @@ export async function deleteNote(formData: FormData) {
   await prisma.note.delete({ where: { id } });
   revalidatePath("/");
   revalidatePath("/notes");
+  redirect("/notes");
 }
 
 export async function quickCapture(formData: FormData) {
