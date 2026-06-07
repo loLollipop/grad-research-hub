@@ -18,6 +18,7 @@ import type { Paper, Prisma } from "@prisma/client";
 
 import {
   createPaper,
+  createReadingNoteFromPaper,
   deletePaper,
   syncZoteroPapers,
   updatePaper,
@@ -528,6 +529,13 @@ function PaperCard({ paper }: { paper: Paper }) {
         <div className="flex flex-col gap-3 border-t border-border/65 pt-3 md:flex-row md:items-center md:justify-between">
           <TagList value={paper.tags} />
           <div className="flex flex-wrap items-center gap-2">
+            <form action={createReadingNoteFromPaper}>
+              <input type="hidden" name="id" value={paper.id} />
+              <Button type="submit" variant="outline" size="sm">
+                <FileText className="size-4" />
+                阅读笔记
+              </Button>
+            </form>
             <CreateDialog title="编辑文献" label="编辑" icon={Edit3} wide>
               <PaperForm action={updatePaper} paper={paper} />
             </CreateDialog>

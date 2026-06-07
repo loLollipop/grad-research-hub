@@ -16,7 +16,7 @@ import type {
 import { checkAiConnection } from "@/lib/ai";
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
 import { prisma } from "@/lib/db";
-import { splitTags, tagsToString } from "@/lib/format";
+import { parseTags, splitTags, tagsToString } from "@/lib/format";
 import { getMeetingBriefPeriod, type MeetingBriefScope } from "@/lib/meeting-brief";
 import {
   adminItemSchema,
@@ -198,6 +198,103 @@ export async function updatePaperStatus(formData: FormData) {
   await prisma.paper.update({ where: { id }, data: { readStatus } });
   revalidatePath("/");
   revalidatePath("/papers");
+}
+
+export async function createReadingNoteFromPaper(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const paper = await prisma.paper.findUnique({ where: { id } });
+  if (!paper) return;
+
+  const marker = paperNoteMarker(paper.id);
+  const existing = await prisma.note.findFirst({
+    where: { content: { contains: marker, mode: "insensitive" } },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `阅读：${paper.title}`.slice(0, 80),
+      folder: "文献",
+      content: buildPaperReadingNote(paper),
+      tags: tagsToString(["文献笔记", "quick-review", ...parseTags(paper.tags).slice(0, 4)]),
+    },
+  });
+
+  if (paper.readStatus === "unread") {
+    await prisma.paper.update({
+      where: { id: paper.id },
+      data: { readStatus: "reading" },
+    });
+  }
+
+  revalidatePath("/");
+  revalidatePath("/papers");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
+function paperNoteMarker(id: string) {
+  return `paper-reading-note:${id}`;
+}
+
+function buildPaperReadingNote(paper: Paper) {
+  const authors = parseTags(paper.authors).join(", ") || "作者未知";
+  const tags = parseTags(paper.tags);
+  const source = [
+    paper.journal,
+    paper.year ? String(paper.year) : "",
+    paper.doi ? `DOI: ${paper.doi}` : "",
+    paper.arxivId ? `arXiv: ${paper.arxivId}` : "",
+  ].filter(Boolean).join("；") || "来源未填";
+
+  return [
+    `<!-- ${paperNoteMarker(paper.id)} -->`,
+    `# 阅读：${paper.title}`,
+    "",
+    "## 文献信息",
+    "",
+    `- 作者：${authors}`,
+    `- 来源：${source}`,
+    `- 阅读状态：${paperStatusText(paper.readStatus)}`,
+    `- 分类：${paper.category || "未分类"}`,
+    paper.externalUrl ? `- 链接：${paper.externalUrl}` : null,
+    tags.length ? `- 标签：${tags.join(" / ")}` : null,
+    "",
+    "## 一句话问题",
+    "",
+    "- 这篇论文要解决什么问题？",
+    "",
+    "## 方法抓手",
+    "",
+    "- 核心方法 / 实验设计：",
+    "- 关键假设：",
+    "- 数据或设备条件：",
+    "",
+    "## 关键结果",
+    "",
+    "- 最重要的图表 / 指标：",
+    "- 支撑结论的证据：",
+    "",
+    "## 可复用点",
+    "",
+    "- 可以借鉴的实验设置：",
+    "- 可以写进综述或引言的观点：",
+    "- 可以转成项目任务的下一步：",
+    "",
+    "## 疑问",
+    "",
+    "- [ ] 需要回头查的细节：",
+    "",
+    "## 原始摘要 / 备注",
+    "",
+    paper.abstract?.trim() || paper.notes?.trim() || "暂无摘要或备注。",
+  ].filter((line) => line !== null).join("\n");
 }
 
 export async function updatePaperStatuses(formData: FormData) {
