@@ -49,20 +49,20 @@
 }
 
 :root {
-  --background: oklch(0.974 0.006 94);
-  --foreground: oklch(0.205 0.018 235);
+  --background: oklch(0.978 0.006 122);
+  --foreground: oklch(0.205 0.019 222);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.205 0.018 235);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.205 0.018 235);
-  --primary: oklch(0.43 0.058 207);
+  --primary: oklch(0.42 0.065 196);
   --primary-foreground: oklch(0.99 0.004 96);
-  --secondary: oklch(0.932 0.009 213);
-  --secondary-foreground: oklch(0.265 0.022 225);
-  --muted: oklch(0.948 0.007 210);
+  --secondary: oklch(0.936 0.012 174);
+  --secondary-foreground: oklch(0.265 0.024 205);
+  --muted: oklch(0.951 0.008 165);
   --muted-foreground: oklch(0.47 0.018 230);
-  --accent: oklch(0.73 0.055 171);
-  --accent-foreground: oklch(0.24 0.03 190);
+  --accent: oklch(0.74 0.06 145);
+  --accent-foreground: oklch(0.24 0.033 188);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.885 0.007 218);
   --input: oklch(0.878 0.008 218);
@@ -73,11 +73,11 @@
   --chart-4: oklch(0.58 0.075 32);
   --chart-5: oklch(0.52 0.052 278);
   --radius: 0.5rem;
-  --sidebar: oklch(0.965 0.007 98);
+  --sidebar: oklch(0.968 0.009 128);
   --sidebar-foreground: oklch(0.285 0.02 230);
-  --sidebar-primary: oklch(0.43 0.058 207);
+  --sidebar-primary: oklch(0.42 0.065 196);
   --sidebar-primary-foreground: oklch(0.99 0.004 96);
-  --sidebar-accent: oklch(0.925 0.012 210);
+  --sidebar-accent: oklch(0.928 0.014 165);
   --sidebar-accent-foreground: oklch(0.25 0.022 225);
   --sidebar-border: oklch(0.875 0.008 210);
   --sidebar-ring: oklch(0.56 0.052 207);
@@ -139,9 +139,11 @@
 @layer utilities {
   .workbench-surface {
     background:
-      linear-gradient(color-mix(in oklch, var(--border), transparent 86%) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklch, var(--border), transparent 90%) 1px, transparent 1px),
-      linear-gradient(180deg, oklch(0.992 0.003 96) 0%, var(--background) 48%, oklch(0.958 0.008 108) 100%);
+      radial-gradient(circle at 18% 8%, oklch(0.925 0.035 182 / 0.55), transparent 27rem),
+      radial-gradient(circle at 88% 3%, oklch(0.935 0.034 88 / 0.42), transparent 24rem),
+      linear-gradient(color-mix(in oklch, var(--border), transparent 88%) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--border), transparent 92%) 1px, transparent 1px),
+      linear-gradient(180deg, oklch(0.994 0.004 116) 0%, var(--background) 54%, oklch(0.956 0.01 146) 100%);
     background-size:
       32px 32px,
       32px 32px,
@@ -149,7 +151,7 @@
   }
 
   .workbench-card {
-    @apply border-border/80 bg-white/94 shadow-[0_1px_1px_rgba(15,23,42,0.035),0_16px_36px_rgba(15,23,42,0.055)];
+    @apply border-border/75 bg-white/88 shadow-[0_1px_1px_rgba(15,23,42,0.032),0_14px_34px_rgba(27,42,56,0.052)];
   }
 
   .workbench-panel {
@@ -167,7 +169,13 @@
   }
 
   .surface-lift {
-    @apply border border-border/80 bg-white/88 shadow-[0_1px_1px_rgba(15,23,42,0.035),0_10px_28px_rgba(15,23,42,0.045)];
+    @apply border border-border/75 bg-white/84 shadow-[0_1px_1px_rgba(15,23,42,0.032),0_10px_26px_rgba(27,42,56,0.045)];
+  }
+
+  .dashboard-hero {
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.8), rgba(245, 251, 248, 0.56)),
+      linear-gradient(135deg, rgba(226, 242, 240, 0.92) 0%, rgba(249, 246, 232, 0.78) 55%, rgba(236, 241, 246, 0.9) 100%);
   }
 
   .workspace-page {
