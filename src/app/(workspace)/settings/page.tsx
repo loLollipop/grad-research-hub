@@ -110,7 +110,7 @@ export default async function SettingsPage({ searchParams }: Props) {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <Settings className="size-3.5" />
                 连接中心
               </span>
@@ -523,7 +523,7 @@ function HealthLine({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+    <div className="flex items-center justify-between gap-3 soft-tile rounded-xl p-3">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={

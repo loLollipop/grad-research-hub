@@ -210,7 +210,7 @@ export default async function NotesPage({ searchParams }: Props) {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <NotebookPen className="size-3.5" />
                 笔记工作室
               </span>
@@ -570,7 +570,7 @@ export default async function NotesPage({ searchParams }: Props) {
                           <Link
                             key={note.id}
                             href={`/notes?note=${note.id}`}
-                            className="grid gap-1 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white"
+                            className="grid gap-1 soft-tile rounded-xl p-3 transition hover:border-primary/25 hover:bg-white"
                           >
                             <span className="line-clamp-1 font-medium">{note.title}</span>
                             <span className="text-xs text-muted-foreground">
@@ -602,7 +602,7 @@ export default async function NotesPage({ searchParams }: Props) {
                           <Link
                             key={note.id}
                             href={`/notes?note=${note.id}`}
-                            className="grid gap-1 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white"
+                            className="grid gap-1 soft-tile rounded-xl p-3 transition hover:border-primary/25 hover:bg-white"
                           >
                             <span className="line-clamp-1 font-medium">{note.title}</span>
                             <span className="text-xs text-muted-foreground">

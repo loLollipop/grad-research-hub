@@ -344,7 +344,7 @@ export default async function DashboardPage() {
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-stretch">
           <div className="cockpit-panel min-w-0 rounded-2xl border p-4 md:p-5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <Sparkles className="size-3.5" />
                 今日指挥台
               </span>
@@ -565,7 +565,7 @@ export default async function DashboardPage() {
                   <Link
                     key={`${item.tone}-${item.id}`}
                     href={item.href}
-                    className="group grid gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3.5 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_26px_rgba(27,42,56,0.06)] sm:grid-cols-[auto_1fr_auto] sm:items-center"
+                    className="group grid gap-3 soft-tile rounded-xl p-3.5 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_26px_rgba(27,42,56,0.06)] sm:grid-cols-[auto_1fr_auto] sm:items-center"
                   >
                     <span
                       className={
@@ -672,7 +672,7 @@ export default async function DashboardPage() {
                   <Link
                     key={project.id}
                     href="/projects"
-                    className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3.5 transition hover:border-primary/25 hover:bg-white"
+                    className="soft-tile rounded-xl p-3.5 transition hover:border-primary/25 hover:bg-white"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -713,7 +713,7 @@ export default async function DashboardPage() {
                   <Link
                     key={result.id}
                     href="/data"
-                    className="grid gap-2 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3.5 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[1fr_auto] sm:items-center"
+                    className="grid gap-2 soft-tile rounded-xl p-3.5 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[1fr_auto] sm:items-center"
                   >
                     <div className="min-w-0">
                       <p className="line-clamp-1 font-medium">{result.title}</p>
@@ -744,7 +744,7 @@ function FirstRunDashboard() {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <Sparkles className="size-3.5" />
                 开箱指挥台
               </span>
@@ -943,7 +943,7 @@ function StartCard({
 
 function ChecklistRow({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+    <div className="flex gap-3 soft-tile rounded-xl p-3">
       <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#eef7f7] text-primary">
         <CheckCircle2 className="size-4" />
       </span>

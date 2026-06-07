@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import type { Experiment, Paper, Project } from "@prisma/client";
@@ -89,7 +89,7 @@ export function ExperimentForm({
           </select>
         </Field>
       </div>
-      <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 text-xs leading-5 text-muted-foreground">
+      <div className="soft-tile rounded-xl p-3 text-xs leading-5 text-muted-foreground">
         {selectedTemplate?.detail ?? "选择模板后会预填正文结构。"}
         {!experiment && dirty ? " 已手动编辑正文，切换模板不会再覆盖内容。" : null}
       </div>

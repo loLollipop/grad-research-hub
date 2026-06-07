@@ -151,3 +151,22 @@ Obsidian 的双链和 backlinks 说明研究笔记的关键价值是“看见关
 - OSF Components: <https://help.osf.io/article/622-utilize-components-for-detailed-project-management>
 - Obsidian Internal Links: <https://obsidian.md/help/links>
 - Obsidian Backlinks: <https://obsidian.md/help/plugins/backlinks>
+
+## 8. 第二轮视觉收口计划
+
+上一轮已经把全局颜色、侧边栏、导航和行动栈从后台感改成低疲劳研究工作台。第二轮继续做“细节减噪”，不新增功能，专门处理那些会让用户觉得粗糙或割裂的地方。
+
+### 本轮优先事项
+
+1. 加载态：把普通灰色骨架换成和工作台一致的纸面骨架，避免切页时出现突兀的后台占位感。
+2. 弹窗：把新增/编辑弹窗改成轻量工作面板，弱化遮罩压迫感，表头、正文和关闭按钮更清晰。
+3. 表单：增强标签可读性，减少“配置表单”的机器感。
+4. 语义色：抽出 `research-eyebrow`、`soft-tile`、`soft-chip`、`warm-chip`、`skeleton-block` 等全局类，降低页面内硬编码色块。
+5. 保持边界：仍然不新增数据库表、不新增配置项、不引入图片生成或复杂动效。
+
+### 判断标准
+
+- 新增、编辑、加载这三类高频状态要和主界面气质一致。
+- 页面切换时不再像传统后台骨架屏。
+- 表单仍然紧凑，但要更像人填写的工作记录，而不是机器参数面板。
+- 所有动效必须轻，并遵守 `prefers-reduced-motion`。

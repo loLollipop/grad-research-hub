@@ -120,7 +120,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <Microscope className="size-3.5" />
                 实验日志
               </span>
@@ -339,7 +339,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
 
 function TemplateHint({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+    <div className="soft-tile rounded-xl p-3">
       <p className="font-medium">{title}</p>
       <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
     </div>
@@ -414,7 +414,7 @@ function QuickStatusLink({
       className={
         active
           ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
-          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+          : "flex items-center justify-between soft-tile rounded-xl px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
       }
     >
       <span>{label}</span>
@@ -526,7 +526,7 @@ function ExperimentCard({
           </div>
         ) : null}
 
-        <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-4 text-sm leading-6">
+        <div className="soft-tile rounded-xl p-4 text-sm leading-6">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {experiment.content || "暂无实验内容。建议至少写下：目的、方法、观察、结论和下一步。"}
           </ReactMarkdown>

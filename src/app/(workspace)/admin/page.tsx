@@ -152,7 +152,7 @@ export default async function AdminPage({ searchParams }: Props) {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <ClipboardList className="size-3.5" />
                 轻事务时间线
               </span>
@@ -248,7 +248,7 @@ export default async function AdminPage({ searchParams }: Props) {
             </CardHeader>
             <CardContent>
               {focusItem ? (
-                <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+                <div className="soft-tile rounded-xl p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge value={focusItem.type} />
                     <StatusBadge value={focusItem.status} />
@@ -444,7 +444,7 @@ function QuickAdminLink({
       className={
         active
           ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
-          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+          : "flex items-center justify-between soft-tile rounded-xl px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
       }
     >
       <span>{label}</span>
@@ -500,7 +500,7 @@ function AdminTimelineCard({ item }: { item: AdminItem }) {
         </div>
 
         {item.location ? (
-          <p className="flex items-center gap-2 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 text-sm text-muted-foreground">
+          <p className="flex items-center gap-2 soft-tile rounded-xl p-3 text-sm text-muted-foreground">
             <MapPin className="size-4 shrink-0" />
             {item.location}
           </p>

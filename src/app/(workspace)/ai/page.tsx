@@ -63,7 +63,7 @@ export default async function AiPage() {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <Bot className="size-3.5" />
                 科研助手
               </span>
@@ -136,7 +136,7 @@ export default async function AiPage() {
             </CardHeader>
             <CardContent className="grid gap-2">
               {presets.map(({ label, prompt, action, icon: Icon }) => (
-                <div key={label} className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+                <div key={label} className="soft-tile rounded-xl p-3">
                   <div className="flex items-start gap-2">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#eef7f7] text-primary">
                       <Icon className="size-4" />
@@ -162,7 +162,7 @@ export default async function AiPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
-              <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+              <div className="soft-tile rounded-xl p-3">
                 <div className="flex items-center justify-between gap-3">
                   <span className="inline-flex items-center gap-2 font-medium">
                     {settings.apiKeyConfigured ? (
@@ -236,7 +236,7 @@ function AiStackItem({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-1 rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2">
+    <div className="grid gap-1 soft-tile rounded-xl px-3 py-2">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="break-all text-xs font-medium">{value}</span>
     </div>

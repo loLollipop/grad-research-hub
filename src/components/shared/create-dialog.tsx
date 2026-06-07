@@ -27,7 +27,7 @@ export function CreateDialog({
 }) {
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" className="bg-white/90" />}>
+      <DialogTrigger render={<Button variant="outline" className="bg-white/84" />}>
         {Icon ? <Icon className="size-4" /> : null}
         {label}
       </DialogTrigger>

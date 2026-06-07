@@ -212,7 +212,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <Route className="size-3.5" />
                 课题路线图
               </span>
@@ -685,7 +685,7 @@ function QuickProjectLink({
       className={
         active
           ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
-          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+          : "flex items-center justify-between soft-tile rounded-xl px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
       }
     >
       <span>{label}</span>
@@ -706,7 +706,7 @@ function NextTaskRow({
   const nextAction = taskActionLabel(task);
 
   return (
-    <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+    <div className="soft-tile rounded-xl p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="line-clamp-1 font-medium">{task.title}</p>
@@ -745,7 +745,7 @@ function TaskCard({
   const nextAction = taskActionLabel(task);
 
   return (
-    <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)]">
+    <div className="soft-tile rounded-xl p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)]">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 gap-2">
           <input
@@ -988,7 +988,7 @@ function MilestoneRow({
   const total = milestone.tasks.length;
 
   return (
-    <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+    <div className="soft-tile rounded-xl p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="line-clamp-1 font-medium">{milestone.title}</p>
@@ -1121,7 +1121,7 @@ function ProjectMilestoneStrip({
   const done = milestone.tasks.filter((task) => task.status === "done").length;
 
   return (
-    <div className="grid gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 md:grid-cols-[1fr_auto] md:items-center">
+    <div className="grid gap-3 soft-tile rounded-xl p-3 md:grid-cols-[1fr_auto] md:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge value={milestone.status} />

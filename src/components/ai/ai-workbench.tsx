@@ -90,7 +90,7 @@ export function AiWorkbench({
       ) : null}
 
       {result ? (
-        <div className="rounded-lg border bg-[#fbfcfd] p-4">
+        <div className="soft-tile rounded-xl p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Bot className="size-4 text-[#1f3d33]" />
             占位响应

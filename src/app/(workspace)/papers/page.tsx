@@ -128,7 +128,7 @@ export default async function PapersPage({ searchParams }: Props) {
         <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
+              <span className="research-eyebrow">
                 <LibraryBig className="size-3.5" />
                 Zotero 阅读台
               </span>
@@ -340,7 +340,7 @@ export default async function PapersPage({ searchParams }: Props) {
                     className={
                       item.category === category
                         ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef3fb] px-3 py-2 text-sm font-medium text-primary"
-                        : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+                        : "flex items-center justify-between soft-tile rounded-xl px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
                     }
                   >
                     <span className="line-clamp-1">{item.category || "未分类"}</span>
@@ -552,7 +552,7 @@ function QuickStatusLink({
       className={
         active
           ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
-          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+          : "flex items-center justify-between soft-tile rounded-xl px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
       }
     >
       <span>{label}</span>
