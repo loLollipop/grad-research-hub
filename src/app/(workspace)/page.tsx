@@ -25,7 +25,8 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createMeetingBriefNote } from "@/lib/actions";
+import { createDailyPlanNote, createMeetingBriefNote } from "@/lib/actions";
+import { getDailyPlanPeriod } from "@/lib/daily-plan";
 import { prisma } from "@/lib/db";
 import { daysUntil, formatDateTime, parseJson, statusLabel } from "@/lib/format";
 import { getMeetingBriefPeriod } from "@/lib/meeting-brief";
@@ -63,6 +64,7 @@ type ClosingItem = {
 };
 
 export default async function DashboardPage() {
+  const dailyPlanPeriod = getDailyPlanPeriod();
   const meetingBriefPeriod = getMeetingBriefPeriod();
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -82,6 +84,7 @@ export default async function DashboardPage() {
     adminItems,
     projects,
     results,
+    currentDailyPlan,
     currentMeetingBrief,
     totalRecords,
   ] = await Promise.all([
@@ -152,6 +155,14 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" },
       take: 5,
       include: { experiment: true, dataset: true },
+    }),
+    prisma.note.findFirst({
+      where: {
+        folder: "日计划",
+        content: { contains: dailyPlanPeriod.marker, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, updatedAt: true },
     }),
     prisma.note.findFirst({
       where: {
@@ -353,13 +364,22 @@ export default async function DashboardPage() {
                 <ClipboardList className="size-4" />
                 查看下一步
               </Link>
+              {currentDailyPlan ? (
+                <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentDailyPlan.id}`}>
+                  <FileText className="size-4" />
+                  今日计划
+                </Link>
+              ) : (
+                <form action={createDailyPlanNote}>
+                  <SubmitButton variant="outline">
+                    <FileText className="size-4" />
+                    生成今日计划
+                  </SubmitButton>
+                </form>
+              )}
               <Link className={buttonVariants({ variant: "outline" })} href="/experiments">
                 <NotebookPen className="size-4" />
                 记录实验
-              </Link>
-              <Link className={buttonVariants({ variant: "outline" })} href="/papers">
-                <BookOpenText className="size-4" />
-                同步文献
               </Link>
               <form action={createMeetingBriefNote}>
                 <input type="hidden" name="scope" value="week" />
@@ -405,7 +425,39 @@ export default async function DashboardPage() {
         evidence={`${manuscriptReady} 条可写入`}
       />
 
-      <section className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
+      <section className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(237,245,244,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#173042]">
+            {currentDailyPlan ? "今天的开工清单已经准备好" : "先生成今天的开工清单"}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {currentDailyPlan
+              ? `覆盖 ${dailyPlanPeriod.shortLabel}，最近更新 ${formatDateTime(currentDailyPlan.updatedAt)}。`
+              : "自动汇总今天该看的任务、事务、进行中实验、待补结果和待读文献，生成后继续在笔记页勾选和调整。"}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          {currentDailyPlan ? (
+            <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentDailyPlan.id}`}>
+              <FileText className="size-4" />
+              打开今日计划
+            </Link>
+          ) : (
+            <form action={createDailyPlanNote}>
+              <SubmitButton variant="default" className="w-fit">
+                <FileText className="size-4" />
+                生成今日计划
+              </SubmitButton>
+            </form>
+          )}
+          <Link className={buttonVariants({ variant: "outline" })} href="/projects?scope=today">
+            <TimerReset className="size-4" />
+            看今日任务
+          </Link>
+        </div>
+      </section>
+
+      <section className="grid gap-3 rounded-2xl border border-border/70 bg-white/68 p-3 shadow-[0_8px_18px_rgba(27,42,56,0.035)] lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[#173042]">
             {currentMeetingBrief ? "本周组会草稿已经准备好" : "开组会前先生成一版草稿"}

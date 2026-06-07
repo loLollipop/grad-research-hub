@@ -15,6 +15,7 @@ import type {
 
 import { checkAiConnection } from "@/lib/ai";
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
+import { getDailyPlanPeriod } from "@/lib/daily-plan";
 import { prisma } from "@/lib/db";
 import { parseTags, splitTags, tagsToString } from "@/lib/format";
 import { getMeetingBriefPeriod, type MeetingBriefScope } from "@/lib/meeting-brief";
@@ -1191,6 +1192,89 @@ export async function createMeetingBriefNote(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createDailyPlanNote() {
+  const now = new Date();
+  const period = getDailyPlanPeriod(now);
+
+  const existingNote = await prisma.note.findFirst({
+    where: {
+      folder: "日计划",
+      content: { contains: period.marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existingNote) {
+    redirect(`/notes?note=${existingNote.id}`);
+  }
+
+  const [tasks, adminItems, experiments, results, papers] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        status: { not: "done" },
+        OR: [
+          { dueDate: { lt: period.endExclusive } },
+          { priority: "high" },
+          { status: "doing" },
+        ],
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 12,
+      include: { milestone: { include: { project: true } } },
+    }),
+    prisma.adminItem.findMany({
+      where: {
+        status: { not: "done" },
+        OR: [{ dueDate: { lt: period.endExclusive } }, { type: "meeting" }],
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 5,
+    }),
+    prisma.experiment.findMany({
+      where: { status: "running" },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: { project: true, results: true },
+    }),
+    prisma.result.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: { dataset: true, experiment: { include: { project: true } } },
+    }),
+    prisma.paper.findMany({
+      where: { readStatus: { in: ["unread", "reading"] } },
+      orderBy: [{ readStatus: "asc" }, { updatedAt: "desc" }],
+      take: 5,
+    }),
+  ]);
+
+  const rankedTasks = tasks
+    .sort((left, right) => taskRank(left) - taskRank(right))
+    .slice(0, 8);
+
+  const note = await prisma.note.create({
+    data: {
+      title: period.title,
+      folder: "日计划",
+      content: dailyPlanMarkdown({
+        generatedAt: now,
+        period,
+        tasks: rankedTasks,
+        adminItems,
+        experiments,
+        results,
+        papers,
+      }),
+      tags: tagsToString(["日计划", "今日开工", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createDataset(formData: FormData) {
   const parsed = datasetSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
@@ -1613,6 +1697,20 @@ type MeetingBriefResult = Result & {
   experiment: (Experiment & { project: Project | null }) | null;
 };
 
+type DailyPlanTask = Task & {
+  milestone: (Milestone & { project: Project }) | null;
+};
+
+type DailyPlanExperiment = Experiment & {
+  project: Project | null;
+  results: Result[];
+};
+
+type DailyPlanResult = Result & {
+  dataset: Dataset | null;
+  experiment: (Experiment & { project: Project | null }) | null;
+};
+
 function meetingBriefMarkdown({
   generatedAt,
   period,
@@ -1747,6 +1845,140 @@ function meetingBriefMarkdown({
   );
 
   return lines.join("\n");
+}
+
+function dailyPlanMarkdown({
+  generatedAt,
+  period,
+  tasks,
+  adminItems,
+  experiments,
+  results,
+  papers,
+}: {
+  generatedAt: Date;
+  period: ReturnType<typeof getDailyPlanPeriod>;
+  tasks: DailyPlanTask[];
+  adminItems: AdminItem[];
+  experiments: DailyPlanExperiment[];
+  results: DailyPlanResult[];
+  papers: Paper[];
+}) {
+  const focusTasks = tasks.slice(0, 3);
+  const followUps = [
+    ...tasks.slice(3).map((task) => `- [ ] ${task.title}（${taskOwnerText(task)}）`),
+    ...adminItems.map((item) => `- [ ] ${item.title}（${adminTypeText(item.type)}，${dateText(item.dueDate)}）`),
+  ].slice(0, 8);
+
+  const lines = [
+    period.marker,
+    "",
+    `# ${period.title}`,
+    "",
+    `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
+    "",
+    "> 先选一件最重要的事开始。今天的目标是推进、留证据、写清下一步。",
+    "",
+    "## 今天最重要的三件事",
+    "",
+  ];
+
+  if (focusTasks.length) {
+    focusTasks.forEach((task, index) => {
+      lines.push(
+        `${index + 1}. [ ] ${task.title}`,
+        `   - 归属：${taskOwnerText(task)}`,
+        `   - 优先级：${taskPriorityText(task.priority)}；状态：${taskStatusText(task.status)}；截止：${dateText(task.dueDate)}`,
+        task.description?.trim() ? `   - 备注：${oneLine(task.description, 100)}` : "",
+      );
+    });
+  } else {
+    lines.push("- [ ] 从项目页挑一个最小下一步，或用快速捕捉记录今天要做的事。");
+  }
+
+  lines.push("", "## 需要顺手收口", "");
+
+  if (followUps.length) {
+    lines.push(...followUps);
+  } else {
+    lines.push("- 暂无临近事务或额外任务。");
+  }
+
+  lines.push("", "## 实验和证据", "");
+
+  if (experiments.length) {
+    experiments.forEach((experiment) => {
+      lines.push(
+        `- ${experiment.title}`,
+        `  - 项目：${experiment.project?.title ?? "未关联项目"}；结果数：${experiment.results.length}；最近更新：${dateText(experiment.updatedAt)}`,
+        `  - 今天要补：观察 / 结论 / 下一步`,
+      );
+    });
+  } else {
+    lines.push("- 暂无进行中实验。");
+  }
+
+  lines.push("", "## 最近结果", "");
+
+  if (results.length) {
+    results.forEach((result) => {
+      const config = parseJsonObjectText(result.config);
+      const metrics = parseJsonObjectText(result.metrics);
+      const metricText = Object.entries(metrics)
+        .filter(([, value]) => String(value).trim())
+        .slice(0, 3)
+        .map(([key, value]) => `${key}: ${String(value)}`)
+        .join("；") || "未填写指标";
+
+      lines.push(
+        `- ${result.title}`,
+        `  - 项目：${result.experiment?.project?.title ?? "未关联项目"}；实验：${result.experiment?.title ?? "未关联实验"}`,
+        `  - 指标：${metricText}；复现：${reproducibilityText(String(config.reproducibility ?? "unknown"))}`,
+        `  - 今天要补：${result.artifactPath ? "确认图表/素材能用" : "补图表路径或一句话结论"}`,
+      );
+    });
+  } else {
+    lines.push("- 暂无结果证据。");
+  }
+
+  lines.push("", "## 文献阅读", "");
+
+  if (papers.length) {
+    papers.forEach((paper) => {
+      lines.push(
+        `- [${paperStatusText(paper.readStatus)}] ${paper.title}`,
+        `  - 来源：${paper.journal || paper.category || "未填写"}；年份：${paper.year ?? "未知"}`,
+      );
+    });
+  } else {
+    lines.push("- 暂无待读或读中文献。");
+  }
+
+  lines.push(
+    "",
+    "## 晚上收口",
+    "",
+    "- [ ] 今天新增的实验是否写了结论和下一步",
+    "- [ ] 今天读过的文献是否生成阅读笔记",
+    "- [ ] 今天得到的结果是否能变成写作素材",
+    "- [ ] 明天第一件事是否已经明确",
+  );
+
+  return lines.join("\n");
+}
+
+function taskOwnerText(task: DailyPlanTask | MeetingBriefTask) {
+  return task.milestone
+    ? `${task.milestone.project.title} / ${task.milestone.title}`
+    : "独立任务";
+}
+
+function taskRank(task: Pick<Task, "dueDate" | "priority" | "status" | "updatedAt">) {
+  const due = task.dueDate ? task.dueDate.getTime() : Number.MAX_SAFE_INTEGER;
+  const priority = { high: 0, medium: 1, low: 2 }[task.priority] ?? 3;
+  const status = task.status === "doing" ? -1 : 0;
+
+  return due + priority * 86_400_000 + status * 43_200_000 - task.updatedAt.getTime() / 1_000_000;
 }
 
 function dateText(value: Date | null) {
