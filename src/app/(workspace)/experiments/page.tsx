@@ -2,8 +2,6 @@ import Link from "next/link";
 import {
   ClipboardList,
   Beaker,
-  Bug,
-  CheckCircle2,
   Edit3,
   FileChartColumn,
   FileText,
@@ -110,27 +108,30 @@ export default async function ExperimentsPage({ searchParams }: Props) {
   const running = experiments.filter((experiment) => experiment.status === "running").length;
   const completed = experiments.filter((experiment) => experiment.status === "completed").length;
   const failed = experiments.filter((experiment) => experiment.status === "failed").length;
-  const linkedResults = experiments.reduce((sum, experiment) => sum + experiment.results.length, 0);
   const selectedProjectTitle = projects.find((project) => project.id === projectId)?.title;
+  const experimentStack = [
+    ...experiments.filter((experiment) => experiment.status === "running"),
+    ...experiments.filter((experiment) => experiment.status === "failed"),
+  ].slice(0, 3);
 
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.86fr] xl:items-end">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <Microscope className="size-3.5" />
                 实验日志
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 目的 · 观察 · 结论 · 下一步
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.5rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
               每次实验只留下能复盘的东西。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
               不把实验记录做成参数仓库。这里更像一个轻量 ELN：用模板帮你写清楚目的、
               方法、观察、结论和下一步，再把项目、文献和结果连起来。
             </p>
@@ -155,11 +156,34 @@ export default async function ExperimentsPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SignalCard icon={FlaskConical} label="进行中" value={`${running} 个`} detail="需要继续观察" />
-            <SignalCard icon={CheckCircle2} label="已完成" value={`${completed} 个`} detail="可用于复盘" />
-            <SignalCard icon={Bug} label="失败案例" value={`${failed} 个`} detail="别浪费负结果" />
-            <SignalCard icon={FileChartColumn} label="已登记结果" value={`${linkedResults} 条`} detail="形成证据链" />
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <FlaskConical className="size-3.5" />
+                今日实验栈
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                {experimentStack.length ? (
+                  experimentStack.map((experiment, index) => (
+                    <ExperimentStackItem
+                      key={experiment.id}
+                      index={`0${index + 1}`}
+                      title={experiment.title}
+                      detail={`${statusLabel(experiment.status)} · ${experiment.project?.title ?? "未关联项目"}`}
+                    />
+                  ))
+                ) : (
+                  <ExperimentStackItem
+                    index="01"
+                    title="先记录一个正在做的实验"
+                    detail="写目的、方法、观察和下一步"
+                  />
+                )}
+              </div>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-white/62">
+              先收口进行中和失败实验，再把关键结果回填到正文。
+            </p>
           </div>
         </div>
       </section>
@@ -188,6 +212,21 @@ export default async function ExperimentsPage({ searchParams }: Props) {
               <ProgressLine label="进行中" value={running} total={experiments.length} />
               <ProgressLine label="完成" value={completed} total={experiments.length} />
               <ProgressLine label="失败" value={failed} total={experiments.length} />
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Search className="size-4 text-primary" />
+                快捷视图
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <QuickStatusLink label="全部实验" count={experiments.length} statusValue="" currentStatus={status} q={q} projectId={projectId} template={template} />
+              <QuickStatusLink label="继续观察" count={running} statusValue="running" currentStatus={status} q={q} projectId={projectId} template={template} />
+              <QuickStatusLink label="已完成" count={completed} statusValue="completed" currentStatus={status} q={q} projectId={projectId} template={template} />
+              <QuickStatusLink label="失败复盘" count={failed} statusValue="failed" currentStatus={status} q={q} projectId={projectId} template={template} />
             </CardContent>
           </Card>
         </aside>
@@ -298,33 +337,6 @@ export default async function ExperimentsPage({ searchParams }: Props) {
   );
 }
 
-function SignalCard({
-  icon: Icon,
-  label,
-  value,
-  detail,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
-      <CardContent className="flex items-start gap-3 py-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 text-xl font-semibold tracking-tight text-[#173042]">{value}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function TemplateHint({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
@@ -350,6 +362,81 @@ function ProgressLine({ label, value, total }: { label: string; value: number; t
   );
 }
 
+function ExperimentStackItem({
+  index,
+  title,
+  detail,
+}: {
+  index: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
+  );
+}
+
+function QuickStatusLink({
+  label,
+  count,
+  statusValue,
+  currentStatus,
+  q,
+  projectId,
+  template,
+}: {
+  label: string;
+  count: number;
+  statusValue: string;
+  currentStatus?: string;
+  q?: string;
+  projectId?: string;
+  template?: string;
+}) {
+  const active = statusValue ? currentStatus === statusValue : !currentStatus;
+  const href = `/experiments?${experimentFilterQuery({
+    q,
+    project: projectId,
+    status: statusValue || undefined,
+    template,
+  })}`;
+
+  return (
+    <Link
+      href={href === "/experiments?" ? "/experiments" : href}
+      className={
+        active
+          ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
+          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+      }
+    >
+      <span>{label}</span>
+      <span className="text-xs text-muted-foreground">{count}</span>
+    </Link>
+  );
+}
+
+function experimentFilterQuery(values: {
+  q?: string;
+  project?: string;
+  status?: string;
+  template?: string;
+}) {
+  const params = new URLSearchParams();
+  if (values.q) params.set("q", values.q);
+  if (values.project) params.set("project", values.project);
+  if (values.status) params.set("status", values.status);
+  if (values.template) params.set("template", values.template);
+  return params.toString();
+}
+
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
     running: "进行中",
@@ -371,6 +458,14 @@ function ExperimentCard({
   papers: Paper[];
 }) {
   const linkedPapers = experiment.papers.map((paper) => paper.title).join("；");
+  const nextAction =
+    experiment.status === "failed"
+      ? "复盘失败"
+      : experiment.results.length
+        ? "补结果"
+        : experiment.status === "completed"
+          ? "沉淀结论"
+          : "继续观察";
 
   return (
     <Card className="workbench-card">
@@ -382,6 +477,9 @@ function ExperimentCard({
               <span className="rounded-md border bg-white/80 px-1.5 py-0.5 text-[11px] text-muted-foreground">
                 {templateLabel(experiment.template)}
               </span>
+              <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] text-[#365a7d]">
+                {nextAction}
+              </span>
             </div>
             <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
               {experiment.title}
@@ -390,7 +488,7 @@ function ExperimentCard({
               {experiment.project?.title ?? "未关联项目"} · 更新 {formatDateTime(experiment.updatedAt)}
             </p>
           </div>
-          <form action={setExperimentStatus} className="flex gap-2">
+          <form action={setExperimentStatus} className="flex flex-wrap gap-2 lg:justify-end">
             <input type="hidden" name="id" value={experiment.id} />
             <select
               name="status"
