@@ -1,16 +1,5 @@
-import Link from "next/link";
-import {
-  BarChart3,
-  Bot,
-  ClipboardList,
-  Database,
-  FlaskConical,
-  GraduationCap,
-  Home,
-  NotebookTabs,
-  ScrollText,
-  Settings,
-} from "lucide-react";
+﻿import Link from "next/link";
+import { GraduationCap } from "lucide-react";
 
 import { quickCapture } from "@/lib/actions";
 import { NavLink } from "@/components/layout/nav-link";
@@ -19,19 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/", label: "首页", icon: Home },
-  { href: "/papers", label: "文献", icon: ScrollText },
-  { href: "/experiments", label: "实验", icon: FlaskConical },
-  { href: "/projects", label: "项目", icon: BarChart3 },
-  { href: "/notes", label: "笔记", icon: NotebookTabs },
-  { href: "/data", label: "数据", icon: Database },
-  { href: "/admin", label: "事务", icon: ClipboardList },
-];
+  { href: "/", label: "首页", icon: "home" },
+  { href: "/papers", label: "文献", icon: "papers" },
+  { href: "/experiments", label: "实验", icon: "experiments" },
+  { href: "/projects", label: "项目", icon: "projects" },
+  { href: "/notes", label: "笔记", icon: "notes" },
+  { href: "/data", label: "数据", icon: "data" },
+  { href: "/admin", label: "事务", icon: "admin" },
+] as const;
 
 const utilityItems = [
-  { href: "/ai", label: "AI", icon: Bot },
-  { href: "/settings", label: "设置", icon: Settings },
-];
+  { href: "/ai", label: "AI", icon: "ai" },
+  { href: "/settings", label: "设置", icon: "settings" },
+] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (

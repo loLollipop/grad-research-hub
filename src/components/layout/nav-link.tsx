@@ -2,23 +2,49 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  Bot,
+  ClipboardList,
+  Database,
+  FlaskConical,
+  Home,
+  NotebookTabs,
+  ScrollText,
+  Settings,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
+
+const icons = {
+  admin: ClipboardList,
+  ai: Bot,
+  data: Database,
+  experiments: FlaskConical,
+  home: Home,
+  notes: NotebookTabs,
+  papers: ScrollText,
+  projects: BarChart3,
+  settings: Settings,
+} as const;
+
+export type NavIcon = keyof typeof icons;
 
 export function NavLink({
   href,
   label,
-  icon: Icon,
+  icon,
   compact = false,
 }: {
   href: string;
   label: string;
-  icon?: LucideIcon;
+  icon?: NavIcon;
   compact?: boolean;
 }) {
   const pathname = usePathname();
-  const active = href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const active =
+    href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const Icon = icon ? icons[icon] : null;
 
   if (compact) {
     return (
