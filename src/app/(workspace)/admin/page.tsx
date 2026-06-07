@@ -67,7 +67,7 @@ export default async function AdminPage({ searchParams }: Props) {
   ]);
 
   return (
-    <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-6">
+    <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-6 lg:h-[calc(100dvh-7rem)]">
       <PageHeader
         eyebrow="事务"
         title="轻行政事务"
@@ -85,9 +85,9 @@ export default async function AdminPage({ searchParams }: Props) {
         }
       />
 
-      <section className="grid flex-1 gap-4 lg:min-h-[520px] lg:grid-cols-[0.42fr_1.58fr]">
-        <div className="grid h-full gap-4">
-          <Card className="h-full bg-white/95">
+      <section className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[0.42fr_1.58fr]">
+        <div className="grid min-h-0 gap-4">
+          <Card className="h-full min-h-0 bg-white/95">
             <CardHeader>
               <CardTitle>事务分布</CardTitle>
             </CardHeader>
@@ -134,18 +134,18 @@ export default async function AdminPage({ searchParams }: Props) {
           </form>
 
           {items.length ? (
-            <div className="grid gap-3">
+            <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pr-1">
               {items.map((item) => (
                 <AdminItemCard key={item.id} item={item} />
               ))}
             </div>
           ) : (
-            <div className="flex min-h-[360px] flex-1">
+            <div className="flex min-h-0 flex-1">
               <EmptyState
                 icon={ClipboardList}
                 title="暂无行政事务"
                 description="把组会、材料和报销先登记起来，首页会自动汇总近期事项。"
-                className="w-full"
+                className="min-h-full w-full"
               />
             </div>
           )}

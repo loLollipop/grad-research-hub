@@ -23,15 +23,15 @@ export default function AiPage() {
   ];
 
   return (
-    <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-6">
+    <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-6 lg:h-[calc(100dvh-7rem)]">
       <PageHeader
         eyebrow="AI"
         title="AI 助手"
         description="先保留服务端接口和试验台；API Key、Base URL 和模型名在设置中心维护。"
       />
 
-      <section className="grid flex-1 gap-4 lg:min-h-[520px] lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="h-full bg-white/95">
+      <section className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="h-full min-h-0 bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="size-4" />
@@ -39,12 +39,12 @@ export default function AiPage() {
             </CardTitle>
             <CardDescription>用于验证 `/api/ai` 的请求结构，后续可替换为真实模型调用。</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-h-0 flex-1">
             <AiWorkbench />
           </CardContent>
         </Card>
 
-        <div className="grid h-full gap-4 lg:grid-rows-[auto_1fr]">
+        <div className="grid min-h-0 gap-4 lg:grid-rows-[auto_1fr]">
           <Card className="bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -62,7 +62,7 @@ export default function AiPage() {
             </CardContent>
           </Card>
 
-          <Card className="h-full bg-white/95">
+          <Card className="h-full min-h-0 bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ServerCog className="size-4" />
