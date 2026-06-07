@@ -37,6 +37,13 @@ type ZoteroItem = {
   data: ZoteroItemData;
 };
 
+type ZoteroCollection = {
+  key: string;
+  data?: {
+    name?: string;
+  };
+};
+
 export type ZoteroPaper = {
   title: string;
   authors: string;
@@ -99,11 +106,14 @@ export async function fetchZoteroPapers(): Promise<ZoteroPaper[]> {
     throw new Error(`Zotero 同步失败：${response.status} ${response.statusText}`);
   }
 
-  const items = (await response.json()) as ZoteroItem[];
+  const [items, collectionNames] = await Promise.all([
+    response.json() as Promise<ZoteroItem[]>,
+    fetchZoteroCollectionNames(config, apiKey),
+  ]);
   const syncedAt = new Date();
 
   return items
-    .map((item) => mapZoteroItemToPaper(item, syncedAt))
+    .map((item) => mapZoteroItemToPaper(item, syncedAt, collectionNames))
     .filter((paper): paper is ZoteroPaper => Boolean(paper));
 }
 
@@ -145,7 +155,7 @@ export async function checkZoteroConnection(input: {
 
     const items = (await response.json()) as ZoteroItem[];
     const readableItems = items
-      .map((item) => mapZoteroItemToPaper(item, new Date()))
+      .map((item) => mapZoteroItemToPaper(item, new Date(), new Map()))
       .filter(Boolean).length;
 
     return {
@@ -181,6 +191,38 @@ function zoteroItemsUrl(config: {
   );
 }
 
+async function fetchZoteroCollectionNames(
+  config: {
+    libraryType: "user" | "group";
+    libraryId: string;
+  },
+  apiKey: string,
+) {
+  const librarySegment = config.libraryType === "group" ? "groups" : "users";
+  const url = new URL(`${ZOTERO_API_BASE}/${librarySegment}/${config.libraryId}/collections`);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("include", "data");
+  url.searchParams.set("limit", "100");
+
+  try {
+    const response = await fetch(url, {
+      headers: zoteroHeaders(apiKey),
+      cache: "no-store",
+    });
+
+    if (!response.ok) return new Map<string, string>();
+
+    const collections = (await response.json()) as ZoteroCollection[];
+    return new Map(
+      collections
+        .map((collection) => [collection.key, collection.data?.name?.trim()] as const)
+        .filter((entry): entry is readonly [string, string] => Boolean(entry[0] && entry[1])),
+    );
+  } catch {
+    return new Map<string, string>();
+  }
+}
+
 function zoteroHeaders(apiKey: string) {
   return {
     "Zotero-API-Key": apiKey,
@@ -191,6 +233,7 @@ function zoteroHeaders(apiKey: string) {
 function mapZoteroItemToPaper(
   item: ZoteroItem,
   syncedAt: Date,
+  collectionNames: Map<string, string>,
 ): ZoteroPaper | null {
   const data = item.data;
   const title = data.title?.trim();
@@ -218,11 +261,24 @@ function mapZoteroItemToPaper(
     doi: textOrUndefined(data.DOI),
     arxivId: arxivFromArchiveId(data.archiveID),
     zoteroKey: data.key ?? item.key,
-    category: data.collections?.[0] ?? data.itemType ?? "zotero",
+    category: collectionLabel(data.collections, collectionNames, data.itemType),
     externalUrl: textOrUndefined(data.url),
     tags: tagsToString(tags),
     lastSyncedAt: syncedAt,
   };
+}
+
+function collectionLabel(
+  collections: string[] | undefined,
+  collectionNames: Map<string, string>,
+  fallback: string | undefined,
+) {
+  const collectionKey = collections?.[0];
+  if (collectionKey) {
+    return collectionNames.get(collectionKey) ?? collectionKey;
+  }
+
+  return fallback ?? "zotero";
 }
 
 function formatCreators(creators: ZoteroCreator[]) {

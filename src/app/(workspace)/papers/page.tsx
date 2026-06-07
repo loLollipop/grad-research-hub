@@ -94,19 +94,21 @@ export default async function PapersPage({ searchParams }: Props) {
     where.category = { contains: category, mode: "insensitive" };
   }
 
-  const [papers, allCounts, categories] = await Promise.all([
+  const [papers, allCounts, categories, lastSyncedPaper] = await Promise.all([
     prisma.paper.findMany({
       where,
       orderBy: [{ readStatus: "asc" }, { updatedAt: "desc" }],
     }),
     prisma.paper.groupBy({ by: ["readStatus"], _count: true }),
     prisma.paper.groupBy({ by: ["category"], _count: true, orderBy: { _count: { category: "desc" } }, take: 8 }),
+    prisma.paper.findFirst({
+      where: { lastSyncedAt: { not: null } },
+      orderBy: { lastSyncedAt: "desc" },
+      select: { lastSyncedAt: true },
+    }),
   ]);
 
-  const lastSyncedAt = papers
-    .map((paper) => paper.lastSyncedAt)
-    .filter((date): date is Date => Boolean(date))
-    .sort((a, b) => b.getTime() - a.getTime())[0];
+  const lastSyncedAt = lastSyncedPaper?.lastSyncedAt;
   const unreadCount = countStatus(allCounts, "unread");
   const readingCount = countStatus(allCounts, "reading");
   const readCount = countStatus(allCounts, "read");
