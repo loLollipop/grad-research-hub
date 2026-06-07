@@ -62,6 +62,8 @@ type Props = {
     taskBulk?: string;
     taskBulkCount?: string;
     taskBulkStatus?: string;
+    taskSync?: string;
+    taskSyncCount?: string;
   }>;
 };
 
@@ -100,6 +102,8 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const taskBulk = valueOf(params.taskBulk);
   const taskBulkCount = Number(valueOf(params.taskBulkCount) ?? 0);
   const taskBulkStatus = valueOf(params.taskBulkStatus);
+  const taskSync = valueOf(params.taskSync);
+  const taskSyncCount = Number(valueOf(params.taskSyncCount) ?? 0);
   const activeFilterCount = [q, projectId, status, priority, scope].filter(Boolean).length;
   const currentFilters = { q, project: projectId, status, priority, scope };
   const currentQuery = new URLSearchParams();
@@ -345,6 +349,15 @@ export default async function ProjectsPage({ searchParams }: Props) {
               tone="error"
               title="没有选中任务"
               description="先勾选要处理的任务，再批量更新状态。"
+            />
+          ) : null}
+
+          {taskSync === "success" ? (
+            <TaskBulkNotice
+              href="/projects?status=todo"
+              tone="success"
+              title="笔记清单已拆成任务"
+              description={`已从笔记待办清单创建 ${taskSyncCount} 个项目任务。后续可以把它们挂到对应里程碑。`}
             />
           ) : null}
 

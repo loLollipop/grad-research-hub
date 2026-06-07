@@ -636,6 +636,59 @@ export async function deleteNote(formData: FormData) {
   redirect("/notes");
 }
 
+export async function createTasksFromNoteChecklist(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const note = await prisma.note.findUnique({ where: { id } });
+  if (!note) return;
+
+  const checklistItems = extractOpenChecklistItems(note.content).filter(
+    (item) => !note.content.includes(noteTaskMarker(note.id, item.key)),
+  );
+
+  if (!checklistItems.length) {
+    redirect(`/notes?note=${note.id}&taskSync=empty`);
+  }
+
+  await prisma.$transaction([
+    ...checklistItems.map((item) =>
+      prisma.task.create({
+        data: {
+          title: item.title,
+          description: [
+            `来自笔记：${note.title}`,
+            "",
+            `原始清单：${item.raw}`,
+            "",
+            "后续可在项目页挂到对应里程碑。",
+          ].join("\n"),
+          priority: item.title.includes("导师") || item.title.includes("实验") ? "high" : "medium",
+          status: "todo",
+          tags: tagsToString(["笔记清单", note.folder]),
+        },
+      }),
+    ),
+    prisma.note.update({
+      where: { id: note.id },
+      data: {
+        content: [
+          note.content.trimEnd(),
+          "",
+          "<!-- task-sync:start -->",
+          ...checklistItems.map((item) => noteTaskMarker(note.id, item.key)),
+          "<!-- task-sync:end -->",
+        ].join("\n"),
+      },
+    }),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath("/notes");
+  revalidatePath("/projects");
+  redirect(`/projects?status=todo&taskSync=success&taskSyncCount=${checklistItems.length}`);
+}
+
 export async function quickCapture(formData: FormData) {
   const content = String(formData.get("content") ?? "").trim();
   if (!content) return;
@@ -651,6 +704,41 @@ export async function quickCapture(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/notes");
+}
+
+function extractOpenChecklistItems(content: string) {
+  return content
+    .split("\n")
+    .map((line) => {
+      const match = line.match(/^\s*[-*]\s+\[\s\]\s+(.+?)\s*$/);
+      if (!match?.[1]) return null;
+      const title = match[1]
+        .replace(/\[\[([^\]]+)\]\]/g, "$1")
+        .replace(/[*_`]/g, "")
+        .trim();
+
+      if (!title) return null;
+
+      return {
+        key: stableTaskKey(title),
+        raw: line.trim(),
+        title: title.length > 80 ? `${title.slice(0, 80)}...` : title,
+      };
+    })
+    .filter((item): item is { key: string; raw: string; title: string } => Boolean(item))
+    .slice(0, 20);
+}
+
+function stableTaskKey(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+function noteTaskMarker(noteId: string, key: string) {
+  return `<!-- note-task:${noteId}:${key} -->`;
 }
 
 export async function createMeetingBriefNote(formData: FormData) {

@@ -5,6 +5,7 @@ import {
   FileText,
   FolderOpen,
   Link2,
+  ListTodo,
   NotebookPen,
   PenLine,
   Plus,
@@ -16,7 +17,7 @@ import type { Note } from "@prisma/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { createNote, deleteNote, updateNote } from "@/lib/actions";
+import { createNote, createTasksFromNoteChecklist, deleteNote, updateNote } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { extractWikiLinks, formatDateTime, parseTags } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,13 @@ import { Textarea } from "@/components/ui/textarea";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ q?: string; folder?: string; mode?: string; note?: string }>;
+  searchParams: Promise<{
+    folder?: string;
+    mode?: string;
+    note?: string;
+    q?: string;
+    taskSync?: string;
+  }>;
 };
 
 function first(value: string | string[] | undefined) {
@@ -54,12 +61,34 @@ function noteSnippet(content: string) {
     .slice(0, 78);
 }
 
+function openChecklistCount(content: string) {
+  return content
+    .split("\n")
+    .filter((line) => /^\s*[-*]\s+\[\s\]\s+.+/.test(line))
+    .filter((line) => !content.includes(noteTaskMarkerKey(line)))
+    .length;
+}
+
+function noteTaskMarkerKey(line: string) {
+  const title = line
+    .replace(/^\s*[-*]\s+\[\s\]\s+/, "")
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/[*_`]/g, "")
+    .trim();
+  let hash = 0;
+  for (let index = 0; index < title.length; index += 1) {
+    hash = (hash * 31 + title.charCodeAt(index)) >>> 0;
+  }
+  return `:${hash.toString(36)} -->`;
+}
+
 export default async function NotesPage({ searchParams }: Props) {
   const params = await searchParams;
   const q = first(params.q)?.trim();
   const folder = first(params.folder)?.trim();
   const mode = first(params.mode);
   const noteId = first(params.note);
+  const taskSync = first(params.taskSync);
 
   const notes = await prisma.note.findMany({
     where: {
@@ -89,6 +118,7 @@ export default async function NotesPage({ searchParams }: Props) {
   const defaultFolder = folder || "Inbox";
   const linkedNoteTitles = new Set(activeLinks.map((link) => link.toLowerCase()));
   const linkedNotes = notes.filter((note) => linkedNoteTitles.has(note.title.toLowerCase()));
+  const checklistCount = activeNote ? openChecklistCount(activeNote.content) : 0;
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-5">
@@ -266,6 +296,19 @@ export default async function NotesPage({ searchParams }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               {activeNote ? <TagList value={activeNote.tags} /> : null}
               {activeNote ? (
+                <form action={createTasksFromNoteChecklist}>
+                  <input type="hidden" name="id" value={activeNote.id} />
+                  <SubmitButton
+                    variant={checklistCount ? "outline" : "ghost"}
+                    size="sm"
+                    disabled={!checklistCount}
+                  >
+                    <ListTodo className="size-3.5" />
+                    {checklistCount ? `拆成任务 ${checklistCount}` : "无待办清单"}
+                  </SubmitButton>
+                </form>
+              ) : null}
+              {activeNote ? (
                 <form action={deleteNote}>
                   <input type="hidden" name="id" value={activeNote.id} />
                   <Button type="submit" variant="destructive" size="sm">
@@ -285,7 +328,9 @@ export default async function NotesPage({ searchParams }: Props) {
                 <TabsTrigger value="links">双链</TabsTrigger>
               </TabsList>
               <p className="text-xs text-muted-foreground">
-                支持 Markdown 和 `[[双链标题]]`
+                {taskSync === "empty"
+                  ? "没有新的未同步待办清单。"
+                  : "支持 Markdown、`[[双链标题]]` 和 `- [ ] 待办清单`"}
               </p>
             </div>
 
