@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   BookOpenText,
   Bot,
+  CheckCircle2,
   ClipboardList,
   FlaskConical,
   KeyRound,
@@ -21,24 +22,32 @@ export const dynamic = "force-dynamic";
 const presets = [
   {
     label: "组会提纲",
+    action: "整理组会",
+    detail: "任务、实验、文献、结果合成汇报骨架",
     prompt:
       "请把我最近一周的任务、实验、文献和结果整理成组会汇报提纲，结构包括：本周完成、关键证据、遇到的问题、下周计划。",
     icon: ClipboardList,
   },
   {
     label: "实验复盘",
+    action: "复盘实验",
+    detail: "把观察、失败原因和下一步收成清单",
     prompt:
       "请根据最近的实验记录生成一份复盘：实验目的、关键观察、失败原因或风险、下一步最小动作。",
     icon: FlaskConical,
   },
   {
     label: "阅读卡片",
+    action: "提炼论文",
+    detail: "从论文摘录变成可回顾阅读卡片",
     prompt:
       "请把最近阅读的论文整理成阅读卡片：研究问题、方法、关键结论、可借鉴点、和我当前课题的关系。",
     icon: BookOpenText,
   },
   {
     label: "写作润色",
+    action: "打磨表达",
+    detail: "优化结构和清晰度，事实由用户把关",
     prompt:
       "请把我的中文研究笔记改成更适合论文或组会汇报的表达，保持事实不变，只提升结构和清晰度。",
     icon: PenLine,
@@ -50,24 +59,24 @@ export default async function AiPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.88fr] xl:items-end">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <Bot className="size-3.5" />
                 科研助手
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 周报 · 复盘 · 阅读 · 写作
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.5rem]">
-              AI 不做万能聊天框，先做能省时间的小工具。
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+              AI 页只做一件事：把研究材料变成可检查的草稿。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
-              首版保留接口骨架和提示词工作台，优先围绕组会提纲、实验复盘、论文阅读卡片和写作润色。
-              API Key、Base URL 和模型名仍在设置中心随时修改。
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+              不做万能聊天框，也不替你下结论。先围绕组会提纲、实验复盘、阅读卡片和写作润色，
+              把已有笔记整理成可人工核对的结构化草稿。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link className={buttonVariants({ variant: "default" })} href="/settings">
@@ -81,14 +90,37 @@ export default async function AiPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SignalCard
-              icon={KeyRound}
-              label="连接状态"
-              value={settings.apiKeyConfigured ? "已配置" : "待配置"}
-              detail={settings.model}
-            />
-            <SignalCard icon={WandSparkles} label="工作流" value="4 个入口" detail="从高频科研场景开始" />
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <WandSparkles className="size-3.5" />
+                今日助手栈
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                {presets.slice(0, 3).map((preset, index) => (
+                  <AiStackItem
+                    key={preset.label}
+                    index={`0${index + 1}`}
+                    title={preset.action}
+                    detail={preset.detail}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{settings.apiKeyConfigured ? "已连" : "待连"}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">模型</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{presets.length}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">入口</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">人工</p>
+                <p className="mt-0.5 text-[11px] text-white/54">把关</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -99,17 +131,20 @@ export default async function AiPage() {
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="size-4 text-primary" />
-                推荐入口
+                场景入口
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
-              {presets.map(({ label, prompt, icon: Icon }) => (
+              {presets.map(({ label, prompt, action, icon: Icon }) => (
                 <div key={label} className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
-                  <div className="flex items-center gap-2 font-medium">
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-[#eef7f7] text-primary">
+                  <div className="flex items-start gap-2">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#eef7f7] text-primary">
                       <Icon className="size-4" />
                     </span>
-                    {label}
+                    <div className="min-w-0">
+                      <p className="font-medium">{label}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{action}</p>
+                    </div>
                   </div>
                   <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
                     {prompt}
@@ -121,14 +156,34 @@ export default async function AiPage() {
 
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-              <CardTitle>当前配置</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <KeyRound className="size-4 text-primary" />
+                连接状态
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
+              <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-2 font-medium">
+                    {settings.apiKeyConfigured ? (
+                      <CheckCircle2 className="size-4 text-emerald-600" />
+                    ) : (
+                      <KeyRound className="size-4 text-amber-600" />
+                    )}
+                    {settings.apiKeyConfigured ? "已配置 Key" : "待配置 Key"}
+                  </span>
+                  <Link className="text-xs text-primary underline-offset-4 hover:underline" href="/settings">
+                    去设置
+                  </Link>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  Key 不会在浏览器显示明文；模型和 Base URL 可在设置中心随时改。
+                </p>
+              </div>
               <InfoRow label="服务商" value={providerLabel(settings.provider)} />
               <InfoRow label="模型" value={settings.model} />
-              <InfoRow label="Base URL" value={settings.baseUrl} />
-              <p className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 text-xs leading-5 text-muted-foreground">
-                密钥只显示是否已配置，不会在浏览器中展示明文。
+              <p className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs leading-5 text-sky-900">
+                建议先粘贴经过脱敏的笔记片段。AI 输出只当草稿，事实、引用和结论必须人工核对。
               </p>
             </CardContent>
           </Card>
@@ -138,7 +193,7 @@ export default async function AiPage() {
           <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
             <CardTitle className="flex items-center gap-2">
               <Bot className="size-4 text-primary" />
-              助手试验台
+              助手工作台
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -158,30 +213,24 @@ export default async function AiPage() {
   );
 }
 
-function SignalCard({
-  icon: Icon,
-  label,
-  value,
+function AiStackItem({
+  index,
+  title,
   detail,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
+  index: string;
+  title: string;
   detail: string;
 }) {
   return (
-    <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
-      <CardContent className="flex items-start gap-3 py-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 text-xl font-semibold tracking-tight text-[#173042]">{value}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
   );
 }
 
