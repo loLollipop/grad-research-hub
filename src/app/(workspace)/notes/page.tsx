@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BookOpenText,
   Clock3,
   FileText,
   FolderOpen,
@@ -90,6 +91,48 @@ function noteTaskMarkerKey(line: string) {
   return `:${hash.toString(36)} -->`;
 }
 
+const writingFolders = ["组会", "阅读", "实验", "结果", "写作"];
+
+function isWritingMaterial(note: Note) {
+  return writingFolders.some((name) => note.folder.includes(name));
+}
+
+function noteActionLabel(note: Note, allNotes: Note[]) {
+  const checklist = openChecklistCount(note.content);
+  const links = uniqueWikiLinks(note.content);
+  const allTitles = new Set(allNotes.map((item) => normalizeTitle(item.title)));
+  const missingLinkCount = links.filter((link) => !allTitles.has(normalizeTitle(link))).length;
+
+  if (checklist > 0) {
+    return "拆任务";
+  }
+
+  if (missingLinkCount > 0) {
+    return "补双链";
+  }
+
+  if (isWritingMaterial(note)) {
+    return "继续打磨";
+  }
+
+  if (links.length > 0) {
+    return "回顾关系";
+  }
+
+  return "继续写";
+}
+
+function noteActionScore(note: Note, allNotes: Note[]) {
+  const ageHours = Math.max(1, (Date.now() - note.updatedAt.getTime()) / 36e5);
+  const recency = 1 / ageHours;
+  const checklist = openChecklistCount(note.content);
+  const links = uniqueWikiLinks(note.content);
+  const allTitles = new Set(allNotes.map((item) => normalizeTitle(item.title)));
+  const missingLinkCount = links.filter((link) => !allTitles.has(normalizeTitle(link))).length;
+
+  return recency + checklist * 5 + missingLinkCount * 2 + links.length + (isWritingMaterial(note) ? 1.5 : 0);
+}
+
 export default async function NotesPage({ searchParams }: Props) {
   const params = await searchParams;
   const q = first(params.q)?.trim();
@@ -149,38 +192,90 @@ export default async function NotesPage({ searchParams }: Props) {
       )
     : [];
   const checklistCount = activeNote ? openChecklistCount(activeNote.content) : 0;
+  const noteStack = allNotes
+    .map((note) => ({
+      note,
+      action: noteActionLabel(note, allNotes),
+      score: noteActionScore(note, allNotes),
+    }))
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 3);
+  const notesWithTasks = allNotes.filter((note) => openChecklistCount(note.content) > 0).length;
+  const linkedNoteCount = allNotes.filter((note) => uniqueWikiLinks(note.content).length > 0).length;
+  const writingNoteCount = allNotes.filter(isWritingMaterial).length;
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-4 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <NotebookPen className="size-3.5" />
                 笔记工作室
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
-                Markdown · 双链 · 灵感收束
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
+                阅读 · 实验 · 组会 · 写作
               </span>
             </div>
-            <h1 className="mt-3 max-w-3xl text-[1.85rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.35rem]">
-              先写下来，再慢慢长成知识。
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+              笔记页只做一件事：把碎片变成可继续推进的材料。
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#557083]">
-              这里不是配置页，也不是复杂知识图谱。左边快速找材料，右边专心写组会记录、
-              阅读摘录、实验想法和论文草稿，用 `[[双链]]` 把相关内容连起来。
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+              这里承接 Zotero 阅读、实验复盘、结果证据和组会草稿。左侧快速找材料，
+              右侧专心写作，用 `[[双链]]` 和待办清单把想法接回项目任务。
             </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button render={<Link href="/notes?mode=new" />} className="bg-primary">
+                <Plus className="size-4" />
+                新建笔记
+              </Button>
+              <Button render={<Link href="/notes" />} variant="outline">
+                <Clock3 className="size-4" />
+                最近更新
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button render={<Link href="/notes?mode=new" />} className="bg-primary">
-              <Plus className="size-4" />
-              新建笔记
-            </Button>
-            <Button render={<Link href="/notes" />} variant="outline">
-              <Clock3 className="size-4" />
-              最近更新
-            </Button>
+
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <BookOpenText className="size-3.5" />
+                今日沉淀栈
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                {noteStack.length ? (
+                  noteStack.map(({ note, action }, index) => (
+                    <NoteStackItem
+                      key={note.id}
+                      index={`0${index + 1}`}
+                      title={note.title}
+                      detail={`${action} · ${folderLabel(note.folder)}`}
+                    />
+                  ))
+                ) : (
+                  <NoteStackItem
+                    index="01"
+                    title="先写一篇今天能继续用的笔记"
+                    detail="组会、阅读、实验或结果都可以"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{notesWithTasks}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">可拆任务</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{linkedNoteCount}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">含双链</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{writingNoteCount}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">写作素材</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -268,6 +363,7 @@ export default async function NotesPage({ searchParams }: Props) {
                   {notes.map((note) => {
                     const selected = activeNote?.id === note.id;
                     const snippet = noteSnippet(note.content);
+                    const action = noteActionLabel(note, allNotes);
 
                     return (
                       <Link
@@ -278,7 +374,12 @@ export default async function NotesPage({ searchParams }: Props) {
                           selected && "border-primary/35 bg-primary/9 shadow-[0_8px_20px_rgba(37,99,235,0.08)]",
                         )}
                       >
-                        <span className="line-clamp-1 font-medium">{note.title}</span>
+                        <span className="flex items-start justify-between gap-2">
+                          <span className="line-clamp-1 font-medium">{note.title}</span>
+                          <span className="shrink-0 rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] text-[#365a7d]">
+                            {action}
+                          </span>
+                        </span>
                         <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                           <FolderOpen className="size-3" />
                           {folderLabel(note.folder)}
@@ -522,6 +623,27 @@ export default async function NotesPage({ searchParams }: Props) {
           </Tabs>
         </section>
       </section>
+    </div>
+  );
+}
+
+function NoteStackItem({
+  index,
+  title,
+  detail,
+}: {
+  index: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
     </div>
   );
 }
