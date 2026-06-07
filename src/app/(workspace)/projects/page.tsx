@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ArrowRight,
   CalendarClock,
@@ -9,9 +10,11 @@ import {
   ListTodo,
   Plus,
   Route,
+  Search,
   Trash2,
+  X,
 } from "lucide-react";
-import type { Milestone, Project, Task } from "@prisma/client";
+import type { Milestone, Prisma, Project, Task } from "@prisma/client";
 
 import {
   createMilestone,
@@ -44,6 +47,15 @@ import { Textarea } from "@/components/ui/textarea";
 
 export const dynamic = "force-dynamic";
 
+type Props = {
+  searchParams: Promise<{
+    q?: string;
+    project?: string;
+    status?: string;
+    priority?: string;
+  }>;
+};
+
 type ProjectFull = Project & {
   milestones: Array<Milestone & { tasks: Task[] }>;
   experiments: { id: string }[];
@@ -64,8 +76,41 @@ const taskColumns = [
   { id: "done", label: "完成", hint: "已收口", tone: "bg-[#f3f6ef]" },
 ];
 
-export default async function ProjectsPage() {
-  const [projects, milestones, tasks] = await Promise.all([
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ProjectsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const q = valueOf(params.q)?.trim();
+  const projectId = valueOf(params.project);
+  const status = valueOf(params.status);
+  const priority = valueOf(params.priority);
+  const activeFilterCount = [q, projectId, status, priority].filter(Boolean).length;
+  const taskFilters: Prisma.TaskWhereInput[] = [];
+  if (q) {
+    taskFilters.push({
+      OR: [
+        { title: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+        { tags: { contains: q, mode: "insensitive" } },
+        { milestone: { title: { contains: q, mode: "insensitive" } } },
+        { milestone: { project: { title: { contains: q, mode: "insensitive" } } } },
+      ],
+    });
+  }
+  if (projectId) {
+    taskFilters.push({ milestone: { projectId } });
+  }
+  if (status && ["todo", "doing", "done"].includes(status)) {
+    taskFilters.push({ status });
+  }
+  if (priority && ["high", "medium", "low"].includes(priority)) {
+    taskFilters.push({ priority });
+  }
+  const taskWhere: Prisma.TaskWhereInput = taskFilters.length ? { AND: taskFilters } : {};
+
+  const [projects, milestones, tasks, allTasks] = await Promise.all([
     prisma.project.findMany({
       orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
       include: {
@@ -81,6 +126,11 @@ export default async function ProjectsPage() {
       include: { project: true, tasks: true },
     }),
     prisma.task.findMany({
+      where: taskWhere,
+      orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { updatedAt: "desc" }],
+      include: { milestone: { include: { project: true } } },
+    }),
+    prisma.task.findMany({
       orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { updatedAt: "desc" }],
       include: { milestone: { include: { project: true } } },
     }),
@@ -88,8 +138,9 @@ export default async function ProjectsPage() {
 
   const activeProjects = projects.filter((project) => project.status === "active");
   const pausedProjects = projects.filter((project) => project.status === "paused");
+  const allOpenTasks = allTasks.filter((task) => task.status !== "done");
+  const allDoneTasks = allTasks.filter((task) => task.status === "done");
   const openTasks = tasks.filter((task) => task.status !== "done");
-  const doneTasks = tasks.filter((task) => task.status === "done");
   const dueSoon = openTasks.filter((task) => {
     const distance = daysUntil(task.dueDate);
     return distance !== null && distance <= 7;
@@ -100,7 +151,8 @@ export default async function ProjectsPage() {
   const nextMilestones = milestones
     .filter((milestone) => milestone.status !== "completed")
     .slice(0, 5);
-  const completion = tasks.length ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
+  const completion = allTasks.length ? Math.round((allDoneTasks.length / allTasks.length) * 100) : 0;
+  const selectedProjectTitle = projects.find((project) => project.id === projectId)?.title;
 
   return (
     <div className="grid gap-5">
@@ -154,7 +206,7 @@ export default async function ProjectsPage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <SignalCard icon={FolderKanban} label="活跃课题" value={`${activeProjects.length} 个`} detail={`${pausedProjects.length} 个暂停`} />
-            <SignalCard icon={ListChecks} label="待推进任务" value={`${openTasks.length} 个`} detail={`完成度 ${completion}%`} />
+            <SignalCard icon={ListChecks} label="待推进任务" value={`${allOpenTasks.length} 个`} detail={`完成度 ${completion}%`} />
             <SignalCard icon={CalendarClock} label="7 天内截止" value={`${dueSoon.length} 个`} detail="优先看这里" />
             <SignalCard icon={Layers3} label="实验连接" value={`${projects.reduce((sum, project) => sum + project.experiments.length, 0)} 条`} detail="项目到实验证据" />
           </div>
@@ -209,6 +261,82 @@ export default async function ProjectsPage() {
         </aside>
 
         <div className="grid gap-4">
+          <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_170px_130px_130px_auto]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input name="q" placeholder="搜索任务、里程碑、项目" defaultValue={q} className="pl-8" />
+            </div>
+            <select
+              name="project"
+              defaultValue={projectId ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部项目</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+            <select
+              name="status"
+              defaultValue={status ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部状态</option>
+              <option value="todo">待办</option>
+              <option value="doing">进行中</option>
+              <option value="done">完成</option>
+            </select>
+            <select
+              name="priority"
+              defaultValue={priority ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部优先级</option>
+              <option value="high">高优先级</option>
+              <option value="medium">中优先级</option>
+              <option value="low">低优先级</option>
+            </select>
+            <Button type="submit" variant="outline">
+              筛选
+            </Button>
+          </form>
+
+          <div className="flex flex-col gap-2 rounded-2xl border border-border/72 bg-white/78 p-3 text-sm shadow-[0_10px_24px_rgba(34,48,71,0.04)] md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">当前任务 {tasks.length} 个</span>
+              {selectedProjectTitle ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {selectedProjectTitle}
+                </span>
+              ) : null}
+              {status ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {taskStatusLabel(status)}
+                </span>
+              ) : null}
+              {priority ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {priorityLabel(priority)}
+                </span>
+              ) : null}
+            </div>
+            {activeFilterCount ? (
+              <Link
+                href="/projects"
+                className="inline-flex w-fit items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+              >
+                <X className="size-3" />
+                清除 {activeFilterCount} 个筛选
+              </Link>
+            ) : (
+              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                未筛选
+              </span>
+            )}
+          </div>
+
           <section className="grid gap-3 lg:grid-cols-3">
             {taskColumns.map((column) => {
               const columnTasks = tasks.filter((task) => task.status === column.id);
@@ -235,7 +363,7 @@ export default async function ProjectsPage() {
                       ))
                     ) : (
                       <p className="rounded-xl border border-dashed bg-muted/25 p-4 text-center text-sm text-muted-foreground">
-                        暂无{column.label}任务
+                        {activeFilterCount ? "当前筛选下无任务" : `暂无${column.label}任务`}
                       </p>
                     )}
                   </CardContent>
@@ -382,6 +510,26 @@ function TaskMoveForm({ task, compact = false }: { task: Task; compact?: boolean
       </Button>
     </form>
   );
+}
+
+function taskStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    todo: "待办",
+    doing: "进行中",
+    done: "完成",
+  };
+
+  return labels[value] ?? value;
+}
+
+function priorityLabel(value: string) {
+  const labels: Record<string, string> = {
+    high: "高优先级",
+    medium: "中优先级",
+    low: "低优先级",
+  };
+
+  return labels[value] ?? value;
 }
 
 function MilestoneRow({
