@@ -4,14 +4,19 @@ import {
   BookOpenText,
   CalendarClock,
   CheckCircle2,
+  CircleCheck,
   ClipboardList,
+  Database,
   FileChartColumn,
   FlaskConical,
+  FolderKanban,
   Lightbulb,
   NotebookPen,
   PenLine,
+  Settings,
   Sparkles,
   TimerReset,
+  UploadCloud,
 } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
@@ -44,6 +49,7 @@ export default async function DashboardPage() {
     adminItems,
     projects,
     results,
+    totalRecords,
   ] = await Promise.all([
     prisma.task.groupBy({ by: ["status"], _count: true }),
     prisma.task.findMany({
@@ -87,7 +93,21 @@ export default async function DashboardPage() {
       take: 5,
       include: { experiment: true, dataset: true },
     }),
+    Promise.all([
+      prisma.paper.count(),
+      prisma.project.count(),
+      prisma.task.count(),
+      prisma.experiment.count(),
+      prisma.note.count(),
+      prisma.dataset.count(),
+      prisma.result.count(),
+      prisma.adminItem.count(),
+    ]).then((counts) => counts.reduce((sum, count) => sum + count, 0)),
   ]);
+
+  if (totalRecords === 0) {
+    return <FirstRunDashboard />;
+  }
 
   const todo = taskCounts.find((item) => item.status === "todo")?._count ?? 0;
   const doing = taskCounts.find((item) => item.status === "doing")?._count ?? 0;
@@ -503,6 +523,209 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+    </div>
+  );
+}
+
+function FirstRunDashboard() {
+  return (
+    <div className="grid gap-5">
+      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_0.92fr] xl:items-end">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+                <Sparkles className="size-3.5" />
+                10 分钟开箱
+              </span>
+              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+                先连文献 · 再建课题 · 留下第一条记录
+              </span>
+            </div>
+            <h1 className="mt-4 max-w-3xl text-[2.05rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.62rem]">
+              先别配置一堆东西，从三件小事开始。
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
+              研途 Hub 的第一天不需要完整迁移资料。先连接 Zotero 或手动补一篇文献，
+              建一个正在做的课题，再写下第一条实验/笔记，首页就会开始帮你排序。
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link className={buttonVariants({ variant: "default" })} href="/settings">
+                <Settings className="size-4" />
+                先填设置
+              </Link>
+              <Link className={buttonVariants({ variant: "outline" })} href="/papers">
+                <UploadCloud className="size-4" />
+                同步文献
+              </Link>
+              <Link className={buttonVariants({ variant: "outline" })} href="/projects">
+                <FolderKanban className="size-4" />
+                建第一个课题
+              </Link>
+            </div>
+          </div>
+
+          <Card className="border-white/72 bg-white/76 shadow-[0_16px_34px_rgba(27,42,56,0.08)] backdrop-blur">
+            <CardContent className="grid gap-3 py-4">
+              <p className="text-xs font-medium text-muted-foreground">推荐顺序</p>
+              <FirstRunStep
+                index="01"
+                title="设置访问密码、Zotero 和 AI Key"
+                detail="高频变动项都在设置中心，不用回服务器改。"
+                href="/settings"
+              />
+              <FirstRunStep
+                index="02"
+                title="同步 Zotero 或补一篇临时文献"
+                detail="文献不要重复录，阅读状态交给这里。"
+                href="/papers"
+              />
+              <FirstRunStep
+                index="03"
+                title="创建课题和下一步任务"
+                detail="首页会从任务和事务里自动生成今日队列。"
+                href="/projects"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <StartCard
+          icon={Settings}
+          title="设置中心"
+          detail="修改访问密码、AI Key、Zotero Key 和导出数据。"
+          href="/settings"
+          action="去设置"
+        />
+        <StartCard
+          icon={BookOpenText}
+          title="Zotero 阅读台"
+          detail="同步文献集合，给论文标记待读、读中、已读。"
+          href="/papers"
+          action="同步文献"
+        />
+        <StartCard
+          icon={FolderKanban}
+          title="课题路线图"
+          detail="建课题、里程碑和下一步任务，不堆复杂字段。"
+          href="/projects"
+          action="建课题"
+        />
+        <StartCard
+          icon={NotebookPen}
+          title="第一条记录"
+          detail="写一条实验、笔记或组会提醒，让工作台开始运转。"
+          href="/notes?mode=new"
+          action="写笔记"
+        />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.62fr_0.38fr]">
+        <Card className="workbench-card overflow-hidden">
+          <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <CircleCheck className="size-4 text-primary" />
+              今天只需要完成这些
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <ChecklistRow title="确认设置中心能保存 Key" detail="后续换模型、换 Zotero Key 都在网页端完成。" />
+            <ChecklistRow title="把一个真实课题放进去" detail="不要搬历史资料，先放当前正在推进的题目。" />
+            <ChecklistRow title="留下第一条能复盘的记录" detail="实验目的、阅读摘录、组会提醒，任选一个。" />
+          </CardContent>
+        </Card>
+
+        <Card className="workbench-card overflow-hidden">
+          <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Database className="size-4 text-primary" />
+              暂时不用做
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
+            <p>不用先导入全部 PDF。</p>
+            <p>不用把所有旧实验搬进来。</p>
+            <p>不用配置一堆不常用字段。</p>
+            <p>等真实使用一周后，再决定要不要扩展功能。</p>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+function FirstRunStep({
+  index,
+  title,
+  detail,
+  href,
+}: {
+  index: string;
+  title: string;
+  detail: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="grid gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
+    >
+      <span className="font-mono text-xs font-semibold text-primary">{index}</span>
+      <span className="min-w-0">
+        <span className="block font-medium">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
+      </span>
+      <ArrowRight className="hidden size-4 text-muted-foreground sm:block" />
+    </Link>
+  );
+}
+
+function StartCard({
+  icon: Icon,
+  title,
+  detail,
+  href,
+  action,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  detail: string;
+  href: string;
+  action: string;
+}) {
+  return (
+    <Link href={href} className="group block">
+      <Card className="h-full border-border/72 bg-white/86 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_12px_28px_rgba(27,42,56,0.07)]">
+        <CardContent className="grid h-full gap-4 py-4">
+          <span className="flex size-10 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266] transition group-hover:bg-primary group-hover:text-primary-foreground">
+            <Icon className="size-4" />
+          </span>
+          <span>
+            <span className="block font-semibold">{title}</span>
+            <span className="mt-1 block text-sm leading-6 text-muted-foreground">{detail}</span>
+          </span>
+          <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
+            {action}
+            <ArrowRight className="size-3.5" />
+          </span>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function ChecklistRow({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="flex gap-3 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#eef7f7] text-primary">
+        <CheckCircle2 className="size-4" />
+      </span>
+      <span>
+        <span className="block font-medium">{title}</span>
+        <span className="mt-1 block text-sm leading-6 text-muted-foreground">{detail}</span>
+      </span>
     </div>
   );
 }
