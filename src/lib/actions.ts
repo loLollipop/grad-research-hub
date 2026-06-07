@@ -397,6 +397,35 @@ export async function setTaskStatus(formData: FormData) {
   revalidatePath("/projects");
 }
 
+export async function attachTaskToMilestone(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const milestoneId = String(formData.get("milestoneId") ?? "");
+  const returnTo = safeProjectsReturnTo(String(formData.get("returnTo") ?? "/projects"));
+  const joiner = returnTo.includes("?") ? "&" : "?";
+
+  if (!id || !milestoneId) {
+    redirect(`${returnTo}${joiner}taskAttach=error`);
+  }
+
+  const milestone = await prisma.milestone.findUnique({
+    where: { id: milestoneId },
+    select: { id: true },
+  });
+
+  if (!milestone) {
+    redirect(`${returnTo}${joiner}taskAttach=error`);
+  }
+
+  await prisma.task.update({
+    where: { id },
+    data: { milestoneId },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/projects");
+  redirect(`${returnTo}${joiner}taskAttach=success`);
+}
+
 export async function updateTaskStatuses(formData: FormData) {
   const ids = formData
     .getAll("ids")

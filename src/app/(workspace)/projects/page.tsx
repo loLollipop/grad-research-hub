@@ -20,6 +20,7 @@ import {
 import type { Milestone, Prisma, Project, Task } from "@prisma/client";
 
 import {
+  attachTaskToMilestone,
   createMilestone,
   createProject,
   createExperimentFromTask,
@@ -64,6 +65,7 @@ type Props = {
     taskBulkStatus?: string;
     taskSync?: string;
     taskSyncCount?: string;
+    taskAttach?: string;
   }>;
 };
 
@@ -104,6 +106,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const taskBulkStatus = valueOf(params.taskBulkStatus);
   const taskSync = valueOf(params.taskSync);
   const taskSyncCount = Number(valueOf(params.taskSyncCount) ?? 0);
+  const taskAttach = valueOf(params.taskAttach);
   const activeFilterCount = [q, projectId, status, priority, scope].filter(Boolean).length;
   const currentFilters = { q, project: projectId, status, priority, scope };
   const currentQuery = new URLSearchParams();
@@ -263,7 +266,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
             <CardContent className="grid gap-2">
               {nextTasks.length ? (
                 nextTasks.map((task) => (
-                  <NextTaskRow key={task.id} task={task} milestones={milestones} />
+                  <NextTaskRow key={task.id} task={task} milestones={milestones} returnTo={returnTo} />
                 ))
               ) : (
                 <EmptyState
@@ -358,6 +361,24 @@ export default async function ProjectsPage({ searchParams }: Props) {
               tone="success"
               title="笔记清单已拆成任务"
               description={`已从笔记待办清单创建 ${taskSyncCount} 个项目任务。后续可以把它们挂到对应里程碑。`}
+            />
+          ) : null}
+
+          {taskAttach === "success" ? (
+            <TaskBulkNotice
+              href={returnTo}
+              tone="success"
+              title="任务已挂到里程碑"
+              description="它现在会出现在对应项目路线图里，后续推进不用再打开编辑弹窗。"
+            />
+          ) : null}
+
+          {taskAttach === "error" ? (
+            <TaskBulkNotice
+              href={returnTo}
+              tone="error"
+              title="挂载失败"
+              description="请选择一个有效里程碑后再保存。"
             />
           ) : null}
 
@@ -482,7 +503,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
                   <CardContent className="grid gap-2">
                     {columnTasks.length ? (
                       columnTasks.map((task) => (
-                        <TaskCard key={task.id} task={task} milestones={milestones} />
+                        <TaskCard key={task.id} task={task} milestones={milestones} returnTo={returnTo} />
                       ))
                     ) : (
                       <p className="rounded-xl border border-dashed bg-muted/25 p-4 text-center text-sm text-muted-foreground">
@@ -601,9 +622,11 @@ function TaskBulkNotice({
 function NextTaskRow({
   task,
   milestones,
+  returnTo,
 }: {
   task: TaskFull;
   milestones: MilestoneFull[];
+  returnTo: string;
 }) {
   return (
     <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
@@ -618,6 +641,7 @@ function NextTaskRow({
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <TaskMoveForm task={task} compact />
+        <TaskMilestoneAttachForm task={task} milestones={milestones} returnTo={returnTo} compact />
         <CreateExperimentFromTaskButton task={task} compact />
         <CreateDialog title="编辑任务" label="编辑" icon={Edit3} wide>
           <TaskForm action={updateTask} milestones={milestones} task={task} />
@@ -630,9 +654,11 @@ function NextTaskRow({
 function TaskCard({
   task,
   milestones,
+  returnTo,
 }: {
   task: TaskFull;
   milestones: MilestoneFull[];
+  returnTo: string;
 }) {
   return (
     <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)]">
@@ -662,6 +688,7 @@ function TaskCard({
       ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <TaskMoveForm task={task} />
+        <TaskMilestoneAttachForm task={task} milestones={milestones} returnTo={returnTo} />
         {task.status !== "done" ? <CreateExperimentFromTaskButton task={task} /> : null}
         <CreateDialog title="编辑任务" label="编辑" icon={Edit3} wide>
           <TaskForm action={updateTask} milestones={milestones} task={task} />
@@ -675,6 +702,50 @@ function TaskCard({
         </form>
       </div>
     </div>
+  );
+}
+
+function TaskMilestoneAttachForm({
+  task,
+  milestones,
+  returnTo,
+  compact = false,
+}: {
+  task: Task;
+  milestones: MilestoneFull[];
+  returnTo: string;
+  compact?: boolean;
+}) {
+  if (task.milestoneId || !milestones.length) {
+    return null;
+  }
+
+  return (
+    <form
+      action={attachTaskToMilestone}
+      className="flex min-w-0 max-w-full flex-wrap gap-1.5 rounded-lg border border-dashed border-[#c9d9de] bg-white/70 p-1"
+    >
+      <input type="hidden" name="id" value={task.id} />
+      <input type="hidden" name="returnTo" value={returnTo} />
+      <select
+        name="milestoneId"
+        required
+        defaultValue=""
+        aria-label="挂到里程碑"
+        className={`${compact ? "h-7" : "h-8"} min-w-0 max-w-[190px] rounded-md border border-transparent bg-transparent px-2 text-xs text-[#315266] outline-none transition focus:border-primary/30 focus:bg-white`}
+      >
+        <option value="">挂到里程碑</option>
+        {milestones.map((milestone) => (
+          <option key={milestone.id} value={milestone.id}>
+            {milestone.project.title} / {milestone.title}
+          </option>
+        ))}
+      </select>
+      <Button type="submit" variant="outline" size="sm">
+        <Flag className="size-3.5" />
+        保存
+      </Button>
+    </form>
   );
 }
 
