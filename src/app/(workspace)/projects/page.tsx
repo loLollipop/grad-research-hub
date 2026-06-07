@@ -3,12 +3,10 @@ import {
   AlertCircle,
   ArrowRight,
   Beaker,
-  CalendarClock,
   CheckCircle2,
   Edit3,
   Flag,
   FolderKanban,
-  Layers3,
   ListChecks,
   ListTodo,
   Plus,
@@ -181,41 +179,51 @@ export default async function ProjectsPage({ searchParams }: Props) {
   ]);
 
   const activeProjects = projects.filter((project) => project.status === "active");
-  const pausedProjects = projects.filter((project) => project.status === "paused");
   const allOpenTasks = allTasks.filter((task) => task.status !== "done");
   const allDoneTasks = allTasks.filter((task) => task.status === "done");
+  const quickBaseTasks = allTasks.filter((task) => taskMatchesProjectBase(task, q, projectId));
+  const quickOpenTasks = quickBaseTasks.filter((task) => task.status !== "done");
   const openTasks = tasks.filter((task) => task.status !== "done");
-  const dueSoon = openTasks.filter((task) => {
-    const distance = daysUntil(task.dueDate);
-    return distance !== null && distance <= 7;
-  });
   const nextTasks = [...openTasks]
     .sort((left, right) => taskRank(left) - taskRank(right))
     .slice(0, 6);
+  const projectStack = [...quickOpenTasks]
+    .sort((left, right) => taskRank(left) - taskRank(right))
+    .slice(0, 3);
   const nextMilestones = milestones
     .filter((milestone) => milestone.status !== "completed")
     .slice(0, 5);
   const completion = allTasks.length ? Math.round((allDoneTasks.length / allTasks.length) * 100) : 0;
   const selectedProjectTitle = projects.find((project) => project.id === projectId)?.title;
+  const todayOpenTasks = quickOpenTasks.filter((task) => {
+    const distance = daysUntil(task.dueDate);
+    return distance !== null && distance <= 0;
+  });
+  const weekOpenTasks = quickOpenTasks.filter((task) => {
+    const distance = daysUntil(task.dueDate);
+    return distance !== null && distance <= 7;
+  });
+  const highOpenTasks = quickOpenTasks.filter((task) => task.priority === "high");
+  const doingTasks = quickOpenTasks.filter((task) => task.status === "doing");
 
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr] xl:items-end">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <Route className="size-3.5" />
                 课题路线图
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 阶段 · 里程碑 · 下一步
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.5rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
               项目页只回答一个问题：下一步推进什么。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
               课题可以很复杂，但每天推进不该复杂。这里把项目压成路线图、里程碑和任务队列，
               少填字段，多看状态，让你打开后直接进入行动。
             </p>
@@ -258,11 +266,45 @@ export default async function ProjectsPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SignalCard icon={FolderKanban} label="活跃课题" value={`${activeProjects.length} 个`} detail={`${pausedProjects.length} 个暂停`} />
-            <SignalCard icon={ListChecks} label="待推进任务" value={`${allOpenTasks.length} 个`} detail={`完成度 ${completion}%`} />
-            <SignalCard icon={CalendarClock} label="7 天内截止" value={`${dueSoon.length} 个`} detail="优先看这里" />
-            <SignalCard icon={Layers3} label="实验连接" value={`${projects.reduce((sum, project) => sum + project.experiments.length, 0)} 条`} detail="项目到实验证据" />
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <FolderKanban className="size-3.5" />
+                今日推进栈
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                {projectStack.length ? (
+                  projectStack.map((task, index) => (
+                    <ProjectStackItem
+                      key={task.id}
+                      index={`0${index + 1}`}
+                      title={task.title}
+                      detail={`${task.milestone?.project.title ?? "独立任务"} · ${dueText(task.dueDate)}`}
+                    />
+                  ))
+                ) : (
+                  <ProjectStackItem
+                    index="01"
+                    title="先写一个今天能推进的动作"
+                    detail="任务最好短到可以直接开始"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{activeProjects.length}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">活跃课题</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{allOpenTasks.length}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">待推进</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{completion}%</p>
+                <p className="mt-0.5 text-[11px] text-white/54">完成度</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -312,44 +354,25 @@ export default async function ProjectsPage({ searchParams }: Props) {
               )}
             </CardContent>
           </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Search className="size-4 text-primary" />
+                快捷视图
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <QuickProjectLink label="全部任务" count={quickBaseTasks.length} href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: undefined })} active={!status && !priority && !scope} />
+              <QuickProjectLink label="今天/逾期" count={todayOpenTasks.length} href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: "today" })} active={scope === "today" && !status && !priority} />
+              <QuickProjectLink label="高优先级" count={highOpenTasks.length} href={projectsHref(currentFilters, { status: undefined, priority: "high", scope: undefined })} active={priority === "high" && !status && !scope} />
+              <QuickProjectLink label="进行中" count={doingTasks.length} href={projectsHref(currentFilters, { status: "doing", priority: undefined, scope: undefined })} active={status === "doing" && !priority && !scope} />
+              <QuickProjectLink label="本周收口" count={weekOpenTasks.length} href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: "week" })} active={scope === "week" && !status && !priority} />
+            </CardContent>
+          </Card>
         </aside>
 
         <div className="grid gap-4">
-          <div className="flex flex-col gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(238,247,247,0.76))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-[#173042]">开工视图</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                今天会带上逾期任务，本周会带上 7 天内要收口的事情。
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={projectsHref(currentFilters, { scope: undefined })}
-                className={scopePillClass(!scope)}
-              >
-                全部
-              </Link>
-              <Link
-                href={projectsHref(currentFilters, { scope: "today" })}
-                className={scopePillClass(scope === "today" && !(priority === "high" && !status))}
-              >
-                今天
-              </Link>
-              <Link
-                href={projectsHref(currentFilters, { scope: "today", priority: "high", status: undefined })}
-                className={scopePillClass(scope === "today" && priority === "high" && !status)}
-              >
-                今天高优先级
-              </Link>
-              <Link
-                href={projectsHref(currentFilters, { scope: "week" })}
-                className={scopePillClass(scope === "week")}
-              >
-                本周
-              </Link>
-            </div>
-          </div>
-
           {taskBulk === "success" ? (
             <TaskBulkNotice
               href={returnTo}
@@ -572,33 +595,6 @@ export default async function ProjectsPage({ searchParams }: Props) {
   );
 }
 
-function SignalCard({
-  icon: Icon,
-  label,
-  value,
-  detail,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
-      <CardContent className="flex items-start gap-3 py-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 text-xl font-semibold tracking-tight text-[#173042]">{value}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function TaskBulkNotice({
   tone,
   title,
@@ -651,6 +647,53 @@ function TaskBulkNotice({
   );
 }
 
+function ProjectStackItem({
+  index,
+  title,
+  detail,
+}: {
+  index: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
+  );
+}
+
+function QuickProjectLink({
+  label,
+  count,
+  href,
+  active,
+}: {
+  label: string;
+  count: number;
+  href: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={
+        active
+          ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
+          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+      }
+    >
+      <span>{label}</span>
+      <span className="text-xs text-muted-foreground">{count}</span>
+    </Link>
+  );
+}
+
 function NextTaskRow({
   task,
   milestones,
@@ -660,6 +703,8 @@ function NextTaskRow({
   milestones: MilestoneFull[];
   returnTo: string;
 }) {
+  const nextAction = taskActionLabel(task);
+
   return (
     <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
       <div className="flex items-start justify-between gap-3">
@@ -669,7 +714,12 @@ function NextTaskRow({
             {task.milestone?.project.title ?? "独立任务"} · {dueText(task.dueDate)}
           </p>
         </div>
-        <StatusBadge value={task.priority} kind="priority" />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <StatusBadge value={task.priority} kind="priority" />
+          <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] text-[#365a7d]">
+            {nextAction}
+          </span>
+        </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <TaskMoveForm task={task} compact />
@@ -692,6 +742,8 @@ function TaskCard({
   milestones: MilestoneFull[];
   returnTo: string;
 }) {
+  const nextAction = taskActionLabel(task);
+
   return (
     <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)]">
       <div className="flex items-start justify-between gap-2">
@@ -711,7 +763,12 @@ function TaskCard({
             </p>
           </div>
         </div>
-        <StatusBadge value={task.priority} kind="priority" />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <StatusBadge value={task.priority} kind="priority" />
+          <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] text-[#365a7d]">
+            {nextAction}
+          </span>
+        </div>
       </div>
       {task.description ? (
         <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
@@ -849,15 +906,6 @@ function scopeLabel(value: string) {
   return labels[value] ?? value;
 }
 
-function scopePillClass(active: boolean) {
-  return [
-    "inline-flex h-8 items-center rounded-full border px-3 text-sm font-medium transition",
-    active
-      ? "border-[#315266] bg-[#173042] text-white shadow-[0_10px_20px_rgba(23,48,66,0.14)]"
-      : "border-border/76 bg-white/78 text-muted-foreground hover:border-primary/30 hover:text-foreground",
-  ].join(" ");
-}
-
 function projectsHref(
   current: {
     q?: string;
@@ -883,6 +931,50 @@ function projectsHref(
 
   const query = params.toString();
   return query ? `/projects?${query}` : "/projects";
+}
+
+function taskMatchesProjectBase(task: TaskFull, q?: string, projectId?: string) {
+  if (projectId && task.milestone?.projectId !== projectId) {
+    return false;
+  }
+
+  if (!q) {
+    return true;
+  }
+
+  const keyword = q.toLowerCase();
+  return [
+    task.title,
+    task.description,
+    task.tags,
+    task.milestone?.title,
+    task.milestone?.project.title,
+  ].some((value) => value?.toLowerCase().includes(keyword));
+}
+
+function taskActionLabel(task: Task) {
+  if (task.status === "done") {
+    return "已收口";
+  }
+
+  if (!task.milestoneId) {
+    return "补里程碑";
+  }
+
+  const distance = daysUntil(task.dueDate);
+  if (distance !== null && distance < 0) {
+    return "先补逾期";
+  }
+
+  if (task.status === "doing") {
+    return "继续推进";
+  }
+
+  if (task.priority === "high") {
+    return "优先处理";
+  }
+
+  return "开始推进";
 }
 
 function MilestoneRow({
