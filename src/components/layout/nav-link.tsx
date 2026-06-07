@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -42,22 +43,33 @@ export function NavLink({
   compact?: boolean;
 }) {
   const pathname = usePathname();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const active =
     href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const selected = active || pendingHref === href;
   const Icon = icon ? icons[icon] : null;
+
+  function handleNavigate() {
+    if (!active) {
+      setPendingHref(href);
+    }
+  }
 
   if (compact) {
     return (
       <Link
         href={href}
+        prefetch={true}
+        onNavigate={handleNavigate}
         className={cn(
-          "rounded-md border px-2 py-1 text-xs transition",
-          active
+          "relative rounded-md border px-2 py-1 text-xs transition",
+          selected
             ? "border-[#1f3d33] bg-[#1f3d33] text-white"
             : "bg-white text-muted-foreground hover:border-[#b9c9c0] hover:text-[#1f3d33]",
         )}
       >
         {label}
+        <NavPendingMark compact />
       </Link>
     );
   }
@@ -65,16 +77,37 @@ export function NavLink({
   return (
     <Link
       href={href}
+      prefetch={true}
+      onNavigate={handleNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition",
-        active
+        "relative flex items-center gap-2 overflow-hidden rounded-lg px-3 py-2 text-sm transition",
+        selected
           ? "bg-[#1f3d33] font-medium text-white shadow-sm hover:bg-[#1f3d33] hover:text-white"
           : "text-muted-foreground hover:bg-[#eef4ef] hover:text-[#1f3d33]",
       )}
     >
       {Icon ? <Icon className="size-4" /> : null}
       {label}
+      <NavPendingMark />
     </Link>
+  );
+}
+
+function NavPendingMark({ compact = false }: { compact?: boolean }) {
+  const { pending } = useLinkStatus();
+
+  if (!pending) {
+    return null;
+  }
+
+  if (compact) {
+    return (
+      <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-current opacity-70" />
+    );
+  }
+
+  return (
+    <span className="ml-auto size-1.5 animate-pulse rounded-full bg-current opacity-75" />
   );
 }

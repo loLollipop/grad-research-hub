@@ -78,7 +78,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6">{children}</main>
+        <main className="workspace-page mx-auto w-full max-w-7xl px-4 py-6 lg:px-6">
+          {children}
+        </main>
       </div>
     </div>
   );
