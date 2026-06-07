@@ -722,9 +722,87 @@ export async function quickCapture(formData: FormData) {
   const content = String(formData.get("content") ?? "").trim();
   if (!content) return;
 
+  const captured = parseQuickCapture(content);
+
+  if (captured.kind === "task") {
+    await prisma.task.create({
+      data: {
+        title: quickTitle(captured.body),
+        description: `来自快速捕捉：${captured.body}`,
+        priority: "medium",
+        status: "todo",
+        tags: tagsToString(["quick-capture"]),
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/projects");
+    return;
+  }
+
+  if (captured.kind === "experiment") {
+    await prisma.experiment.create({
+      data: {
+        title: quickTitle(captured.body),
+        status: "running",
+        template: "purpose-method-result",
+        content: [
+          "## 目的",
+          captured.body,
+          "",
+          "## 方法 / 参数",
+          "",
+          "## 观察",
+          "",
+          "## 结论 / 下一步",
+          "",
+          "---",
+          "来源：快速捕捉",
+        ].join("\n"),
+        tags: tagsToString(["quick-capture", "待补全"]),
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/experiments");
+    return;
+  }
+
+  if (captured.kind === "paper") {
+    await prisma.paper.create({
+      data: {
+        title: quickTitle(captured.body),
+        category: "inbox",
+        readStatus: "unread",
+        notes: `来自快速捕捉：${captured.body}`,
+        tags: tagsToString(["quick-capture"]),
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/papers");
+    return;
+  }
+
+  if (captured.kind === "admin") {
+    await prisma.adminItem.create({
+      data: {
+        title: quickTitle(captured.body),
+        type: inferAdminType(captured.body),
+        status: "todo",
+        notes: `来自快速捕捉：${captured.body}`,
+        tags: tagsToString(["quick-capture"]),
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/admin");
+    return;
+  }
+
   await prisma.note.create({
     data: {
-      title: content.slice(0, 28),
+      title: quickTitle(captured.body),
       content,
       folder: "Inbox",
       tags: tagsToString(["quick-capture"]),
@@ -733,6 +811,49 @@ export async function quickCapture(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/notes");
+}
+
+function parseQuickCapture(content: string) {
+  const match = content.match(/^([^:：]{1,12})[:：]\s*(.+)$/);
+  if (!match?.[1] || !match[2]?.trim()) {
+    return { kind: "note" as const, body: content };
+  }
+
+  const prefix = match[1].trim().toLowerCase();
+  const body = match[2].trim();
+  const kindMap = new Map<string, "task" | "experiment" | "paper" | "admin" | "note">([
+    ["任务", "task"],
+    ["待办", "task"],
+    ["todo", "task"],
+    ["task", "task"],
+    ["实验", "experiment"],
+    ["试验", "experiment"],
+    ["experiment", "experiment"],
+    ["exp", "experiment"],
+    ["文献", "paper"],
+    ["论文", "paper"],
+    ["paper", "paper"],
+    ["事务", "admin"],
+    ["提醒", "admin"],
+    ["组会", "admin"],
+    ["admin", "admin"],
+    ["笔记", "note"],
+    ["想法", "note"],
+    ["note", "note"],
+  ]);
+
+  return { kind: kindMap.get(prefix) ?? "note", body };
+}
+
+function quickTitle(value: string) {
+  return value.replace(/\s+/g, " ").trim().slice(0, 42) || "快速捕捉";
+}
+
+function inferAdminType(value: string): AdminItem["type"] {
+  if (/组会|会议|汇报|seminar|meeting/i.test(value)) return "meeting";
+  if (/报销|发票|经费|reimbursement/i.test(value)) return "reimbursement";
+  if (/材料|表格|证明|申请|material/i.test(value)) return "material";
+  return "deadline";
 }
 
 function extractOpenChecklistItems(content: string) {

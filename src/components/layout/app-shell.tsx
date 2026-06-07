@@ -110,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
-                  placeholder="快速捕捉：想法、待办、组会提醒..."
+                  placeholder="快速捕捉：任务：整理结果 / 实验：复现实验 / 想法..."
                   className="h-9 rounded-2xl border-border/75 bg-white/95 pl-8 text-sm shadow-[0_1px_1px_rgba(15,23,42,0.04)] md:h-10"
                 />
               </div>
