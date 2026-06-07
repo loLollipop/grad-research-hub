@@ -52,13 +52,32 @@ type TimelineItem = {
   tone: "paper" | "experiment" | "result" | "note";
 };
 
+type ClosingItem = {
+  id: string;
+  title: string;
+  href: string;
+  kind: "任务" | "实验" | "结果" | "文献";
+  reason: string;
+  action: string;
+  tone: "urgent" | "watch" | "quiet";
+};
+
 export default async function DashboardPage() {
   const meetingBriefPeriod = getMeetingBriefPeriod();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const staleSince = new Date(todayStart);
+  staleSince.setDate(staleSince.getDate() - 7);
+  const readingSince = new Date(todayStart);
+  readingSince.setDate(readingSince.getDate() - 14);
   const [
     taskCounts,
     upcomingTasks,
+    staleDoingTasks,
     recentExperiments,
+    staleExperiments,
     recentPapers,
+    stalePapers,
     recentNotes,
     adminItems,
     projects,
@@ -73,14 +92,40 @@ export default async function DashboardPage() {
       take: 7,
       include: { milestone: { include: { project: true } } },
     }),
+    prisma.task.findMany({
+      where: {
+        status: "doing",
+        updatedAt: { lt: staleSince },
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 3,
+      include: { milestone: { include: { project: true } } },
+    }),
     prisma.experiment.findMany({
       orderBy: { updatedAt: "desc" },
       take: 4,
       include: { project: true, results: true },
     }),
+    prisma.experiment.findMany({
+      where: {
+        status: "running",
+        updatedAt: { lt: staleSince },
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 3,
+      include: { project: true, results: true },
+    }),
     prisma.paper.findMany({
       orderBy: { updatedAt: "desc" },
       take: 5,
+    }),
+    prisma.paper.findMany({
+      where: {
+        readStatus: { in: ["unread", "reading"] },
+        updatedAt: { lt: readingSince },
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 3,
     }),
     prisma.note.findMany({
       orderBy: { updatedAt: "desc" },
@@ -221,6 +266,66 @@ export default async function DashboardPage() {
   ]
     .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
     .slice(0, 8);
+  const closingItems = [
+    ...upcomingTasks
+      .filter((task) => {
+        const distance = daysUntil(task.dueDate);
+        return distance !== null && distance < 0;
+      })
+      .map<ClosingItem>((task) => ({
+        id: `overdue-${task.id}`,
+        title: task.title,
+        href: "/projects?scope=today",
+        kind: "任务",
+        reason: `${dueText(task.dueDate)} · ${task.milestone?.project.title ?? "独立任务"}`,
+        action: "今天处理或改期",
+        tone: "urgent",
+      })),
+    ...staleDoingTasks.map<ClosingItem>((task) => ({
+      id: `stale-task-${task.id}`,
+      title: task.title,
+      href: "/projects?status=doing",
+      kind: "任务",
+      reason: `${ageText(task.updatedAt)}未更新 · ${task.milestone?.project.title ?? "独立任务"}`,
+      action: "确认下一步",
+      tone: "watch",
+    })),
+    ...staleExperiments.map<ClosingItem>((experiment) => ({
+      id: `stale-experiment-${experiment.id}`,
+      title: experiment.title,
+      href: "/experiments?status=running",
+      kind: "实验",
+      reason: `${ageText(experiment.updatedAt)}未更新 · 结果 ${experiment.results.length} 条`,
+      action: "补观察或收口",
+      tone: "watch",
+    })),
+    ...results
+      .filter((result) => {
+        const config = parseJson<{ reproducibility?: string; manuscriptReady?: boolean }>(
+          result.config,
+          {},
+        );
+        return config.reproducibility !== "verified" || (!config.manuscriptReady && !result.artifactPath);
+      })
+      .map<ClosingItem>((result) => ({
+        id: `result-${result.id}`,
+        title: result.title,
+        href: "/data?manuscript=not-ready",
+        kind: "结果",
+        reason: result.experiment?.title ?? "未关联实验",
+        action: "补复现/论文素材",
+        tone: "quiet",
+      })),
+    ...stalePapers.map<ClosingItem>((paper) => ({
+      id: `paper-${paper.id}`,
+      title: paper.title,
+      href: `/papers?status=${paper.readStatus}`,
+      kind: "文献",
+      reason: `${ageText(paper.updatedAt)}未处理 · ${statusLabel(paper.readStatus)}`,
+      action: "标记阅读状态",
+      tone: "quiet",
+    })),
+  ].slice(0, 4);
 
   return (
     <div className="grid gap-5">
@@ -363,6 +468,8 @@ export default async function DashboardPage() {
           href="/data"
         />
       </section>
+
+      <ClosingRadar items={closingItems} />
 
       <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
         <Card className="workbench-card">
@@ -868,6 +975,62 @@ function ResearchSignal({
   );
 }
 
+function ClosingRadar({ items }: { items: ClosingItem[] }) {
+  return (
+    <section className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(246,249,249,0.86))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.04)]">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-sm font-semibold text-[#173042]">
+            <TimerReset className="size-4 text-primary" />
+            收口提醒
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            只提醒最容易被遗忘的任务、实验、结果和文献，不增加新的配置。
+          </p>
+        </div>
+        <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+          {items.length ? `${items.length} 项需要看一眼` : "状态稳定"}
+        </span>
+      </div>
+
+      {items.length ? (
+        <div className="grid gap-2 lg:grid-cols-2">
+          {items.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="group grid gap-3 rounded-xl border border-border/70 bg-white/76 p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)] sm:grid-cols-[auto_1fr_auto] sm:items-center"
+            >
+              <span className={closingToneClass(item.tone)}>{item.kind}</span>
+              <span className="min-w-0">
+                <span className="block line-clamp-1 font-medium">{item.title}</span>
+                <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">
+                  {item.reason}
+                </span>
+              </span>
+              <span className="text-xs font-medium text-primary">{item.action}</span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 p-3 text-sm text-muted-foreground">
+          暂时没有逾期任务、久未更新实验或待补证据。今天可以直接从“下一步队列”开始。
+        </div>
+      )}
+    </section>
+  );
+}
+
+function closingToneClass(tone: ClosingItem["tone"]) {
+  const classes = {
+    urgent: "flex h-8 shrink-0 items-center justify-center rounded-lg bg-[#fff1f2] px-2 text-xs font-medium text-rose-700",
+    watch: "flex h-8 shrink-0 items-center justify-center rounded-lg bg-[#fff7e6] px-2 text-xs font-medium text-[#7a5a2f]",
+    quiet: "flex h-8 shrink-0 items-center justify-center rounded-lg bg-[#eef7f3] px-2 text-xs font-medium text-[#2f6655]",
+  };
+
+  return classes[tone];
+}
+
 function LoopRow({
   icon: Icon,
   title,
@@ -986,6 +1149,16 @@ function timelineIconClass(tone: TimelineItem["tone"]) {
 function parseTagsPreview(value: string) {
   const tags = parseJson<string[]>(value, []);
   return tags.length ? tags.slice(0, 2).join(" / ") : "无标签";
+}
+
+function ageText(value: Date) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const target = new Date(value);
+  target.setHours(0, 0, 0, 0);
+  const days = Math.max(1, Math.floor((start.getTime() - target.getTime()) / 86_400_000));
+
+  return `${days} 天`;
 }
 
 function dueText(value: Date | null) {
