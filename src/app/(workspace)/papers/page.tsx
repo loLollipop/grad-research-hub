@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, RefreshCw, Trash2 } from "lucide-react";
+import { Edit3, ExternalLink, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
 import type { Paper, Prisma } from "@prisma/client";
 
 import {
@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db";
 import { formatDate, parseTags } from "@/lib/format";
 import { getZoteroConfigStatus } from "@/lib/zotero";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -74,12 +75,23 @@ export default async function PapersPage({ searchParams }: Props) {
         title="Zotero 文献台"
         description="文献库继续交给 Zotero 管理，这里同步元数据、阅读状态、标签和笔记，减少重复录入。"
         actions={
-          <form action={syncZoteroPapers}>
-            <SubmitButton variant="outline">
-              <RefreshCw className="size-4" />
-              同步 Zotero
-            </SubmitButton>
-          </form>
+          <>
+            <CreateDialog
+              title="手动补录文献"
+              description="优先使用 Zotero 同步；只有临时材料或未入库文献再手动补录。"
+              label="补录文献"
+              icon={Plus}
+              wide
+            >
+              <PaperForm action={createPaper} />
+            </CreateDialog>
+            <form action={syncZoteroPapers}>
+              <SubmitButton variant="outline">
+                <RefreshCw className="size-4" />
+                同步 Zotero
+              </SubmitButton>
+            </form>
+          </>
         }
       />
 
@@ -119,15 +131,6 @@ export default async function PapersPage({ searchParams }: Props) {
             筛选
           </Button>
         </form>
-
-        <details className="rounded-lg border bg-white/95 p-3">
-          <summary className="cursor-pointer text-sm font-medium">
-            手动补录文献
-          </summary>
-          <div className="mt-4 max-w-3xl">
-            <PaperForm action={createPaper} />
-          </div>
-        </details>
 
         {papers.length ? (
           papers.map((paper) => <PaperCard key={paper.id} paper={paper} />)
@@ -208,12 +211,9 @@ function PaperCard({ paper }: { paper: Paper }) {
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <details className="rounded-md border px-2 py-1 text-sm">
-            <summary className="cursor-pointer">编辑笔记</summary>
-            <div className="mt-3 w-full min-w-[min(720px,80vw)]">
-              <PaperForm action={updatePaper} paper={paper} />
-            </div>
-          </details>
+          <CreateDialog title="编辑文献" label="编辑" icon={Edit3} wide>
+            <PaperForm action={updatePaper} paper={paper} />
+          </CreateDialog>
           <form action={deletePaper}>
             <input type="hidden" name="id" value={paper.id} />
             <Button type="submit" variant="destructive">

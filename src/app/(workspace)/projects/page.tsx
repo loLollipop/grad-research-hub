@@ -15,6 +15,7 @@ import {
 import { prisma } from "@/lib/db";
 import { formatDate, parseTags } from "@/lib/format";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -135,13 +136,9 @@ function QuickCreate({
   children: React.ReactNode;
 }) {
   return (
-    <details className="rounded-lg border bg-white/95 px-3 py-2">
-      <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-        <Icon className="size-4" />
-        {label}
-      </summary>
-      <div className="mt-4 w-[min(520px,82vw)]">{children}</div>
-    </details>
+    <CreateDialog title={label} label={label} icon={Icon}>
+      {children}
+    </CreateDialog>
   );
 }
 

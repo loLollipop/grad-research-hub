@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/db";
 import { formatDateTime, parseTags } from "@/lib/format";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -42,19 +43,19 @@ export default async function ExperimentsPage() {
         title="实验记录"
         description="一次实验一条记录，重点保留目的、方法、结果和下一步，不把实验日志变成工具参数仓库。"
         actions={
-          <details className="rounded-lg border bg-white/95 px-3 py-2">
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-              <Plus className="size-4" />
-              新建实验
-            </summary>
-            <div className="mt-4 w-[min(760px,82vw)]">
-              <ExperimentForm
-                action={createExperiment}
-                projects={projects}
-                papers={papers}
-              />
-            </div>
-          </details>
+          <CreateDialog
+            title="新建实验"
+            description="只写目的、方法、观察和下一步；工具参数以后再关联。"
+            label="新建实验"
+            icon={Plus}
+            wide
+          >
+            <ExperimentForm
+              action={createExperiment}
+              projects={projects}
+              papers={papers}
+            />
+          </CreateDialog>
         }
       />
 

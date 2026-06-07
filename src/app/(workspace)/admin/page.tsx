@@ -1,4 +1,4 @@
-import { ClipboardList, MapPin, Trash2 } from "lucide-react";
+import { ClipboardList, MapPin, Plus, Trash2 } from "lucide-react";
 import type { AdminItem, Prisma } from "@prisma/client";
 
 import {
@@ -10,6 +10,7 @@ import {
 import { prisma } from "@/lib/db";
 import { formatDate, formatDateTime, parseTags, statusLabel } from "@/lib/format";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -19,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -72,20 +72,21 @@ export default async function AdminPage({ searchParams }: Props) {
         eyebrow="事务"
         title="轻行政事务"
         description="组会、材料、报销、截止日期这些碎片事项和科研任务一起管理，减少遗漏。"
+        actions={
+          <CreateDialog
+            title="新增事务"
+            description="适合记录组会安排、学院材料、报销进度和硬截止。"
+            label="新增事务"
+            icon={Plus}
+            wide
+          >
+            <AdminItemForm action={createAdminItem} />
+          </CreateDialog>
+        }
       />
 
-      <section className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
+      <section className="grid gap-4 lg:grid-cols-[0.42fr_1.58fr]">
         <div className="grid gap-4">
-          <Card className="rounded-lg bg-white/95">
-            <CardHeader>
-              <CardTitle>新增事务</CardTitle>
-              <CardDescription>适合记录组会安排、学院材料、报销进度和硬截止。</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AdminItemForm action={createAdminItem} />
-            </CardContent>
-          </Card>
-
           <Card className="rounded-lg bg-white/95">
             <CardHeader>
               <CardTitle>事务分布</CardTitle>

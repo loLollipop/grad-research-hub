@@ -1,4 +1,4 @@
-import { NotebookTabs, Trash2 } from "lucide-react";
+import { NotebookTabs, Plus, Trash2 } from "lucide-react";
 import type { Note } from "@prisma/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -7,6 +7,7 @@ import { createNote, deleteNote, updateNote } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { extractWikiLinks, formatDateTime, parseTags } from "@/lib/format";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { SubmitButton } from "@/components/shared/submit-button";
@@ -60,19 +61,21 @@ export default async function NotesPage({ searchParams }: Props) {
         eyebrow="笔记"
         title="笔记知识库"
         description="记录想法、会议、阅读摘录和临时材料；部署配置和接口密钥统一放在设置中心。"
+        actions={
+          <CreateDialog
+            title="新建笔记"
+            description="先把想法放进来，后面再整理分类和双链。"
+            label="新建笔记"
+            icon={Plus}
+            wide
+          >
+            <NoteForm action={createNote} />
+          </CreateDialog>
+        }
       />
 
-      <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+      <section className="grid gap-4 lg:grid-cols-[0.45fr_1.55fr]">
         <div className="grid gap-4">
-          <Card className="rounded-lg bg-white/95">
-            <CardHeader>
-              <CardTitle>新建笔记</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <NoteForm action={createNote} />
-            </CardContent>
-          </Card>
-
           <Card className="rounded-lg bg-white/95">
             <CardHeader>
               <CardTitle>分类</CardTitle>
