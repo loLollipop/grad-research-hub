@@ -387,7 +387,7 @@ export default async function DashboardPage() {
                 <input type="hidden" name="scope" value="week" />
                 <SubmitButton variant="outline">
                   <FileText className="size-4" />
-                  生成组会草稿
+                  生成周报草稿
                 </SubmitButton>
               </form>
             </div>
@@ -481,12 +481,12 @@ export default async function DashboardPage() {
       <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/72 p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)] lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
           <p className="text-sm font-semibold hero-title">
-            {currentMeetingBrief ? "本周组会草稿已经准备好" : "开组会前先生成一版草稿"}
+            {currentMeetingBrief ? "本周组会/周报草稿已经准备好" : "组会前先生成一版周报草稿"}
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {currentMeetingBrief
               ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
-              : "自动汇总本周高优先级任务、临近事务、最近实验、结果证据和待读文献，生成后继续在笔记页修改。"}
+              : "自动汇总本周高优先级任务、临近事务、最近实验、结果证据和待读文献，生成后在笔记页改成能直接汇报的版本。"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -500,7 +500,7 @@ export default async function DashboardPage() {
               <input type="hidden" name="scope" value="week" />
               <SubmitButton variant="default" className="w-fit">
                 <FileText className="size-4" />
-                生成组会准备
+                生成周报草稿
               </SubmitButton>
             </form>
           )}

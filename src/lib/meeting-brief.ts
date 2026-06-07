@@ -25,7 +25,7 @@ export function getMeetingBriefPeriod(
     marker: `<!-- meeting-brief:${scope}:${startKey} -->`,
     shortLabel,
     start,
-    title: scope === "today" ? `组会准备 ${startKey}` : `组会准备 ${startKey} 至 ${endKey}`,
+    title: scope === "today" ? `组会/周报准备 ${startKey}` : `组会/周报准备 ${startKey} 至 ${endKey}`,
   };
 }
 

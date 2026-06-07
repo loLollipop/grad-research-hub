@@ -1438,7 +1438,7 @@ export async function createMeetingBriefNote(formData: FormData) {
         results,
         papers,
       }),
-      tags: tagsToString(["组会", "周报", "自动整理"]),
+      tags: tagsToString(["组会", "周报", "导师沟通", "自动整理"]),
     },
   });
 
@@ -1992,15 +1992,21 @@ function meetingBriefMarkdown({
     `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
     `覆盖范围：${period.shortLabel}`,
     "",
-    "> 自动整理自研途 Hub。先改“本周最需要讲清楚”的三行，再补细节。",
+    "> 自动整理自研途 Hub。先把前两段改成能直接发给导师/组会汇报的版本，再按需要删减下面的证据材料。",
     "",
-    "## 本周最需要讲清楚",
+    "## 一句话进展",
     "",
-    "- [ ] 核心进展：",
-    "- [ ] 最大阻塞：",
-    "- [ ] 下周计划：",
+    "- 本周推进：",
+    "- 当前结论：",
+    "- 下周最小计划：",
     "",
-    "## 下一步任务",
+    "## 需要导师确认",
+    "",
+    "- [ ] 方向判断：",
+    "- [ ] 实验/数据是否需要补：",
+    "- [ ] 文献或写作重点：",
+    "",
+    "## 下周最小计划",
     "",
   ];
 
@@ -2020,22 +2026,7 @@ function meetingBriefMarkdown({
     lines.push("- 暂无本周高优先级或临近截止任务。");
   }
 
-  lines.push("", "## 实验进展", "");
-
-  if (experiments.length) {
-    experiments.forEach((experiment) => {
-      lines.push(
-        `- ${experiment.title}`,
-        `  - 项目：${experiment.project?.title ?? "未关联项目"}；状态：${experimentStatusText(experiment.status)}；结果数：${experiment.results.length}`,
-        `  - 最近更新：${dateText(experiment.updatedAt)}`,
-        `  - 摘要：${experimentSnippet(experiment.content)}`,
-      );
-    });
-  } else {
-    lines.push("- 暂无实验记录。");
-  }
-
-  lines.push("", "## 结果证据", "");
+  lines.push("", "## 可展示证据", "");
 
   if (results.length) {
     results.forEach((result) => {
@@ -2051,17 +2042,31 @@ function meetingBriefMarkdown({
       lines.push(
         `- ${result.title}`,
         `  - 项目：${result.experiment?.project?.title ?? "未关联项目"}；实验：${result.experiment?.title ?? "未关联实验"}`,
-        `  - 数据集：${result.dataset?.name ?? "未关联数据集"}`,
         `  - 指标：${metricText}`,
         `  - 复现：${reproducibilityText(String(config.reproducibility ?? "unknown"))}；可写入论文/组会：${manuscriptReady}`,
-        `  - 结论：${result.notes?.trim() || "待补充"}`,
+        `  - 一句话结论：${result.notes?.trim() || "待补充"}`,
       );
     });
   } else {
-    lines.push("- 暂无结果证据。");
+    lines.push("- 暂无可展示结果证据。");
   }
 
-  lines.push("", "## 文献阅读", "");
+  lines.push("", "## 实验/数据更新", "");
+
+  if (experiments.length) {
+    experiments.forEach((experiment) => {
+      lines.push(
+        `- ${experiment.title}`,
+        `  - 项目：${experiment.project?.title ?? "未关联项目"}；状态：${experimentStatusText(experiment.status)}；结果数：${experiment.results.length}`,
+        `  - 最近更新：${dateText(experiment.updatedAt)}`,
+        `  - 摘要：${experimentSnippet(experiment.content)}`,
+      );
+    });
+  } else {
+    lines.push("- 暂无实验记录。");
+  }
+
+  lines.push("", "## 文献输入", "");
 
   if (papers.length) {
     papers.forEach((paper) => {
@@ -2075,7 +2080,7 @@ function meetingBriefMarkdown({
     lines.push("- 暂无待读或读中文献。");
   }
 
-  lines.push("", "## 事务提醒", "");
+  lines.push("", "## 阻塞与事务提醒", "");
 
   if (adminItems.length) {
     adminItems.forEach((item) => {
@@ -2098,6 +2103,7 @@ function meetingBriefMarkdown({
     "- [ ] 把需要补实验的结果转成待补任务",
     "- [ ] 把新的阅读建议同步到 Zotero 或文献台",
     "- [ ] 把本次会议结论写回相关实验/结果/笔记",
+    "- [ ] 如果要发周报，删掉内部备注，只保留进展、问题和下周计划",
   );
 
   return lines.join("\n");

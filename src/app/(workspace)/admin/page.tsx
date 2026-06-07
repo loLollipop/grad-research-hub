@@ -154,18 +154,18 @@ export default async function AdminPage({ searchParams }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <span className="research-eyebrow">
                 <ClipboardList className="size-3.5" />
-                轻事务时间线
+                组会/周报减负台
               </span>
               <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
-                组会 · 材料 · 报销 · 截止
+                导师沟通 · 材料 · 报销 · 截止
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              事务页只做一件事：别让小事打断科研节奏。
+              先准备导师要看的内容，再处理那些会打断科研的小事。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              只登记真正会偷走注意力的事：组会地点、材料截止、报销进度和学院通知。
-              这里优先告诉你今天要处理什么，处理完就回到科研主线。
+              把组会、周报、材料截止和报销进度收在一起。这里优先告诉你今天要收口什么，
+              周报草稿会自动带上任务、实验、结果和待读文献。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
@@ -180,14 +180,14 @@ export default async function AdminPage({ searchParams }: Props) {
               {currentMeetingBrief ? (
                 <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentMeetingBrief.id}`}>
                   <FileText className="size-4" />
-                  继续组会草稿
+                  继续周报草稿
                 </Link>
               ) : (
                 <form action={createMeetingBriefNote}>
                   <input type="hidden" name="scope" value="week" />
                   <SubmitButton variant="outline">
                     <FileText className="size-4" />
-                    生成组会草稿
+                    生成周报草稿
                   </SubmitButton>
                 </form>
               )}
@@ -326,12 +326,12 @@ export default async function AdminPage({ searchParams }: Props) {
           <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#173042]">
-                {currentMeetingBrief ? "本周组会草稿已经准备好" : "组会前快速整理"}
+                {currentMeetingBrief ? "本周组会/周报草稿已经准备好" : "组会/导师周报准备"}
               </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 {currentMeetingBrief
                   ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
-                  : "自动把近期任务、事务、实验、结果和待读文献汇成一篇组会笔记，生成后直接编辑。"}
+                  : "自动把近期任务、事务、实验、结果和待读文献汇成一篇可编辑草稿，先写结论，再删减细节。"}
               </p>
             </div>
             {currentMeetingBrief ? (
@@ -344,7 +344,7 @@ export default async function AdminPage({ searchParams }: Props) {
                 <input type="hidden" name="scope" value="week" />
                 <SubmitButton variant="default" className="w-fit">
                   <FileText className="size-4" />
-                  生成准备笔记
+                  生成周报笔记
                 </SubmitButton>
               </form>
             )}
