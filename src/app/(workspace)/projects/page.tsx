@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  Beaker,
   CalendarClock,
   Edit3,
   Flag,
@@ -19,6 +20,7 @@ import type { Milestone, Prisma, Project, Task } from "@prisma/client";
 import {
   createMilestone,
   createProject,
+  createExperimentFromTask,
   createTask,
   deleteMilestone,
   deleteProject,
@@ -53,6 +55,7 @@ type Props = {
     project?: string;
     status?: string;
     priority?: string;
+    scope?: string;
   }>;
 };
 
@@ -86,7 +89,13 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const projectId = valueOf(params.project);
   const status = valueOf(params.status);
   const priority = valueOf(params.priority);
-  const activeFilterCount = [q, projectId, status, priority].filter(Boolean).length;
+  const rawScope = valueOf(params.scope);
+  const scope = rawScope && ["today", "week"].includes(rawScope) ? rawScope : undefined;
+  const activeFilterCount = [q, projectId, status, priority, scope].filter(Boolean).length;
+  const currentFilters = { q, project: projectId, status, priority, scope };
+  const todayStart = startOfDay(new Date());
+  const tomorrowStart = addDays(todayStart, 1);
+  const weekEnd = addDays(todayStart, 8);
   const taskFilters: Prisma.TaskWhereInput[] = [];
   if (q) {
     taskFilters.push({
@@ -107,6 +116,15 @@ export default async function ProjectsPage({ searchParams }: Props) {
   }
   if (priority && ["high", "medium", "low"].includes(priority)) {
     taskFilters.push({ priority });
+  }
+  if (scope === "today") {
+    taskFilters.push({ dueDate: { lt: tomorrowStart } });
+  }
+  if (scope === "week") {
+    taskFilters.push({ dueDate: { lt: weekEnd } });
+  }
+  if (scope && !status) {
+    taskFilters.push({ status: { not: "done" } });
   }
   const taskWhere: Prisma.TaskWhereInput = taskFilters.length ? { AND: taskFilters } : {};
 
@@ -261,11 +279,41 @@ export default async function ProjectsPage({ searchParams }: Props) {
         </aside>
 
         <div className="grid gap-4">
+          <div className="flex flex-col gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(238,247,247,0.76))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-[#173042]">开工视图</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                今天会带上逾期任务，本周会带上 7 天内要收口的事情。
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={projectsHref(currentFilters, { scope: undefined })}
+                className={scopePillClass(!scope)}
+              >
+                全部
+              </Link>
+              <Link
+                href={projectsHref(currentFilters, { scope: "today" })}
+                className={scopePillClass(scope === "today")}
+              >
+                今天
+              </Link>
+              <Link
+                href={projectsHref(currentFilters, { scope: "week" })}
+                className={scopePillClass(scope === "week")}
+              >
+                本周
+              </Link>
+            </div>
+          </div>
+
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_170px_130px_130px_auto]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input name="q" placeholder="搜索任务、里程碑、项目" defaultValue={q} className="pl-8" />
             </div>
+            {scope ? <input type="hidden" name="scope" value={scope} /> : null}
             <select
               name="project"
               defaultValue={projectId ?? ""}
@@ -319,6 +367,11 @@ export default async function ProjectsPage({ searchParams }: Props) {
               {priority ? (
                 <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
                   {priorityLabel(priority)}
+                </span>
+              ) : null}
+              {scope ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {scopeLabel(scope)}
                 </span>
               ) : null}
             </div>
@@ -443,6 +496,7 @@ function NextTaskRow({
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <TaskMoveForm task={task} compact />
+        <CreateExperimentFromTaskButton task={task} compact />
         <CreateDialog title="编辑任务" label="编辑" icon={Edit3} wide>
           <TaskForm action={updateTask} milestones={milestones} task={task} />
         </CreateDialog>
@@ -476,6 +530,7 @@ function TaskCard({
       ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <TaskMoveForm task={task} />
+        {task.status !== "done" ? <CreateExperimentFromTaskButton task={task} /> : null}
         <CreateDialog title="编辑任务" label="编辑" icon={Edit3} wide>
           <TaskForm action={updateTask} milestones={milestones} task={task} />
         </CreateDialog>
@@ -488,6 +543,24 @@ function TaskCard({
         </form>
       </div>
     </div>
+  );
+}
+
+function CreateExperimentFromTaskButton({
+  task,
+  compact = false,
+}: {
+  task: Task;
+  compact?: boolean;
+}) {
+  return (
+    <form action={createExperimentFromTask}>
+      <input type="hidden" name="id" value={task.id} />
+      <Button type="submit" variant="outline" size="sm">
+        <Beaker className="size-3.5" />
+        {compact ? "转实验" : "转成实验"}
+      </Button>
+    </form>
   );
 }
 
@@ -530,6 +603,51 @@ function priorityLabel(value: string) {
   };
 
   return labels[value] ?? value;
+}
+
+function scopeLabel(value: string) {
+  const labels: Record<string, string> = {
+    today: "今天/逾期",
+    week: "本周/逾期",
+  };
+
+  return labels[value] ?? value;
+}
+
+function scopePillClass(active: boolean) {
+  return [
+    "inline-flex h-8 items-center rounded-full border px-3 text-sm font-medium transition",
+    active
+      ? "border-[#315266] bg-[#173042] text-white shadow-[0_10px_20px_rgba(23,48,66,0.14)]"
+      : "border-border/76 bg-white/78 text-muted-foreground hover:border-primary/30 hover:text-foreground",
+  ].join(" ");
+}
+
+function projectsHref(
+  current: {
+    q?: string;
+    project?: string;
+    status?: string;
+    priority?: string;
+    scope?: string;
+  },
+  patch: Partial<{
+    q: string;
+    project: string;
+    status: string;
+    priority: string;
+    scope: string;
+  }>,
+) {
+  const params = new URLSearchParams();
+  const next = { ...current, ...patch };
+
+  Object.entries(next).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+
+  const query = params.toString();
+  return query ? `/projects?${query}` : "/projects";
 }
 
 function MilestoneRow({
@@ -896,6 +1014,18 @@ function taskRank(task: Task) {
   const priority = { high: 0, medium: 1, low: 2 }[task.priority] ?? 1;
   const status = { doing: 0, todo: 1, done: 9 }[task.status] ?? 1;
   return status * 10000 + (due ?? 999) * 10 + priority;
+}
+
+function startOfDay(value: Date) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function addDays(value: Date, days: number) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date;
 }
 
 function dueText(value: Date | null) {

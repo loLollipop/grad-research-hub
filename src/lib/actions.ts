@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { Milestone, Project, Task } from "@prisma/client";
 
 import { checkAiConnection } from "@/lib/ai";
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
@@ -380,6 +381,75 @@ export async function setTaskStatus(formData: FormData) {
   await prisma.task.update({ where: { id }, data: { status } });
   revalidatePath("/");
   revalidatePath("/projects");
+}
+
+export async function createExperimentFromTask(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const task = await prisma.task.findUnique({
+    where: { id },
+    include: { milestone: { include: { project: true } } },
+  });
+
+  if (!task) return;
+
+  const projectId = task.milestone?.projectId ?? null;
+  await prisma.$transaction([
+    prisma.experiment.create({
+      data: {
+        title: `实验：${task.title}`,
+        projectId,
+        status: "running",
+        template: "purpose-method-result",
+        content: taskExperimentContent(task),
+        tags: tagsToString(["任务转实验", "项目推进"]),
+      },
+    }),
+    ...(task.status === "done"
+      ? []
+      : [
+          prisma.task.update({
+            where: { id: task.id },
+            data: { status: "doing" },
+          }),
+        ]),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath("/projects");
+  revalidatePath("/experiments");
+
+  const target = projectId
+    ? `/experiments?project=${projectId}&status=running`
+    : "/experiments?status=running";
+  redirect(target);
+}
+
+function taskExperimentContent(
+  task: Task & { milestone: (Milestone & { project: Project }) | null },
+) {
+  const context = task.description?.trim() || "- 待补充实验方法、数据或对照条件。";
+  const source = task.milestone
+    ? `${task.milestone.project.title} / ${task.milestone.title}`
+    : "独立任务";
+
+  return [
+    "## 目的",
+    `从项目任务推进：${task.title}`,
+    "",
+    "## 方法 / 参数",
+    context,
+    "",
+    "## 观察",
+    "",
+    "## 结论 / 下一步",
+    "",
+    "---",
+    `来源任务：${task.title}`,
+    `归属：${source}`,
+    `任务截止：${task.dueDate ? task.dueDate.toISOString().slice(0, 10) : "未设置"}`,
+  ].join("\n");
 }
 
 export async function createExperiment(formData: FormData) {
