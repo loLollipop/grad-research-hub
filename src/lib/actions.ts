@@ -440,6 +440,51 @@ export async function setExperimentStatus(formData: FormData) {
   revalidatePath("/experiments");
 }
 
+export async function createExperimentReviewTask(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const experiment = await prisma.experiment.findUnique({
+    where: { id },
+    include: {
+      project: {
+        include: {
+          milestones: {
+            orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+            take: 1,
+          },
+        },
+      },
+    },
+  });
+
+  if (!experiment) return;
+
+  const milestoneId = experiment.project?.milestones[0]?.id;
+  await prisma.task.create({
+    data: {
+      title: `复盘失败实验：${experiment.title}`,
+      description: [
+        "从失败实验中提取下一步：",
+        "",
+        "- 失败现象：",
+        "- 可能原因：",
+        "- 需要补做的对照：",
+        "- 下一次实验修改：",
+      ].join("\n"),
+      priority: "high",
+      status: "todo",
+      tags: tagsToString(["实验复盘", "失败案例"]),
+      milestoneId,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/projects");
+  revalidatePath("/experiments");
+  redirect("/projects");
+}
+
 export async function createNote(formData: FormData) {
   const parsed = noteSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);

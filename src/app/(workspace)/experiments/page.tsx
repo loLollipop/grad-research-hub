@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ClipboardList,
   Beaker,
   Bug,
   CheckCircle2,
@@ -17,22 +18,22 @@ import remarkGfm from "remark-gfm";
 
 import {
   createExperiment,
+  createExperimentReviewTask,
   deleteExperiment,
   setExperimentStatus,
   updateExperiment,
 } from "@/lib/actions";
 import { prisma } from "@/lib/db";
-import { formatDateTime, parseTags } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
+import { ExperimentForm } from "@/components/experiments/experiment-form";
+import { EXPERIMENT_TEMPLATES, experimentTemplateLabel } from "@/lib/experiment-templates";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CreateDialog } from "@/components/shared/create-dialog";
-import { Field } from "@/components/shared/field";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { TagList } from "@/components/shared/tag-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 export const dynamic = "force-dynamic";
 
@@ -125,10 +126,9 @@ export default async function ExperimentsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
-              <TemplateHint title="目的 / 方法 / 结果" detail="最通用，适合日常实验记录" />
-              <TemplateHint title="消融实验" detail="比较变量，记录控制条件" />
-              <TemplateHint title="复现实验" detail="验证论文或旧结果是否可靠" />
-              <TemplateHint title="问题排查" detail="记录失败路径和排错结论" />
+              {EXPERIMENT_TEMPLATES.map((template) => (
+                <TemplateHint key={template.value} title={template.label} detail={template.detail} />
+              ))}
             </CardContent>
           </Card>
 
@@ -266,6 +266,26 @@ function ExperimentCard({
           </form>
         </div>
 
+        {experiment.status === "failed" ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-950">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-medium">这条失败实验值得复盘</p>
+                <p className="mt-1 text-xs leading-5 text-amber-900/80">
+                  生成一个高优先级复盘任务，去项目页继续拆解原因、对照和下一次实验修改。
+                </p>
+              </div>
+              <form action={createExperimentReviewTask}>
+                <input type="hidden" name="id" value={experiment.id} />
+                <SubmitButton variant="outline" className="bg-white/82">
+                  <ClipboardList className="size-4" />
+                  生成复盘任务
+                </SubmitButton>
+              </form>
+            </div>
+          </div>
+        ) : null}
+
         <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-4 text-sm leading-6">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {experiment.content || "暂无实验内容。建议至少写下：目的、方法、观察、结论和下一步。"}
@@ -336,120 +356,4 @@ function InfoBlock({
   );
 }
 
-function templateLabel(template: string) {
-  const labels: Record<string, string> = {
-    standard: "标准记录",
-    "purpose-method-result": "目的 / 方法 / 结果",
-    ablation: "消融实验",
-    reproduction: "复现实验",
-    debug: "问题排查",
-  };
-
-  return labels[template] ?? template;
-}
-
-function defaultContent(template: string | undefined) {
-  switch (template) {
-    case "ablation":
-      return "## 目的\n\n## 控制变量\n\n## 对比设置\n\n## 观察\n\n## 结论 / 下一步\n";
-    case "reproduction":
-      return "## 复现目标\n\n## 环境 / 数据\n\n## 复现步骤\n\n## 差异记录\n\n## 结论 / 下一步\n";
-    case "debug":
-      return "## 问题现象\n\n## 排查假设\n\n## 已尝试方法\n\n## 当前结论\n\n## 下一步\n";
-    default:
-      return "## 目的\n\n## 方法 / 参数\n\n## 观察\n\n## 结论 / 下一步\n";
-  }
-}
-
-function ExperimentForm({
-  action,
-  projects,
-  papers,
-  experiment,
-}: {
-  action: (formData: FormData) => Promise<void>;
-  projects: Project[];
-  papers: Paper[];
-  experiment?: Experiment & { papers?: Paper[] };
-}) {
-  const template = experiment?.template ?? "purpose-method-result";
-
-  return (
-    <form action={action} className="grid gap-3">
-      {experiment ? <input type="hidden" name="id" value={experiment.id} /> : null}
-      <Field label="实验标题">
-        <Input name="title" required defaultValue={experiment?.title ?? ""} />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-3">
-        <Field label="项目">
-          <select
-            name="projectId"
-            defaultValue={experiment?.projectId ?? ""}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
-          >
-            <option value="">不关联项目</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.title}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="状态">
-          <select
-            name="status"
-            defaultValue={experiment?.status ?? "running"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
-          >
-            <option value="running">进行中</option>
-            <option value="completed">完成</option>
-            <option value="failed">失败</option>
-            <option value="abandoned">放弃</option>
-          </select>
-        </Field>
-        <Field label="模板">
-          <select
-            name="template"
-            defaultValue={template}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
-          >
-            <option value="purpose-method-result">目的 / 方法 / 结果</option>
-            <option value="ablation">消融实验</option>
-            <option value="reproduction">复现实验</option>
-            <option value="debug">问题排查</option>
-          </select>
-        </Field>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        <Field label="关联论文">
-          <select
-            name="paperId"
-            defaultValue={experiment?.papers?.[0]?.id ?? ""}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
-          >
-            <option value="">不关联论文</option>
-            {papers.map((paper) => (
-              <option key={paper.id} value={paper.id}>
-                {paper.title}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="标签">
-          <Input name="tags" defaultValue={parseTags(experiment?.tags).join(", ")} />
-        </Field>
-      </div>
-      <Field label="实验内容">
-        <Textarea
-          name="content"
-          rows={14}
-          defaultValue={experiment?.content ?? defaultContent(template)}
-        />
-      </Field>
-      <p className="text-xs text-muted-foreground">
-        记录正文保留 Markdown。模板只负责减少空白恐惧，不会限制你自由写。
-      </p>
-      <SubmitButton>{experiment ? "保存实验" : "创建实验"}</SubmitButton>
-    </form>
-  );
-}
+const templateLabel = experimentTemplateLabel;
