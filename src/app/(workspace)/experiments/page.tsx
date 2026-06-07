@@ -10,9 +10,11 @@ import {
   Link2,
   Microscope,
   Plus,
+  Search,
   Trash2,
+  X,
 } from "lucide-react";
-import type { Experiment, Paper, Project } from "@prisma/client";
+import type { Experiment, Paper, Prisma, Project } from "@prisma/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -34,8 +36,18 @@ import { SubmitButton } from "@/components/shared/submit-button";
 import { TagList } from "@/components/shared/tag-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
+
+type Props = {
+  searchParams: Promise<{
+    q?: string;
+    project?: string;
+    status?: string;
+    template?: string;
+  }>;
+};
 
 type ExperimentFull = Experiment & {
   project: Project | null;
@@ -43,9 +55,41 @@ type ExperimentFull = Experiment & {
   results: { id: string; title: string; updatedAt: Date }[];
 };
 
-export default async function ExperimentsPage() {
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ExperimentsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const q = valueOf(params.q)?.trim();
+  const projectId = valueOf(params.project);
+  const status = valueOf(params.status);
+  const template = valueOf(params.template);
+  const activeFilterCount = [q, projectId, status, template].filter(Boolean).length;
+
+  const where: Prisma.ExperimentWhereInput = {};
+  if (q) {
+    where.OR = [
+      { title: { contains: q, mode: "insensitive" } },
+      { content: { contains: q, mode: "insensitive" } },
+      { tags: { contains: q, mode: "insensitive" } },
+      { project: { title: { contains: q, mode: "insensitive" } } },
+      { papers: { some: { title: { contains: q, mode: "insensitive" } } } },
+    ];
+  }
+  if (projectId) {
+    where.projectId = projectId;
+  }
+  if (status && ["running", "completed", "failed", "abandoned"].includes(status)) {
+    where.status = status;
+  }
+  if (template && EXPERIMENT_TEMPLATES.some((item) => item.value === template)) {
+    where.template = template;
+  }
+
   const [experiments, projects, papers] = await Promise.all([
     prisma.experiment.findMany({
+      where,
       orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
       include: {
         project: true,
@@ -64,6 +108,7 @@ export default async function ExperimentsPage() {
   const completed = experiments.filter((experiment) => experiment.status === "completed").length;
   const failed = experiments.filter((experiment) => experiment.status === "failed").length;
   const linkedResults = experiments.reduce((sum, experiment) => sum + experiment.results.length, 0);
+  const selectedProjectTitle = projects.find((project) => project.id === projectId)?.title;
 
   return (
     <div className="grid gap-5">
@@ -145,6 +190,85 @@ export default async function ExperimentsPage() {
         </aside>
 
         <div className="grid gap-3">
+          <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_170px_130px_170px_auto]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input name="q" placeholder="搜索标题、正文、项目、论文" defaultValue={q} className="pl-8" />
+            </div>
+            <select
+              name="project"
+              defaultValue={projectId ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部项目</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+            <select
+              name="status"
+              defaultValue={status ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部状态</option>
+              <option value="running">进行中</option>
+              <option value="completed">完成</option>
+              <option value="failed">失败</option>
+              <option value="abandoned">放弃</option>
+            </select>
+            <select
+              name="template"
+              defaultValue={template ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部模板</option>
+              {EXPERIMENT_TEMPLATES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <Button type="submit" variant="outline">
+              筛选
+            </Button>
+          </form>
+
+          <div className="flex flex-col gap-2 rounded-2xl border border-border/72 bg-white/78 p-3 text-sm shadow-[0_10px_24px_rgba(34,48,71,0.04)] md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">当前列表 {experiments.length} 条</span>
+              {selectedProjectTitle ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {selectedProjectTitle}
+                </span>
+              ) : null}
+              {status ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {statusLabel(status)}
+                </span>
+              ) : null}
+              {template ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {templateLabel(template)}
+                </span>
+              ) : null}
+            </div>
+            {activeFilterCount ? (
+              <Link
+                href="/experiments"
+                className="inline-flex w-fit items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+              >
+                <X className="size-3" />
+                清除 {activeFilterCount} 个筛选
+              </Link>
+            ) : (
+              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                未筛选
+              </span>
+            )}
+          </div>
+
           {experiments.length ? (
             experiments.map((experiment) => (
               <ExperimentCard
@@ -157,8 +281,12 @@ export default async function ExperimentsPage() {
           ) : (
             <EmptyState
               icon={FlaskConical}
-              title="暂无实验记录"
-              description="先建立第一条实验记录，把目的、方法、观察和结论写下来。"
+              title={activeFilterCount ? "没有匹配的实验记录" : "暂无实验记录"}
+              description={
+                activeFilterCount
+                  ? "试着清除筛选，或换一个项目、状态、模板再看。"
+                  : "先建立第一条实验记录，把目的、方法、观察和结论写下来。"
+              }
             />
           )}
         </div>
@@ -217,6 +345,17 @@ function ProgressLine({ label, value, total }: { label: string; value: number; t
       </div>
     </div>
   );
+}
+
+function statusLabel(value: string) {
+  const labels: Record<string, string> = {
+    running: "进行中",
+    completed: "完成",
+    failed: "失败",
+    abandoned: "放弃",
+  };
+
+  return labels[value] ?? value;
 }
 
 function ExperimentCard({
