@@ -65,10 +65,10 @@ export function NavLink({
         href={href}
         prefetch={true}
         className={cn(
-          "relative rounded-lg border px-2.5 py-1.5 text-xs transition",
+          "relative shrink-0 rounded-full border px-3 py-1.5 text-xs transition",
           active
-            ? "border-primary/30 bg-primary text-primary-foreground shadow-sm"
-            : "bg-white/80 text-muted-foreground hover:border-primary/20 hover:text-primary",
+            ? "border-primary/25 bg-primary text-primary-foreground shadow-sm"
+            : "border-border/70 bg-white/70 text-muted-foreground hover:border-primary/20 hover:text-primary",
         )}
       >
         {label}

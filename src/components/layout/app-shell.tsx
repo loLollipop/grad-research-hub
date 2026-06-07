@@ -76,21 +76,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="md:pl-[17rem]">
         <header className="sticky top-0 z-30 border-b border-border/75 bg-white/72 backdrop-blur-xl">
-          <div className="flex min-h-16 flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-7">
-            <div className="flex items-center gap-2 md:hidden">
-              <GraduationCap className="size-5 text-primary" />
-              <span className="text-sm font-semibold">研途 Hub</span>
+          <div className="flex flex-col gap-2 px-3 py-2 md:min-h-16 md:px-4 md:py-3 lg:flex-row lg:items-center lg:justify-between lg:px-7">
+            <div className="flex items-center justify-between gap-3 md:hidden">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="size-4 text-primary" />
+                <span className="text-sm font-semibold">研途 Hub</span>
+              </div>
+              <div className="rounded-full border bg-white/82 px-2 py-1 text-[11px] text-muted-foreground">
+                自托管
+              </div>
             </div>
-            <form action={quickCapture} className="flex w-full max-w-3xl items-center gap-2">
+            <form action={quickCapture} className="flex w-full max-w-3xl items-center gap-1.5 md:gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
-                  placeholder="快速捕捉：导师提醒、实验观察、论文想法、待办..."
-                  className="h-10 rounded-xl border-border/75 bg-white/95 pl-8 shadow-[0_1px_1px_rgba(15,23,42,0.04)]"
+                  placeholder="快速捕捉..."
+                  className="h-9 rounded-xl border-border/75 bg-white/95 pl-8 text-sm shadow-[0_1px_1px_rgba(15,23,42,0.04)] md:h-10"
                 />
               </div>
-              <Button type="submit" className="h-10 shrink-0 px-4">
+              <Button type="submit" className="h-9 shrink-0 px-3 md:h-10 md:px-4">
                 <Sparkles className="size-4" />
                 捕捉
               </Button>
@@ -99,14 +104,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <CircleDot className="size-3 text-primary" />
               <span>本地数据 · 自托管</span>
             </div>
-            <div className="flex items-center gap-2 overflow-x-auto md:hidden">
+            <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-0.5 md:hidden">
               {navItems.map((item) => (
                 <NavLink key={item.href} href={item.href} label={item.label} compact />
               ))}
             </div>
           </div>
         </header>
-        <main className="workspace-page mx-auto w-full max-w-[92rem] px-4 py-6 lg:px-7">
+        <main className="workspace-page mx-auto w-full max-w-[92rem] px-4 py-4 md:py-6 lg:px-7">
           {children}
         </main>
       </div>
