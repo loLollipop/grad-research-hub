@@ -182,6 +182,16 @@
       linear-gradient(135deg, rgba(235, 240, 251, 0.96) 0%, rgba(249, 246, 235, 0.82) 52%, rgba(232, 244, 240, 0.9) 100%);
   }
 
+  .cockpit-hero {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(246, 249, 250, 0.58)),
+      linear-gradient(120deg, rgba(228, 237, 246, 0.92) 0%, rgba(248, 244, 232, 0.72) 48%, rgba(229, 243, 239, 0.84) 100%);
+  }
+
+  .cockpit-panel {
+    @apply border-white/70 bg-white/58 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_14px_34px_rgba(27,42,56,0.055)] backdrop-blur;
+  }
+
   .research-strip {
     @apply border-border/70 bg-white/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)];
   }

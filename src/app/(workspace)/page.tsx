@@ -340,43 +340,45 @@ export default async function DashboardPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr] xl:items-end">
-          <div className="min-w-0">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/70 p-4 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:p-5">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-stretch">
+          <div className="cockpit-panel min-w-0 rounded-2xl border p-4 md:p-5">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
                 <Sparkles className="size-3.5" />
-                今日作战台
+                今日 cockpit
               </span>
               <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
-                文献 · 实验 · 项目 · 写作
+                {dailyPlanPeriod.shortLabel}
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2.15rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.7rem]">
-              先抓住下一步，再补齐科研证据链。
+            <p className="mt-5 text-xs font-medium text-muted-foreground">今天最值得处理</p>
+            <h1 className="mt-2 max-w-4xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.6rem]">
+              {focusItem?.title ?? "先建立第一条任务或实验记录"}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
-              研途 Hub 负责把 Zotero、实验记录、项目任务和笔记之间的断点收进一个轻量工作台。
-              每天打开后，先知道该推进什么，再决定要不要深挖某个模块。
+              {focusItem
+                ? `${focusItem.kind} · ${focusItem.meta} · ${dueText(focusItem.dueDate)}。先推进这一项，再补实验、文献或结果证据。`
+                : "当前还没有可排序的任务或事务。先用快速捕捉写下一件真实要做的事，首页就会开始帮你收口。"}
             </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link className={buttonVariants({ variant: "default" })} href="/projects">
-                <ClipboardList className="size-4" />
-                查看下一步
-              </Link>
+            <div className="mt-5 flex flex-wrap gap-2.5">
               {currentDailyPlan ? (
-                <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentDailyPlan.id}`}>
+                <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentDailyPlan.id}`}>
                   <FileText className="size-4" />
-                  今日计划
+                  打开今日计划
                 </Link>
               ) : (
                 <form action={createDailyPlanNote}>
-                  <SubmitButton variant="outline">
+                  <SubmitButton variant="default">
                     <FileText className="size-4" />
                     生成今日计划
                   </SubmitButton>
                 </form>
               )}
+              <Link className={buttonVariants({ variant: "outline" })} href="/projects?scope=today">
+                <ClipboardList className="size-4" />
+                看今日任务
+              </Link>
               <Link className={buttonVariants({ variant: "outline" })} href="/experiments">
                 <NotebookPen className="size-4" />
                 记录实验
@@ -389,32 +391,65 @@ export default async function DashboardPage() {
                 </SubmitButton>
               </form>
             </div>
+
+            <div className="mt-5 grid gap-3 rounded-xl border border-white/72 bg-white/58 p-3 sm:grid-cols-[auto_1fr] sm:items-center">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-[#173042] text-white shadow-sm">
+                <TimerReset className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span>任务完成度</span>
+                  <span className="font-medium text-[#173042]">{completion}%</span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/85">
+                  <div
+                    className="h-full rounded-full bg-[#315266]"
+                    style={{ width: `${Math.max(4, completion)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <Card className="border-white/72 bg-white/76 shadow-[0_16px_34px_rgba(27,42,56,0.08)] backdrop-blur">
-            <CardContent className="grid gap-4 py-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">现在最值得处理</p>
-                  <h2 className="mt-1 line-clamp-2 text-xl font-semibold tracking-tight">
-                    {focusItem?.title ?? "先建立第一条任务或实验记录"}
-                  </h2>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {focusItem ? `${focusItem.kind} · ${focusItem.meta}` : "让首页开始帮你排序"}
-                  </p>
-                </div>
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#173042] text-white shadow-sm">
-                  <TimerReset className="size-5" />
-                </span>
+          <div className="cockpit-panel grid content-start gap-3 rounded-2xl border p-3">
+            <div className="flex items-center justify-between gap-3 px-1">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">实时信号</p>
+                <h2 className="mt-1 text-base font-semibold text-[#173042]">开工前看一眼</h2>
               </div>
-              <div className="rounded-xl border border-[#d6e7ea] bg-[#f6fbfb]/80 p-3">
-                <p className="text-xs text-muted-foreground">截止状态</p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight">
-                  {focusItem ? dueText(focusItem.dueDate) : "暂无压力"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              <span className="rounded-full border border-white/70 bg-white/72 px-2.5 py-1 text-[11px] text-muted-foreground">
+                自托管
+              </span>
+            </div>
+            <CockpitRow
+              icon={FileText}
+              label={currentDailyPlan ? "今日计划" : "今日计划"}
+              value={currentDailyPlan ? "已生成" : "待生成"}
+              detail={currentDailyPlan ? `更新 ${formatDateTime(currentDailyPlan.updatedAt)}` : "一键整理今天要做的事"}
+              href={currentDailyPlan ? `/notes?note=${currentDailyPlan.id}` : "/notes?folder=日计划"}
+            />
+            <CockpitRow
+              icon={TimerReset}
+              label="收口提醒"
+              value={closingItems.length ? `${closingItems.length} 项` : "稳定"}
+              detail={closingItems[0]?.title ?? "没有逾期或久未更新项"}
+              href={closingItems[0]?.href ?? "/projects?scope=today"}
+            />
+            <CockpitRow
+              icon={BookOpenText}
+              label="文献队列"
+              value={`${readingPapers + unreadPapers} 篇`}
+              detail={recentPapers[0]?.title ?? "同步 Zotero 后显示"}
+              href="/papers"
+            />
+            <CockpitRow
+              icon={FileChartColumn}
+              label="证据素材"
+              value={`${manuscriptReady} 条`}
+              detail={`${verifiedResults} 条已复现`}
+              href="/data?manuscript=ready"
+            />
+          </div>
         </div>
       </section>
 
@@ -424,38 +459,6 @@ export default async function DashboardPage() {
         experiment={`${runningExperiments} 个进行中`}
         evidence={`${manuscriptReady} 条可写入`}
       />
-
-      <section className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(237,245,244,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#173042]">
-            {currentDailyPlan ? "今天的开工清单已经准备好" : "先生成今天的开工清单"}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {currentDailyPlan
-              ? `覆盖 ${dailyPlanPeriod.shortLabel}，最近更新 ${formatDateTime(currentDailyPlan.updatedAt)}。`
-              : "自动汇总今天该看的任务、事务、进行中实验、待补结果和待读文献，生成后继续在笔记页勾选和调整。"}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 lg:justify-end">
-          {currentDailyPlan ? (
-            <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentDailyPlan.id}`}>
-              <FileText className="size-4" />
-              打开今日计划
-            </Link>
-          ) : (
-            <form action={createDailyPlanNote}>
-              <SubmitButton variant="default" className="w-fit">
-                <FileText className="size-4" />
-                生成今日计划
-              </SubmitButton>
-            </form>
-          )}
-          <Link className={buttonVariants({ variant: "outline" })} href="/projects?scope=today">
-            <TimerReset className="size-4" />
-            看今日任务
-          </Link>
-        </div>
-      </section>
 
       <section className="grid gap-3 rounded-2xl border border-border/70 bg-white/68 p-3 shadow-[0_8px_18px_rgba(27,42,56,0.035)] lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
@@ -923,6 +926,38 @@ function ChecklistRow({ title, detail }: { title: string; detail: string }) {
         <span className="mt-1 block text-sm leading-6 text-muted-foreground">{detail}</span>
       </span>
     </div>
+  );
+}
+
+function CockpitRow({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="grid gap-3 rounded-xl border border-white/72 bg-white/66 p-3 transition hover:border-primary/25 hover:bg-white/88 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+    >
+      <span className="flex size-9 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="mt-1 block line-clamp-1 text-sm font-semibold text-[#173042]">{detail}</span>
+      </span>
+      <span className="w-fit rounded-full border border-white/80 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#315266]">
+        {value}
+      </span>
+    </Link>
   );
 }
 
