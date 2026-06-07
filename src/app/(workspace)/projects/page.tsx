@@ -24,6 +24,7 @@ import {
   createMilestone,
   createProject,
   createExperimentFromTask,
+  createProjectProgressNote,
   createTask,
   deleteMilestone,
   deleteProject,
@@ -66,6 +67,7 @@ type Props = {
     taskSync?: string;
     taskSyncCount?: string;
     taskAttach?: string;
+    taskPlan?: string;
   }>;
 };
 
@@ -107,6 +109,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const taskSync = valueOf(params.taskSync);
   const taskSyncCount = Number(valueOf(params.taskSyncCount) ?? 0);
   const taskAttach = valueOf(params.taskAttach);
+  const taskPlan = valueOf(params.taskPlan);
   const activeFilterCount = [q, projectId, status, priority, scope].filter(Boolean).length;
   const currentFilters = { q, project: projectId, status, priority, scope };
   const currentQuery = new URLSearchParams();
@@ -242,6 +245,16 @@ export default async function ProjectsPage({ searchParams }: Props) {
               >
                 <TaskForm action={createTask} milestones={milestones} />
               </CreateDialog>
+              <form action={createProjectProgressNote}>
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {tasks.slice(0, 12).map((task) => (
+                  <input key={task.id} type="hidden" name="ids" value={task.id} />
+                ))}
+                <SubmitButton variant="outline" disabled={!tasks.length}>
+                  <ListChecks className="size-4" />
+                  生成推进笔记
+                </SubmitButton>
+              </form>
             </div>
           </div>
 
@@ -382,6 +395,15 @@ export default async function ProjectsPage({ searchParams }: Props) {
             />
           ) : null}
 
+          {taskPlan === "empty" ? (
+            <TaskBulkNotice
+              href={returnTo}
+              tone="error"
+              title="没有可整理的任务"
+              description="当前任务列表为空。先创建任务，或清除筛选后再生成推进笔记。"
+            />
+          ) : null}
+
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_170px_130px_130px_auto]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -463,6 +485,16 @@ export default async function ProjectsPage({ searchParams }: Props) {
                   未筛选
                 </span>
               )}
+              <form action={createProjectProgressNote} className="contents">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {tasks.slice(0, 12).map((task) => (
+                  <input key={task.id} type="hidden" name="ids" value={task.id} />
+                ))}
+                <SubmitButton variant="outline" className="w-fit" disabled={!tasks.length}>
+                  <ListChecks className="size-3.5" />
+                  推进笔记
+                </SubmitButton>
+              </form>
               <form id="task-bulk-form" action={updateTaskStatuses} className="flex flex-wrap gap-2">
                 <input type="hidden" name="returnTo" value={returnTo} />
                 <select

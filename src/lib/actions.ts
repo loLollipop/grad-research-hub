@@ -674,6 +674,132 @@ export async function updateTaskStatuses(formData: FormData) {
   );
 }
 
+export async function createProjectProgressNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 12);
+  const returnTo = safeProjectsReturnTo(String(formData.get("returnTo") ?? "/projects"));
+  const joiner = returnTo.includes("?") ? "&" : "?";
+
+  if (!ids.length) {
+    redirect(`${returnTo}${joiner}taskPlan=empty`);
+  }
+
+  const tasks = await prisma.task.findMany({
+    where: { id: { in: ids } },
+    orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+    include: { milestone: { include: { project: true } } },
+  });
+
+  if (!tasks.length) {
+    redirect(`${returnTo}${joiner}taskPlan=empty`);
+  }
+
+  const marker = projectProgressMarker(tasks);
+  const existing = await prisma.note.findFirst({
+    where: {
+      folder: "项目",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `课题推进 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "项目",
+      content: buildProjectProgressNote(tasks, marker),
+      tags: tagsToString(["课题推进", "周计划", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/projects");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
+function projectProgressMarker(tasks: Array<Task & { milestone: (Milestone & { project: Project }) | null }>) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = tasks
+    .map((task) => task.id)
+    .sort()
+    .join("|");
+  return `project-progress:${day}:${stableHash(key)}`;
+}
+
+function buildProjectProgressNote(
+  tasks: Array<Task & { milestone: (Milestone & { project: Project }) | null }>,
+  marker: string,
+) {
+  const groups = groupTasksByProject(tasks);
+  const lines = [
+    `<!-- ${marker} -->`,
+    `# 课题推进 ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "> 这份清单来自项目页当前任务队列。先确认本周真正要推进的 1-3 件事，再把能实验化的动作转到实验日志。",
+    "",
+    "## 本次推进目标",
+    "",
+    "- [ ] 今天/本周必须完成：",
+    "- [ ] 需要导师确认：",
+    "- [ ] 可以转成实验或结果证据：",
+    "",
+  ];
+
+  groups.forEach((group) => {
+    lines.push(`## ${group.projectTitle}`, "");
+
+    group.tasks.forEach((task) => {
+      lines.push(
+        `- [ ] ${task.title}`,
+        `  - 里程碑：${task.milestone?.title ?? "未挂载"}`,
+        `  - 状态：${taskStatusText(task.status)}；优先级：${taskPriorityText(task.priority)}；截止：${dateText(task.dueDate)}`,
+        task.description?.trim() ? `  - 备注：${oneLine(task.description, 120)}` : "",
+      );
+    });
+
+    lines.push("");
+  });
+
+  lines.push(
+    "## 推进后回填",
+    "",
+    "- [ ] 完成的任务标记为完成",
+    "- [ ] 需要实验验证的任务转成实验日志",
+    "- [ ] 产出的指标或图表登记到成果页",
+    "- [ ] 新出现的阻塞写回项目任务",
+  );
+
+  return lines.join("\n");
+}
+
+function groupTasksByProject(tasks: Array<Task & { milestone: (Milestone & { project: Project }) | null }>) {
+  const groups = new Map<string, { projectTitle: string; tasks: typeof tasks }>();
+
+  tasks.forEach((task) => {
+    const projectTitle = task.milestone?.project.title ?? "独立任务";
+    const key = task.milestone?.project.id ?? "standalone";
+    const current = groups.get(key);
+
+    if (current) {
+      current.tasks.push(task);
+      return;
+    }
+
+    groups.set(key, { projectTitle, tasks: [task] });
+  });
+
+  return Array.from(groups.values());
+}
+
 export async function createExperimentFromTask(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
