@@ -189,6 +189,29 @@ export async function updatePaperStatus(formData: FormData) {
   revalidatePath("/papers");
 }
 
+export async function updatePaperStatuses(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean);
+  const readStatus = String(formData.get("readStatus") ?? "unread");
+  const returnTo = safePapersReturnTo(String(formData.get("returnTo") ?? "/papers"));
+
+  if (!ids.length || !["unread", "reading", "read"].includes(readStatus)) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}bulk=empty`);
+  }
+
+  await prisma.paper.updateMany({
+    where: { id: { in: ids } },
+    data: { readStatus },
+  });
+  revalidatePath("/");
+  revalidatePath("/papers");
+  redirect(
+    `${returnTo}${returnTo.includes("?") ? "&" : "?"}bulk=success&count=${ids.length}&bulkStatus=${readStatus}`,
+  );
+}
+
 export async function syncZoteroPapers() {
   let papers;
 
@@ -228,6 +251,10 @@ export async function syncZoteroPapers() {
   revalidatePath("/papers");
   revalidatePath("/settings");
   redirect(`/papers?sync=success&count=${papers.length}`);
+}
+
+function safePapersReturnTo(value: string) {
+  return value.startsWith("/papers") ? value : "/papers";
 }
 
 export async function createProject(formData: FormData) {

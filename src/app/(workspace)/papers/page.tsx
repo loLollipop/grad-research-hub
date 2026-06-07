@@ -12,6 +12,7 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
+  X,
 } from "lucide-react";
 import type { Paper, Prisma } from "@prisma/client";
 
@@ -21,6 +22,7 @@ import {
   syncZoteroPapers,
   updatePaper,
   updatePaperStatus,
+  updatePaperStatuses,
 } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { formatDate, parseTags } from "@/lib/format";
@@ -46,6 +48,8 @@ type Props = {
     sync?: string;
     count?: string;
     message?: string;
+    bulk?: string;
+    bulkStatus?: string;
   }>;
 };
 
@@ -61,7 +65,16 @@ export default async function PapersPage({ searchParams }: Props) {
   const sync = valueOf(params.sync);
   const syncedCount = Number(valueOf(params.count) ?? 0);
   const syncMessage = valueOf(params.message);
+  const bulk = valueOf(params.bulk);
+  const bulkCount = Number(valueOf(params.count) ?? 0);
+  const bulkStatus = valueOf(params.bulkStatus);
   const zotero = await getZoteroConfigStatus();
+  const activeFilterCount = [q, status, category].filter(Boolean).length;
+  const currentQuery = new URLSearchParams();
+  if (q) currentQuery.set("q", q);
+  if (status) currentQuery.set("status", status);
+  if (category) currentQuery.set("category", category);
+  const returnTo = currentQuery.size ? `/papers?${currentQuery.toString()}` : "/papers";
 
   const where: Prisma.PaperWhereInput = {};
   if (q) {
@@ -190,6 +203,22 @@ export default async function PapersPage({ searchParams }: Props) {
         />
       ) : null}
 
+      {bulk === "success" ? (
+        <SyncNotice
+          tone="success"
+          title="阅读状态已批量更新"
+          description={`已将 ${bulkCount} 篇文献标记为“${statusText(bulkStatus)}”。`}
+        />
+      ) : null}
+
+      {bulk === "empty" ? (
+        <SyncNotice
+          tone="error"
+          title="没有选中文献"
+          description="先勾选要处理的文献，再批量更新阅读状态。"
+        />
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
         <aside className="grid content-start gap-4">
           <Card className="workbench-card">
@@ -211,15 +240,40 @@ export default async function PapersPage({ searchParams }: Props) {
 
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-              <CardTitle>常用集合</CardTitle>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle>常用集合</CardTitle>
+                {category ? (
+                  <Link
+                    href={status || q ? `/papers?${filterQuery({ q, status })}` : "/papers"}
+                    className="text-xs font-medium text-primary"
+                  >
+                    清除
+                  </Link>
+                ) : null}
+              </div>
             </CardHeader>
             <CardContent className="grid gap-2">
+              <Link
+                href={status || q ? `/papers?${filterQuery({ q, status })}` : "/papers"}
+                className={
+                  category
+                    ? "flex items-center justify-between rounded-xl border border-border/72 bg-white/70 px-3 py-2 text-sm text-muted-foreground transition hover:border-primary/25 hover:bg-white"
+                    : "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef3fb] px-3 py-2 text-sm font-medium text-primary"
+                }
+              >
+                <span>全部集合</span>
+                <span className="text-xs">{unreadCount + readingCount + readCount}</span>
+              </Link>
               {categories.length ? (
                 categories.map((item) => (
                   <Link
                     key={item.category}
-                    href={`/papers?category=${encodeURIComponent(item.category)}`}
-                    className="flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+                    href={`/papers?${filterQuery({ q, status, category: item.category })}`}
+                    className={
+                      item.category === category
+                        ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef3fb] px-3 py-2 text-sm font-medium text-primary"
+                        : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+                    }
                   >
                     <span className="line-clamp-1">{item.category || "未分类"}</span>
                     <span className="text-xs text-muted-foreground">{item._count}</span>
@@ -253,6 +307,40 @@ export default async function PapersPage({ searchParams }: Props) {
               筛选
             </Button>
           </form>
+
+          <div className="flex flex-col gap-2 rounded-2xl border border-border/72 bg-white/78 p-3 shadow-[0_10px_24px_rgba(34,48,71,0.04)] md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-medium">当前列表 {papers.length} 篇</span>
+              {activeFilterCount ? (
+                <Link
+                  href="/papers"
+                  className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+                >
+                  <X className="size-3" />
+                  清除 {activeFilterCount} 个筛选
+                </Link>
+              ) : (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  未筛选
+                </span>
+              )}
+            </div>
+            <form id="paper-bulk-form" action={updatePaperStatuses} className="flex flex-wrap gap-2">
+              <input type="hidden" name="returnTo" value={returnTo} />
+              <select
+                name="readStatus"
+                defaultValue="reading"
+                className="h-9 rounded-lg border bg-background px-2 text-sm"
+              >
+                <option value="unread">标为待读</option>
+                <option value="reading">标为读中</option>
+                <option value="read">标为已读</option>
+              </select>
+              <SubmitButton variant="outline" className="w-fit">
+                批量更新
+              </SubmitButton>
+            </form>
+          </div>
 
           {papers.length ? (
             <div className="grid gap-3">
@@ -325,6 +413,20 @@ function countStatus(
   return counts.find((item) => item.readStatus === status)?._count ?? 0;
 }
 
+function statusText(value: string | undefined) {
+  if (value === "reading") return "读中";
+  if (value === "read") return "已读";
+  return "待读";
+}
+
+function filterQuery(values: { q?: string; status?: string; category?: string }) {
+  const params = new URLSearchParams();
+  if (values.q) params.set("q", values.q);
+  if (values.status) params.set("status", values.status);
+  if (values.category) params.set("category", values.category);
+  return params.toString();
+}
+
 function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
@@ -360,20 +462,30 @@ function PaperCard({ paper }: { paper: Paper }) {
     <Card className="workbench-card">
       <CardContent className="grid gap-3 py-4">
         <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge value={paper.readStatus} />
-              <span className="rounded-md border bg-white/80 px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                {paper.category || "未分类"}
-              </span>
+          <div className="flex min-w-0 gap-3">
+            <input
+              form="paper-bulk-form"
+              type="checkbox"
+              name="ids"
+              value={paper.id}
+              aria-label={`选择文献：${paper.title}`}
+              className="mt-1 size-4 rounded border-border text-primary accent-[var(--primary)]"
+            />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge value={paper.readStatus} />
+                <span className="rounded-md border bg-white/80 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                  {paper.category || "未分类"}
+                </span>
+              </div>
+              <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
+                {paper.title}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {authors.join(", ") || "作者未知"} · {paper.year ?? "年份未知"} ·{" "}
+                {paper.journal ?? "来源未填"}
+              </p>
             </div>
-            <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
-              {paper.title}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {authors.join(", ") || "作者未知"} · {paper.year ?? "年份未知"} ·{" "}
-              {paper.journal ?? "来源未填"}
-            </p>
           </div>
           <form action={updatePaperStatus} className="flex gap-2">
             <input type="hidden" name="id" value={paper.id} />
