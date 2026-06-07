@@ -22,6 +22,7 @@ import { ResultMetricsChart } from "@/components/charts/result-metrics-chart";
 import {
   createDataset,
   createResultBriefNote,
+  createTaskFromResult,
   createResult,
   deleteDataset,
   deleteResult,
@@ -242,6 +243,9 @@ export default async function DataPage({ searchParams }: Props) {
                         </p>
                       </div>
                       <ReproducibilityBadge result={result} />
+                    </div>
+                    <div className="mt-3">
+                      <CreateTaskFromResultButton result={result} compact />
                     </div>
                   </div>
                 ))
@@ -554,6 +558,9 @@ function ResultCard({
         ) : null}
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/65 pt-3">
+          {needsEvidenceTask(result) ? (
+            <CreateTaskFromResultButton result={result} />
+          ) : null}
           <CreateDialog title="编辑结果" label="编辑" icon={Edit3} wide>
             <ResultForm
               action={updateResult}
@@ -572,6 +579,24 @@ function ResultCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function CreateTaskFromResultButton({
+  result,
+  compact = false,
+}: {
+  result: ResultFull;
+  compact?: boolean;
+}) {
+  return (
+    <form action={createTaskFromResult}>
+      <input type="hidden" name="id" value={result.id} />
+      <Button type="submit" variant="outline" size="sm">
+        <Target className="size-3.5" />
+        {compact ? "变任务" : "生成待补任务"}
+      </Button>
+    </form>
   );
 }
 
@@ -607,6 +632,11 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
       </CardContent>
     </Card>
   );
+}
+
+function needsEvidenceTask(result: ResultFull) {
+  const config = parseResultConfig(result.config);
+  return config.reproducibility !== "verified" || (!config.manuscriptReady && !result.artifactPath);
 }
 
 function DatasetCard({ dataset }: { dataset: Dataset }) {

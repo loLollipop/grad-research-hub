@@ -737,6 +737,49 @@ export async function createResultBriefNote(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createTaskFromResult(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const result = await prisma.result.findUnique({
+    where: { id },
+    include: {
+      dataset: true,
+      experiment: {
+        include: {
+          project: {
+            include: {
+              milestones: {
+                orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+                take: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result) return;
+
+  const milestoneId = result.experiment?.project?.milestones[0]?.id;
+  await prisma.task.create({
+    data: {
+      title: `补证据：${result.title}`,
+      description: resultTaskDescription(result),
+      priority: "high",
+      status: "todo",
+      tags: tagsToString(["结果证据", "待补"]),
+      milestoneId,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/data");
+  revalidatePath("/projects");
+  redirect("/projects?priority=high&status=todo");
+}
+
 function resultBriefMarkdown(
   results: Array<{
     title: string;
@@ -795,6 +838,50 @@ function resultBriefMarkdown(
   );
 
   return lines.join("\n");
+}
+
+function resultTaskDescription(result: {
+  title: string;
+  metrics: string;
+  config: string;
+  artifactPath: string | null;
+  notes: string | null;
+  updatedAt: Date;
+  experiment: {
+    title: string;
+    project: { title: string } | null;
+  } | null;
+  dataset: { name: string } | null;
+}) {
+  const config = parseJsonObjectText(result.config);
+  const metrics = parseJsonObjectText(result.metrics);
+  const metricText = Object.entries(metrics)
+    .filter(([, value]) => String(value).trim())
+    .slice(0, 6)
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join("；") || "未填写核心指标";
+  const reproducibility = reproducibilityText(String(config.reproducibility ?? "unknown"));
+  const manuscriptReady = config.manuscriptReady ? "是" : result.artifactPath ? "有图表路径" : "否";
+
+  return [
+    "从结果证据台生成的待补任务：",
+    "",
+    `- 结果：${result.title}`,
+    `- 项目：${result.experiment?.project?.title ?? "未关联项目"}`,
+    `- 实验：${result.experiment?.title ?? "未关联实验"}`,
+    `- 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+    `- 核心指标：${metricText}`,
+    `- 复现状态：${reproducibility}`,
+    `- 可写入论文/组会：${manuscriptReady}`,
+    `- 图表或结果文件：${result.artifactPath || "待补"}`,
+    `- 一句话结论：${result.notes?.trim() || "待补充"}`,
+    `- 最近更新：${result.updatedAt.toISOString().slice(0, 10)}`,
+    "",
+    "下一步检查：",
+    "- [ ] 补齐复现实验或对照",
+    "- [ ] 确认图表路径和结果文件可打开",
+    "- [ ] 把结论写成一两句话，供组会/论文使用",
+  ].join("\n");
 }
 
 function parseJsonObjectText(value: string) {
