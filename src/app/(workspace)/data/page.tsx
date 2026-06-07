@@ -5,6 +5,7 @@ import {
   Database,
   Edit3,
   FileChartColumn,
+  FileText,
   FlaskConical,
   Layers3,
   Link2,
@@ -23,6 +24,7 @@ import {
   createDataset,
   createResultBriefNote,
   createTaskFromResult,
+  createWritingNoteFromResult,
   createResult,
   deleteDataset,
   deleteResult,
@@ -558,6 +560,7 @@ function ResultCard({
         ) : null}
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/65 pt-3">
+          <CreateWritingNoteFromResultButton result={result} />
           {needsEvidenceTask(result) ? (
             <CreateTaskFromResultButton result={result} />
           ) : null}
@@ -579,6 +582,18 @@ function ResultCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function CreateWritingNoteFromResultButton({ result }: { result: ResultFull }) {
+  return (
+    <form action={createWritingNoteFromResult}>
+      <input type="hidden" name="id" value={result.id} />
+      <Button type="submit" variant="outline" size="sm">
+        <FileText className="size-3.5" />
+        写作素材
+      </Button>
+    </form>
   );
 }
 
@@ -629,6 +644,9 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
         {result.notes ? (
           <p className="text-sm leading-6 text-muted-foreground">{result.notes}</p>
         ) : null}
+        <div className="flex justify-end border-t border-border/65 pt-3">
+          <CreateWritingNoteFromResultButton result={result} />
+        </div>
       </CardContent>
     </Card>
   );

@@ -1313,6 +1313,50 @@ export async function createResultBriefNote(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createWritingNoteFromResult(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const result = await prisma.result.findUnique({
+    where: { id },
+    include: {
+      dataset: true,
+      experiment: {
+        include: {
+          project: true,
+          papers: true,
+        },
+      },
+    },
+  });
+
+  if (!result) return;
+
+  const marker = resultWritingNoteMarker(result.id);
+  const existing = await prisma.note.findFirst({
+    where: { content: { contains: marker, mode: "insensitive" } },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `写作素材：${result.title}`.slice(0, 80),
+      folder: "写作",
+      content: buildResultWritingNote(result),
+      tags: tagsToString(["论文素材", "结果证据", reproducibilityTextFromResult(result), ...resultContextTags(result)]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/data");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createTaskFromResult(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
@@ -1455,6 +1499,104 @@ function resultBriefMarkdown(
   );
 
   return lines.join("\n");
+}
+
+function resultWritingNoteMarker(id: string) {
+  return `result-writing-note:${id}`;
+}
+
+function buildResultWritingNote(
+  result: Result & {
+    dataset: Dataset | null;
+    experiment:
+      | (Experiment & {
+          project: Project | null;
+          papers: Paper[];
+        })
+      | null;
+  },
+) {
+  const config = parseJsonObjectText(result.config);
+  const metrics = parseJsonObjectText(result.metrics);
+  const metricText = Object.entries(metrics)
+    .filter(([, value]) => String(value).trim())
+    .slice(0, 8)
+    .map(([key, value]) => `- ${key}: ${String(value)}`)
+    .join("\n") || "- 未填写核心指标";
+  const linkedPapers = result.experiment?.papers.length
+    ? result.experiment.papers.map((paper) => `- ${paper.title}`).join("\n")
+    : "- 暂无关联文献";
+  const manuscriptReady = config.manuscriptReady ? "是" : result.artifactPath ? "有图表或结果文件" : "否";
+
+  return [
+    `<!-- ${resultWritingNoteMarker(result.id)} -->`,
+    `# 写作素材：${result.title}`,
+    "",
+    "## 一句话结论",
+    "",
+    result.notes?.trim() || "- 这条结果说明：",
+    "",
+    "## 证据来源",
+    "",
+    `- 项目：${result.experiment?.project?.title ?? "未关联项目"}`,
+    `- 实验：${result.experiment?.title ?? "未关联实验"}`,
+    `- 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+    `- 更新时间：${dateText(result.updatedAt)}`,
+    `- 复现状态：${reproducibilityText(String(config.reproducibility ?? "unknown"))}`,
+    `- 可写入论文/组会：${manuscriptReady}`,
+    `- 图表或结果文件：${result.artifactPath || "待补"}`,
+    "",
+    "## 核心指标",
+    "",
+    metricText,
+    "",
+    "## 可直接写进论文/周报的话",
+    "",
+    "- 本结果表明：",
+    "- 与基线或前一轮相比：",
+    "- 目前还需要补充的证据：",
+    "",
+    "## 关联文献",
+    "",
+    linkedPapers,
+    "",
+    "## 图表检查",
+    "",
+    "- [ ] 图表路径可以打开",
+    "- [ ] 坐标轴、单位、显著性或误差线已说明",
+    "- [ ] 对照组、样本量或数据划分已写清楚",
+    "- [ ] 复现实验或失败原因已记录",
+    "",
+    "## 后续动作",
+    "",
+    "- [ ] 如果证据不足，到成果页生成待补任务",
+    "- [ ] 如果实验记录未收口，到实验页回填结果正文",
+    "- [ ] 如果准备组会，把本段并入本周组会草稿",
+  ].join("\n");
+}
+
+function resultContextTags(
+  result: Result & {
+    dataset: Dataset | null;
+    experiment:
+      | (Experiment & {
+          project: Project | null;
+        })
+      | null;
+  },
+) {
+  return [
+    result.experiment?.project?.title,
+    result.experiment?.title,
+    result.dataset?.name,
+  ]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .slice(0, 3);
+}
+
+function reproducibilityTextFromResult(result: Result) {
+  const config = parseJsonObjectText(result.config);
+  return reproducibilityText(String(config.reproducibility ?? "unknown"));
 }
 
 type MeetingBriefTask = Task & {
