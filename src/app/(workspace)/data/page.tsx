@@ -1,12 +1,11 @@
 import {
+  ArrowRight,
   BarChart3,
-  CheckCircle2,
   ClipboardList,
   Database,
   Edit3,
   FileChartColumn,
   FileText,
-  FlaskConical,
   Layers3,
   Link2,
   Plus,
@@ -86,6 +85,27 @@ function valueOf(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+type DataFilters = {
+  q?: string;
+  reproducibility?: string;
+  manuscript?: string;
+  experiment?: string;
+  dataset?: string;
+};
+
+function dataHref(filters: DataFilters, patch: Partial<DataFilters>) {
+  const merged = { ...filters, ...patch };
+  const query = new URLSearchParams();
+
+  if (merged.q) query.set("q", merged.q);
+  if (merged.reproducibility) query.set("reproducibility", merged.reproducibility);
+  if (merged.manuscript) query.set("manuscript", merged.manuscript);
+  if (merged.experiment) query.set("experiment", merged.experiment);
+  if (merged.dataset) query.set("dataset", merged.dataset);
+
+  return query.size ? `/data?${query.toString()}` : "/data";
+}
+
 export default async function DataPage({ searchParams }: Props) {
   const params = await searchParams;
   const q = valueOf(params.q)?.trim();
@@ -95,6 +115,13 @@ export default async function DataPage({ searchParams }: Props) {
   const datasetId = valueOf(params.dataset);
   const brief = valueOf(params.brief);
   const activeFilterCount = [q, reproducibility, manuscript, experimentId, datasetId].filter(Boolean).length;
+  const currentFilters: DataFilters = {
+    q,
+    reproducibility,
+    manuscript,
+    experiment: experimentId,
+    dataset: datasetId,
+  };
 
   const resultFilters: Prisma.ResultWhereInput[] = [];
   if (q) {
@@ -145,36 +172,55 @@ export default async function DataPage({ searchParams }: Props) {
   const manuscriptReadyCount = filteredResults.filter(
     (result) => parseResultConfig(result.config).manuscriptReady,
   ).length;
-  const activeExperiments = experiments.filter((experiment) => experiment.status === "running");
   const manuscriptResults = filteredResults.filter(
     (result) => result.artifactPath || parseResultConfig(result.config).manuscriptReady,
   );
   const evidenceQueue = filteredResults
-    .filter((result) => parseResultConfig(result.config).reproducibility !== "verified")
+    .filter(needsEvidenceTask)
+    .sort((left, right) => resultEvidenceRank(left) - resultEvidenceRank(right))
     .slice(0, 5);
+  const evidenceStack = [...filteredResults]
+    .sort((left, right) => resultEvidenceRank(left) - resultEvidenceRank(right))
+    .slice(0, 3);
+  const quickBaseResults = results;
+  const unknownCount = quickBaseResults.filter(
+    (result) => (parseResultConfig(result.config).reproducibility ?? "unknown") === "unknown",
+  ).length;
+  const todoCount = quickBaseResults.filter(
+    (result) => parseResultConfig(result.config).reproducibility === "todo",
+  ).length;
+  const reproducingBaseCount = quickBaseResults.filter(
+    (result) => parseResultConfig(result.config).reproducibility === "reproducing",
+  ).length;
+  const verifiedBaseCount = quickBaseResults.filter(
+    (result) => parseResultConfig(result.config).reproducibility === "verified",
+  ).length;
+  const manuscriptBaseCount = quickBaseResults.filter(
+    (result) => parseResultConfig(result.config).manuscriptReady || result.artifactPath,
+  ).length;
   const selectedExperimentTitle = experiments.find((experiment) => experiment.id === experimentId)?.title;
   const selectedDatasetName = datasets.find((dataset) => dataset.id === datasetId)?.name;
 
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr] xl:items-end">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <FileChartColumn className="size-3.5" />
                 结果证据台
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 指标 · 复现 · 论文素材
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.5rem]">
-              不保存一堆日志，只留下能支撑结论的证据。
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+              成果页只回答一件事：这条结果能不能支撑结论。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
-              成果页只关心三件事：核心指标是什么、结果能不能复现、是否已经能写进周报、
-              组会或论文。数据集作为辅助，不再抢占主流程。
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+              不把这里做成数据仓库，只保留关键指标、复现状态、图表路径和一句话结论。
+              结果先变成可信证据，再进入周报、组会和论文素材。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
@@ -215,11 +261,45 @@ export default async function DataPage({ searchParams }: Props) {
             ) : null}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SignalCard icon={FileChartColumn} label="关键结果" value={`${filteredResults.length} 条`} detail="当前范围证据" />
-            <SignalCard icon={CheckCircle2} label="已复现" value={`${verifiedCount} 条`} detail={`${reproducingCount} 条复现中`} />
-            <SignalCard icon={Layers3} label="论文素材" value={`${manuscriptReadyCount} 条`} detail="周报和论文可引用" />
-            <SignalCard icon={FlaskConical} label="进行中实验" value={`${activeExperiments.length} 个`} detail="优先补结果" />
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <Layers3 className="size-3.5" />
+                今日证据栈
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                {evidenceStack.length ? (
+                  evidenceStack.map((result, index) => (
+                    <ResultStackItem
+                      key={result.id}
+                      index={`0${index + 1}`}
+                      title={result.title}
+                      detail={`${resultActionLabel(result)} · ${result.experiment?.title ?? "未关联实验"}`}
+                    />
+                  ))
+                ) : (
+                  <ResultStackItem
+                    index="01"
+                    title="先记录一条能讲清楚的结果"
+                    detail="核心指标、复现状态、图表路径"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{verifiedCount}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">已复现</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{reproducingCount}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">复现中</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{manuscriptReadyCount}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">可写入</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -229,8 +309,8 @@ export default async function DataPage({ searchParams }: Props) {
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
-                <Target className="size-4 text-primary" />
-                待补证据
+                <ArrowRight className="size-4 text-primary" />
+                下一步证据
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
@@ -241,7 +321,7 @@ export default async function DataPage({ searchParams }: Props) {
                       <div className="min-w-0">
                         <p className="line-clamp-1 font-medium">{result.title}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {result.experiment?.title ?? "未关联实验"}
+                          {resultActionLabel(result)} · {result.experiment?.title ?? "未关联实验"}
                         </p>
                       </div>
                       <ReproducibilityBadge result={result} />
@@ -252,8 +332,55 @@ export default async function DataPage({ searchParams }: Props) {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">没有待补复现的结果。</p>
+                <p className="text-sm text-muted-foreground">没有待补证据的结果。</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Search className="size-4 text-primary" />
+                快捷视图
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <QuickDataLink
+                label="全部结果"
+                count={quickBaseResults.length}
+                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: undefined })}
+                active={!reproducibility && !manuscript}
+              />
+              <QuickDataLink
+                label="待判断"
+                count={unknownCount}
+                href={dataHref(currentFilters, { reproducibility: "unknown", manuscript: undefined })}
+                active={reproducibility === "unknown" && !manuscript}
+              />
+              <QuickDataLink
+                label="待复现"
+                count={todoCount}
+                href={dataHref(currentFilters, { reproducibility: "todo", manuscript: undefined })}
+                active={reproducibility === "todo" && !manuscript}
+              />
+              <QuickDataLink
+                label="复现中"
+                count={reproducingBaseCount}
+                href={dataHref(currentFilters, { reproducibility: "reproducing", manuscript: undefined })}
+                active={reproducibility === "reproducing" && !manuscript}
+              />
+              <QuickDataLink
+                label="已复现"
+                count={verifiedBaseCount}
+                href={dataHref(currentFilters, { reproducibility: "verified", manuscript: undefined })}
+                active={reproducibility === "verified" && !manuscript}
+              />
+              <QuickDataLink
+                label="可写入"
+                count={manuscriptBaseCount}
+                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: "ready" })}
+                active={manuscript === "ready" && !reproducibility}
+              />
             </CardContent>
           </Card>
 
@@ -471,30 +598,24 @@ export default async function DataPage({ searchParams }: Props) {
   );
 }
 
-function SignalCard({
-  icon: Icon,
-  label,
-  value,
+function ResultStackItem({
+  index,
+  title,
   detail,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
+  index: string;
+  title: string;
   detail: string;
 }) {
   return (
-    <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
-      <CardContent className="flex items-start gap-3 py-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 text-xl font-semibold tracking-tight text-[#173042]">{value}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
   );
 }
 
@@ -504,6 +625,32 @@ function WorkflowTip({ title, text }: { title: string; text: string }) {
       <p className="font-medium">{title}</p>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
     </div>
+  );
+}
+
+function QuickDataLink({
+  label,
+  count,
+  href,
+  active,
+}: {
+  label: string;
+  count: number;
+  href: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={
+        active
+          ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
+          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+      }
+    >
+      <span>{label}</span>
+      <span className="text-xs text-muted-foreground">{count}</span>
+    </Link>
   );
 }
 
@@ -518,6 +665,7 @@ function ResultCard({
 }) {
   const metrics = parseJson<Record<string, number | string>>(result.metrics, {});
   const config = parseResultConfig(result.config);
+  const nextAction = resultActionLabel(result);
 
   return (
     <Card className="workbench-card">
@@ -534,6 +682,9 @@ function ResultCard({
                   可写入论文
                 </Badge>
               ) : null}
+              <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-2 py-0.5 text-xs text-[#365a7d]">
+                {nextAction}
+              </span>
             </div>
             <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
               {result.title}
@@ -655,6 +806,48 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
 function needsEvidenceTask(result: ResultFull) {
   const config = parseResultConfig(result.config);
   return config.reproducibility !== "verified" || (!config.manuscriptReady && !result.artifactPath);
+}
+
+function resultActionLabel(result: ResultFull) {
+  const config = parseResultConfig(result.config);
+  const reproducibility = config.reproducibility ?? "unknown";
+
+  if (reproducibility === "unknown") {
+    return "先判定复现";
+  }
+
+  if (reproducibility === "todo") {
+    return "补复现实验";
+  }
+
+  if (reproducibility === "reproducing") {
+    return "继续复现";
+  }
+
+  if (!result.artifactPath) {
+    return "补图表路径";
+  }
+
+  if (!config.manuscriptReady) {
+    return "标成写作素材";
+  }
+
+  return "已成证据";
+}
+
+function resultEvidenceRank(result: ResultFull) {
+  const config = parseResultConfig(result.config);
+  const reproducibility = config.reproducibility ?? "unknown";
+  const reproducibilityRank: Record<string, number> = {
+    reproducing: 0,
+    todo: 1,
+    unknown: 2,
+    verified: 3,
+  };
+  const pathPenalty = result.artifactPath ? 0 : -0.4;
+  const readyPenalty = config.manuscriptReady ? 0.5 : 0;
+
+  return (reproducibilityRank[reproducibility] ?? 2) + pathPenalty + readyPenalty;
 }
 
 function DatasetCard({ dataset }: { dataset: Dataset }) {
