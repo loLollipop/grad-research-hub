@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Edit3,
   FileChartColumn,
+  FileText,
   FlaskConical,
   Link2,
   Microscope,
@@ -21,6 +22,7 @@ import remarkGfm from "remark-gfm";
 import {
   appendResultToExperiment,
   createExperiment,
+  createExperimentReviewNote,
   createExperimentReviewTask,
   deleteExperiment,
   setExperimentStatus,
@@ -444,6 +446,13 @@ function ExperimentCard({
         <div className="flex flex-col gap-3 border-t border-border/65 pt-3 md:flex-row md:items-center md:justify-between">
           <TagList value={experiment.tags} />
           <div className="flex flex-wrap items-center gap-2">
+            <form action={createExperimentReviewNote}>
+              <input type="hidden" name="id" value={experiment.id} />
+              <Button type="submit" variant="outline" size="sm">
+                <FileText className="size-4" />
+                复盘笔记
+              </Button>
+            </form>
             <CreateDialog title="编辑实验" label="编辑" icon={Edit3} wide>
               <ExperimentForm
                 action={updateExperiment}

@@ -674,6 +674,132 @@ export async function setExperimentStatus(formData: FormData) {
   revalidatePath("/experiments");
 }
 
+export async function createExperimentReviewNote(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const experiment = await prisma.experiment.findUnique({
+    where: { id },
+    include: {
+      project: true,
+      papers: true,
+      results: {
+        orderBy: { updatedAt: "desc" },
+        include: { dataset: true },
+      },
+    },
+  });
+
+  if (!experiment) return;
+
+  const marker = experimentNoteMarker(experiment.id);
+  const existing = await prisma.note.findFirst({
+    where: { content: { contains: marker, mode: "insensitive" } },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `复盘：${experiment.title}`.slice(0, 80),
+      folder: "实验",
+      content: buildExperimentReviewNote(experiment),
+      tags: tagsToString([
+        "实验复盘",
+        experimentStatusText(experiment.status),
+        ...parseTags(experiment.tags).slice(0, 4),
+      ]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/notes");
+  revalidatePath("/experiments");
+  redirect(`/notes?note=${note.id}`);
+}
+
+function experimentNoteMarker(id: string) {
+  return `experiment-review-note:${id}`;
+}
+
+function buildExperimentReviewNote(
+  experiment: Experiment & {
+    project: Project | null;
+    papers: Paper[];
+    results: Array<Result & { dataset: Dataset | null }>;
+  },
+) {
+  const linkedPapers = experiment.papers.length
+    ? experiment.papers.map((paper) => `- ${paper.title}`).join("\n")
+    : "- 暂无关联论文";
+  const resultLines = experiment.results.length
+    ? experiment.results.map((result) => {
+        const metrics = parseJsonObjectText(result.metrics);
+        const metricText = Object.entries(metrics)
+          .filter(([, value]) => String(value).trim())
+          .slice(0, 5)
+          .map(([key, value]) => `${key}: ${String(value)}`)
+          .join("；") || "未填写指标";
+
+        return [
+          `- ${result.title}`,
+          `  - 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+          `  - 指标：${metricText}`,
+          result.notes?.trim() ? `  - 结论：${oneLine(result.notes, 120)}` : "",
+        ].filter(Boolean).join("\n");
+      }).join("\n")
+    : "- 暂无结果记录";
+
+  return [
+    `<!-- ${experimentNoteMarker(experiment.id)} -->`,
+    `# 实验复盘：${experiment.title}`,
+    "",
+    "## 基本信息",
+    "",
+    `- 项目：${experiment.project?.title ?? "未关联项目"}`,
+    `- 状态：${experimentStatusText(experiment.status)}`,
+    `- 模板：${experiment.template}`,
+    `- 更新时间：${dateText(experiment.updatedAt)}`,
+    "",
+    "## 实验目的",
+    "",
+    experimentSnippet(experiment.content),
+    "",
+    "## 关联论文",
+    "",
+    linkedPapers,
+    "",
+    "## 结果证据",
+    "",
+    resultLines,
+    "",
+    "## 复盘结论",
+    "",
+    "- 这次实验说明了什么：",
+    "- 可信度 / 复现状态：",
+    "- 对论文或组会最有用的一句话：",
+    "",
+    "## 失败或异常",
+    "",
+    "- 主要异常现象：",
+    "- 可能原因：",
+    "- 需要补做的对照：",
+    "",
+    "## 下一步",
+    "",
+    "- [ ] 补充需要复现的结果",
+    "- [ ] 把下一次实验拆成项目任务",
+    "- [ ] 把可写入论文的图表或指标登记到成果页",
+    "",
+    "## 原始实验记录",
+    "",
+    experiment.content || "暂无原始实验内容。",
+  ].join("\n");
+}
+
 export async function createExperimentReviewTask(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
