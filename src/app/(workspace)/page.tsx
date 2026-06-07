@@ -7,6 +7,7 @@ import {
   CircleCheck,
   ClipboardList,
   Database,
+  FileText,
   FileChartColumn,
   FlaskConical,
   FolderKanban,
@@ -20,10 +21,12 @@ import {
 } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import { SubmitButton } from "@/components/shared/submit-button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { TagList } from "@/components/shared/tag-list";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createMeetingBriefNote } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { daysUntil, formatDate, formatDateTime, parseJson, statusLabel } from "@/lib/format";
 
@@ -188,6 +191,13 @@ export default async function DashboardPage() {
                 <BookOpenText className="size-4" />
                 同步文献
               </Link>
+              <form action={createMeetingBriefNote}>
+                <input type="hidden" name="scope" value="week" />
+                <SubmitButton variant="outline">
+                  <FileText className="size-4" />
+                  生成组会草稿
+                </SubmitButton>
+              </form>
             </div>
           </div>
 
@@ -224,6 +234,26 @@ export default async function DashboardPage() {
         experiment={`${runningExperiments} 个进行中`}
         evidence={`${manuscriptReady} 条可写入`}
       />
+
+      <section className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#173042]">开组会前先生成一版草稿</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            自动汇总本周高优先级任务、临近事务、最近实验、结果证据和待读文献，生成后继续在笔记页修改。
+          </p>
+        </div>
+        <form action={createMeetingBriefNote} className="flex flex-wrap gap-2">
+          <input type="hidden" name="scope" value="week" />
+          <SubmitButton variant="default" className="w-fit">
+            <FileText className="size-4" />
+            生成组会准备
+          </SubmitButton>
+          <Link className={buttonVariants({ variant: "outline" })} href="/notes?folder=组会">
+            <NotebookPen className="size-4" />
+            查看组会笔记
+          </Link>
+        </form>
+      </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <ResearchSignal

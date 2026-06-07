@@ -15,6 +15,7 @@ import {
 import type { AdminItem, Prisma } from "@prisma/client";
 
 import {
+  createMeetingBriefNote,
   createAdminItem,
   deleteAdminItem,
   setAdminStatus,
@@ -125,6 +126,13 @@ export default async function AdminPage({ searchParams }: Props) {
               >
                 <AdminItemForm action={createAdminItem} />
               </CreateDialog>
+              <form action={createMeetingBriefNote}>
+                <input type="hidden" name="scope" value="week" />
+                <SubmitButton variant="outline">
+                  <FileText className="size-4" />
+                  生成组会草稿
+                </SubmitButton>
+              </form>
             </div>
           </div>
 
@@ -193,6 +201,22 @@ export default async function AdminPage({ searchParams }: Props) {
         </aside>
 
         <div className="grid gap-3">
+          <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#173042]">组会前快速整理</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                自动把近期任务、事务、实验、结果和待读文献汇成一篇组会笔记，生成后直接编辑。
+              </p>
+            </div>
+            <form action={createMeetingBriefNote}>
+              <input type="hidden" name="scope" value="week" />
+              <SubmitButton variant="default" className="w-fit">
+                <FileText className="size-4" />
+                生成准备笔记
+              </SubmitButton>
+            </form>
+          </div>
+
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] md:grid-cols-[1fr_150px_150px_auto]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

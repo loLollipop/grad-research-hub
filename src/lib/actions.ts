@@ -2,7 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Milestone, Project, Task } from "@prisma/client";
+import type {
+  AdminItem,
+  Dataset,
+  Experiment,
+  Milestone,
+  Paper,
+  Project,
+  Result,
+  Task,
+} from "@prisma/client";
 
 import { checkAiConnection } from "@/lib/ai";
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
@@ -66,6 +75,18 @@ function parseJsonObject(value: FormDataEntryValue | null) {
   } catch {
     return {};
   }
+}
+
+function startOfLocalDay(value: Date) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function addDays(value: Date, days: number) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date;
 }
 
 function resultFormData(formData: FormData) {
@@ -643,6 +664,69 @@ export async function quickCapture(formData: FormData) {
   revalidatePath("/notes");
 }
 
+export async function createMeetingBriefNote(formData: FormData) {
+  const scope = String(formData.get("scope") ?? "week");
+  const now = new Date();
+  const today = startOfLocalDay(now);
+  const end = scope === "today" ? addDays(today, 1) : addDays(today, 8);
+
+  const [tasks, adminItems, experiments, results, papers] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        status: { not: "done" },
+        OR: [{ priority: "high" }, { dueDate: { lt: end } }],
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 10,
+      include: { milestone: { include: { project: true } } },
+    }),
+    prisma.adminItem.findMany({
+      where: {
+        status: { not: "done" },
+        OR: [{ dueDate: { lt: end } }, { type: "meeting" }],
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 8,
+    }),
+    prisma.experiment.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      include: { project: true, results: true },
+    }),
+    prisma.result.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      include: { dataset: true, experiment: { include: { project: true } } },
+    }),
+    prisma.paper.findMany({
+      where: { readStatus: { in: ["unread", "reading"] } },
+      orderBy: [{ readStatus: "asc" }, { updatedAt: "desc" }],
+      take: 8,
+    }),
+  ]);
+
+  const note = await prisma.note.create({
+    data: {
+      title: `组会准备 ${now.toISOString().slice(0, 10)}`,
+      folder: "组会",
+      content: meetingBriefMarkdown({
+        generatedAt: now,
+        tasks,
+        adminItems,
+        experiments,
+        results,
+        papers,
+      }),
+      tags: tagsToString(["组会", "周报", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createDataset(formData: FormData) {
   const parsed = datasetSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
@@ -907,6 +991,221 @@ function resultBriefMarkdown(
   );
 
   return lines.join("\n");
+}
+
+type MeetingBriefTask = Task & {
+  milestone: (Milestone & { project: Project }) | null;
+};
+
+type MeetingBriefExperiment = Experiment & {
+  project: Project | null;
+  results: Result[];
+};
+
+type MeetingBriefResult = Result & {
+  dataset: Dataset | null;
+  experiment: (Experiment & { project: Project | null }) | null;
+};
+
+function meetingBriefMarkdown({
+  generatedAt,
+  tasks,
+  adminItems,
+  experiments,
+  results,
+  papers,
+}: {
+  generatedAt: Date;
+  tasks: MeetingBriefTask[];
+  adminItems: AdminItem[];
+  experiments: MeetingBriefExperiment[];
+  results: MeetingBriefResult[];
+  papers: Paper[];
+}) {
+  const lines = [
+    `# 组会准备 ${generatedAt.toISOString().slice(0, 10)}`,
+    "",
+    `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
+    "",
+    "> 自动整理自研途 Hub。先改“本周最需要讲清楚”的三行，再补细节。",
+    "",
+    "## 本周最需要讲清楚",
+    "",
+    "- [ ] 核心进展：",
+    "- [ ] 最大阻塞：",
+    "- [ ] 下周计划：",
+    "",
+    "## 下一步任务",
+    "",
+  ];
+
+  if (tasks.length) {
+    tasks.forEach((task, index) => {
+      const owner = task.milestone
+        ? `${task.milestone.project.title} / ${task.milestone.title}`
+        : "独立任务";
+      lines.push(
+        `${index + 1}. ${task.title}`,
+        `   - 归属：${owner}`,
+        `   - 优先级：${taskPriorityText(task.priority)}；状态：${taskStatusText(task.status)}；截止：${dateText(task.dueDate)}`,
+        task.description?.trim() ? `   - 备注：${oneLine(task.description, 120)}` : "",
+      );
+    });
+  } else {
+    lines.push("- 暂无本周高优先级或临近截止任务。");
+  }
+
+  lines.push("", "## 实验进展", "");
+
+  if (experiments.length) {
+    experiments.forEach((experiment) => {
+      lines.push(
+        `- ${experiment.title}`,
+        `  - 项目：${experiment.project?.title ?? "未关联项目"}；状态：${experimentStatusText(experiment.status)}；结果数：${experiment.results.length}`,
+        `  - 最近更新：${dateText(experiment.updatedAt)}`,
+        `  - 摘要：${experimentSnippet(experiment.content)}`,
+      );
+    });
+  } else {
+    lines.push("- 暂无实验记录。");
+  }
+
+  lines.push("", "## 结果证据", "");
+
+  if (results.length) {
+    results.forEach((result) => {
+      const config = parseJsonObjectText(result.config);
+      const metrics = parseJsonObjectText(result.metrics);
+      const metricText = Object.entries(metrics)
+        .filter(([, value]) => String(value).trim())
+        .slice(0, 5)
+        .map(([key, value]) => `${key}: ${String(value)}`)
+        .join("；") || "未填写核心指标";
+      const manuscriptReady = config.manuscriptReady ? "是" : result.artifactPath ? "有图表路径" : "否";
+
+      lines.push(
+        `- ${result.title}`,
+        `  - 项目：${result.experiment?.project?.title ?? "未关联项目"}；实验：${result.experiment?.title ?? "未关联实验"}`,
+        `  - 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+        `  - 指标：${metricText}`,
+        `  - 复现：${reproducibilityText(String(config.reproducibility ?? "unknown"))}；可写入论文/组会：${manuscriptReady}`,
+        `  - 结论：${result.notes?.trim() || "待补充"}`,
+      );
+    });
+  } else {
+    lines.push("- 暂无结果证据。");
+  }
+
+  lines.push("", "## 文献阅读", "");
+
+  if (papers.length) {
+    papers.forEach((paper) => {
+      lines.push(
+        `- [${paperStatusText(paper.readStatus)}] ${paper.title}`,
+        `  - 来源：${paper.journal || paper.category || "未填写"}；年份：${paper.year ?? "未知"}`,
+        paper.notes?.trim() ? `  - 笔记：${oneLine(paper.notes, 120)}` : "",
+      );
+    });
+  } else {
+    lines.push("- 暂无待读或读中文献。");
+  }
+
+  lines.push("", "## 事务提醒", "");
+
+  if (adminItems.length) {
+    adminItems.forEach((item) => {
+      lines.push(
+        `- ${item.title}`,
+        `  - 类型：${adminTypeText(item.type)}；状态：${taskStatusText(item.status)}；截止：${dateText(item.dueDate)}`,
+        item.location ? `  - 地点 / 渠道：${item.location}` : "",
+        item.notes?.trim() ? `  - 备注：${oneLine(item.notes, 120)}` : "",
+      );
+    });
+  } else {
+    lines.push("- 暂无临近事务。");
+  }
+
+  lines.push(
+    "",
+    "## 会后回填",
+    "",
+    "- [ ] 把导师反馈拆成项目任务",
+    "- [ ] 把需要补实验的结果转成待补任务",
+    "- [ ] 把新的阅读建议同步到 Zotero 或文献台",
+    "- [ ] 把本次会议结论写回相关实验/结果/笔记",
+  );
+
+  return lines.join("\n");
+}
+
+function dateText(value: Date | null) {
+  return value ? value.toISOString().slice(0, 10) : "未设置";
+}
+
+function oneLine(value: string, limit: number) {
+  const text = value.replace(/\s+/g, " ").trim();
+  return text.length > limit ? `${text.slice(0, limit)}...` : text;
+}
+
+function experimentSnippet(content: string) {
+  const firstUsefulLine = content
+    .split("\n")
+    .map((line) => line.replace(/^#+\s*/, "").replace(/^[-*]\s*/, "").trim())
+    .find((line) => line && !["目的", "方法 / 参数", "观察", "结论 / 下一步"].includes(line));
+
+  return firstUsefulLine ? oneLine(firstUsefulLine, 120) : "待补充摘要。";
+}
+
+function taskPriorityText(value: string) {
+  const labels: Record<string, string> = {
+    high: "高",
+    medium: "中",
+    low: "低",
+  };
+
+  return labels[value] ?? value;
+}
+
+function taskStatusText(value: string) {
+  const labels: Record<string, string> = {
+    todo: "待办",
+    doing: "进行中",
+    done: "完成",
+  };
+
+  return labels[value] ?? value;
+}
+
+function experimentStatusText(value: string) {
+  const labels: Record<string, string> = {
+    running: "进行中",
+    completed: "已完成",
+    failed: "失败",
+    abandoned: "放弃",
+  };
+
+  return labels[value] ?? value;
+}
+
+function paperStatusText(value: string) {
+  const labels: Record<string, string> = {
+    unread: "待读",
+    reading: "读中",
+    read: "已读",
+  };
+
+  return labels[value] ?? value;
+}
+
+function adminTypeText(value: string) {
+  const labels: Record<string, string> = {
+    meeting: "组会",
+    material: "材料",
+    reimbursement: "报销",
+    deadline: "截止",
+  };
+
+  return labels[value] ?? value;
 }
 
 function resultTaskDescription(result: {
