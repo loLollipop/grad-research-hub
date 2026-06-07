@@ -3,15 +3,15 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3,
   Bot,
   ClipboardList,
   FlaskConical,
   Home,
   LineChart,
-  NotebookTabs,
-  ScrollText,
+  NotebookPen,
   Settings,
+  BookOpenText,
+  FolderKanban,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -22,11 +22,23 @@ const icons = {
   data: LineChart,
   experiments: FlaskConical,
   home: Home,
-  notes: NotebookTabs,
-  papers: ScrollText,
-  projects: BarChart3,
+  notes: NotebookPen,
+  papers: BookOpenText,
+  projects: FolderKanban,
   settings: Settings,
 } as const;
+
+const accents: Record<NavIcon, string> = {
+  admin: "text-amber-700",
+  ai: "text-violet-700",
+  data: "text-cyan-700",
+  experiments: "text-teal-700",
+  home: "text-slate-700",
+  notes: "text-indigo-700",
+  papers: "text-blue-700",
+  projects: "text-emerald-700",
+  settings: "text-slate-700",
+};
 
 export type NavIcon = keyof typeof icons;
 
@@ -45,6 +57,7 @@ export function NavLink({
   const active =
     href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
   const Icon = icon ? icons[icon] : null;
+  const accent = icon ? accents[icon] : "text-slate-700";
 
   if (compact) {
     return (
@@ -54,8 +67,8 @@ export function NavLink({
         className={cn(
           "relative rounded-md border px-2 py-1 text-xs transition",
           active
-            ? "border-[#1f3d33] bg-[#1f3d33] text-white"
-            : "bg-white text-muted-foreground hover:border-[#b9c9c0] hover:text-[#1f3d33]",
+            ? "border-primary/30 bg-primary text-primary-foreground shadow-sm"
+            : "bg-white text-muted-foreground hover:border-primary/20 hover:text-primary",
         )}
       >
         {label}
@@ -70,14 +83,29 @@ export function NavLink({
       prefetch={true}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex items-center gap-2 overflow-hidden rounded-lg px-3 py-2 text-sm transition",
+        "group relative flex min-h-10 items-center gap-2.5 overflow-hidden rounded-md border border-transparent px-2.5 py-2 text-sm transition",
         active
-          ? "bg-[#1f3d33] font-medium text-white shadow-sm hover:bg-[#1f3d33] hover:text-white"
-          : "text-muted-foreground hover:bg-[#eef4ef] hover:text-[#1f3d33]",
+          ? "border-primary/15 bg-white font-medium text-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-white/80 hover:text-foreground",
       )}
     >
-      {Icon ? <Icon className="size-4" /> : null}
-      {label}
+      {active ? (
+        <span className="absolute inset-y-1 left-0 w-1 rounded-r-full bg-primary" />
+      ) : null}
+      {Icon ? (
+        <span
+          className={cn(
+            "flex size-7 shrink-0 items-center justify-center rounded-md border transition",
+            active
+              ? "border-primary/15 bg-primary/10 text-primary"
+              : "border-transparent bg-sidebar-accent/55 group-hover:bg-sidebar-accent",
+            !active && accent,
+          )}
+        >
+          <Icon className="size-4" />
+        </span>
+      ) : null}
+      <span className="truncate">{label}</span>
       <NavPendingMark />
     </Link>
   );
