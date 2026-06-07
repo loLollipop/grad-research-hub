@@ -270,6 +270,17 @@ export async function createMilestone(formData: FormData) {
   revalidatePath("/projects");
 }
 
+export async function updateMilestone(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const parsed = milestoneSchema.safeParse(data(formData));
+  if (!id) return;
+  if (!parsed.success) fail(parsed.error);
+
+  await prisma.milestone.update({ where: { id }, data: parsed.data });
+  revalidatePath("/");
+  revalidatePath("/projects");
+}
+
 export async function deleteMilestone(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;

@@ -1,12 +1,15 @@
 import Link from "next/link";
 import {
+  ArrowRight,
   Clock3,
   FileText,
   FolderOpen,
   Link2,
   NotebookPen,
+  PenLine,
   Plus,
   Search,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 import type { Note } from "@prisma/client";
@@ -18,7 +21,6 @@ import { prisma } from "@/lib/db";
 import { extractWikiLinks, formatDateTime, parseTags } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Field } from "@/components/shared/field";
-import { PageHeader } from "@/components/shared/page-header";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { TagList } from "@/components/shared/tag-list";
 import { Button } from "@/components/ui/button";
@@ -49,7 +51,7 @@ function noteSnippet(content: string) {
     .replace(/[#*_`>\-[\]()]/g, "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 72);
+    .slice(0, 78);
 }
 
 export default async function NotesPage({ searchParams }: Props) {
@@ -64,13 +66,13 @@ export default async function NotesPage({ searchParams }: Props) {
       ...(q
         ? {
             OR: [
-              { title: { contains: q } },
-              { content: { contains: q } },
-              { tags: { contains: q } },
+              { title: { contains: q, mode: "insensitive" } },
+              { content: { contains: q, mode: "insensitive" } },
+              { tags: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
-      ...(folder ? { folder: { contains: folder } } : {}),
+      ...(folder ? { folder: { contains: folder, mode: "insensitive" } } : {}),
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -84,25 +86,48 @@ export default async function NotesPage({ searchParams }: Props) {
   const selectedNote = noteId ? notes.find((note) => note.id === noteId) : notes[0];
   const activeNote = mode === "new" ? undefined : selectedNote;
   const activeLinks = activeNote ? extractWikiLinks(activeNote.content) : [];
-  const defaultFolder = folder || "收件箱";
+  const defaultFolder = folder || "Inbox";
+  const linkedNoteTitles = new Set(activeLinks.map((link) => link.toLowerCase()));
+  const linkedNotes = notes.filter((note) => linkedNoteTitles.has(note.title.toLowerCase()));
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-5">
-      <PageHeader
-        eyebrow="笔记"
-        title="笔记工作台"
-        description="像写研究日志一样记录组会、阅读摘录、实验想法和临时材料；左侧整理，右侧专心写。"
-        actions={
-          <Button render={<Link href="/notes?mode=new" />} variant="outline" className="bg-white/90">
-            <Plus className="size-4" />
-            新建笔记
-          </Button>
-        }
-      />
+      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-4 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+                <NotebookPen className="size-3.5" />
+                笔记工作室
+              </span>
+              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+                Markdown · 双链 · 灵感收束
+              </span>
+            </div>
+            <h1 className="mt-3 max-w-3xl text-[1.85rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.35rem]">
+              先写下来，再慢慢长成知识。
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#557083]">
+              这里不是配置页，也不是复杂知识图谱。左边快速找材料，右边专心写组会记录、
+              阅读摘录、实验想法和论文草稿，用 `[[双链]]` 把相关内容连起来。
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button render={<Link href="/notes?mode=new" />} className="bg-primary">
+              <Plus className="size-4" />
+              新建笔记
+            </Button>
+            <Button render={<Link href="/notes" />} variant="outline">
+              <Clock3 className="size-4" />
+              最近更新
+            </Button>
+          </div>
+        </div>
+      </section>
 
-      <section className="grid flex-1 gap-4 lg:h-[calc(100vh-232px)] lg:min-h-[690px] lg:grid-cols-[330px_minmax(0,1fr)]">
+      <section className="grid flex-1 gap-4 lg:h-[calc(100vh-222px)] lg:min-h-[720px] lg:grid-cols-[330px_minmax(0,1fr)]">
         <aside className="workbench-card flex min-h-[560px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0">
-          <div className="border-b border-border/75 bg-muted/20 p-3.5">
+          <div className="border-b border-border/75 bg-white/62 p-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Search className="size-4 text-primary" />
@@ -122,7 +147,7 @@ export default async function NotesPage({ searchParams }: Props) {
                   className="h-9 pl-8"
                 />
               </div>
-              <Input name="folder" placeholder="分类" defaultValue={folder} className="h-9" />
+              <Input name="folder" placeholder="分类，例如 组会 / 阅读 / 想法" defaultValue={folder} className="h-9" />
               <Button type="submit" variant="outline" className="h-9 bg-white">
                 筛选
               </Button>
@@ -138,7 +163,7 @@ export default async function NotesPage({ searchParams }: Props) {
               <Link
                 href="/notes"
                 className={cn(
-                  "flex items-center justify-between rounded-md px-2.5 py-2 transition hover:bg-muted/60",
+                  "flex items-center justify-between rounded-lg px-2.5 py-2 transition hover:bg-muted/60",
                   !folder && "bg-primary/9 text-primary ring-1 ring-primary/18",
                 )}
               >
@@ -153,7 +178,7 @@ export default async function NotesPage({ searchParams }: Props) {
                     key={item.folder}
                     href={`/notes?folder=${encodeURIComponent(item.folder)}`}
                     className={cn(
-                      "flex items-center justify-between rounded-md px-2.5 py-2 transition hover:bg-muted/60",
+                      "flex items-center justify-between rounded-lg px-2.5 py-2 transition hover:bg-muted/60",
                       selected && "bg-primary/9 text-primary ring-1 ring-primary/18",
                     )}
                   >
@@ -210,11 +235,11 @@ export default async function NotesPage({ searchParams }: Props) {
                   })}
                 </div>
               ) : (
-                <div className="flex h-full min-h-48 flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 p-5 text-center">
+                <div className="flex h-full min-h-48 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 p-5 text-center">
                   <NotebookPen className="mb-2 size-7 text-muted-foreground" />
                   <p className="text-sm font-medium">暂无匹配笔记</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    换个关键词，或者直接在右侧开始写。
+                    换个关键词，或者直接新建一篇。
                   </p>
                 </div>
               )}
@@ -224,13 +249,15 @@ export default async function NotesPage({ searchParams }: Props) {
 
         <section
           id={activeNote ? `note-${activeNote.id}` : "new-note"}
-          className="workbench-card flex min-h-[640px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0"
+          className="workbench-card flex min-h-[690px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0"
         >
-          <div className="flex flex-col gap-3 border-b border-border/75 bg-muted/16 px-4 py-3.5 md:flex-row md:items-start md:justify-between">
+          <div className="grid gap-3 border-b border-border/75 bg-white/66 px-4 py-3.5 md:grid-cols-[1fr_auto] md:items-start">
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <FileText className="size-3.5 text-primary" />
-                {activeNote ? `${folderLabel(activeNote.folder)} · 更新 ${formatDateTime(activeNote.updatedAt)}` : "新笔记 · 默认保存到收件箱"}
+                {activeNote
+                  ? `${folderLabel(activeNote.folder)} · 更新 ${formatDateTime(activeNote.updatedAt)}`
+                  : "新笔记 · 默认保存到收件箱"}
               </div>
               <h2 className="truncate text-lg font-semibold tracking-tight">
                 {activeNote ? activeNote.title : "写一篇新笔记"}
@@ -257,7 +284,9 @@ export default async function NotesPage({ searchParams }: Props) {
                 <TabsTrigger value="preview">预览</TabsTrigger>
                 <TabsTrigger value="links">双链</TabsTrigger>
               </TabsList>
-              <p className="text-xs text-muted-foreground">Markdown · 双链 · 研究日志</p>
+              <p className="text-xs text-muted-foreground">
+                支持 Markdown 和 `[[双链标题]]`
+              </p>
             </div>
 
             <TabsContent value="edit" className="min-h-0 flex-1 p-0">
@@ -270,24 +299,66 @@ export default async function NotesPage({ searchParams }: Props) {
 
             <TabsContent
               value="preview"
-              className="min-h-0 flex-1 overflow-y-auto bg-white p-6 text-sm leading-7"
+              className="min-h-0 flex-1 overflow-y-auto bg-[#fbfcfd] p-4 md:p-6"
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {activeNote?.content || "保存一篇笔记后，这里会显示 Markdown 预览。"}
-              </ReactMarkdown>
+              <article className="mx-auto min-h-full max-w-4xl rounded-2xl border border-border/72 bg-white px-5 py-5 text-sm leading-7 shadow-[0_10px_28px_rgba(27,42,56,0.045)] md:px-7">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {activeNote?.content || "保存一篇笔记后，这里会显示 Markdown 预览。"}
+                </ReactMarkdown>
+              </article>
             </TabsContent>
 
-            <TabsContent value="links" className="min-h-0 flex-1 overflow-y-auto p-5">
-              <div className="flex min-h-full flex-col rounded-xl border border-dashed bg-muted/25 p-5">
-                <div className="mb-3 flex items-center gap-2 font-medium">
-                  <Link2 className="size-4 text-primary" />
-                  当前笔记引用
+            <TabsContent value="links" className="min-h-0 flex-1 overflow-y-auto bg-[#fbfcfd] p-4 md:p-5">
+              <div className="grid min-h-full gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                <div className="rounded-2xl border border-border/72 bg-white p-5">
+                  <div className="mb-3 flex items-center gap-2 font-medium">
+                    <Link2 className="size-4 text-primary" />
+                    当前笔记引用
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {activeLinks.length ? (
+                      activeLinks.map((link) => (
+                        <span
+                          key={link}
+                          className="rounded-lg border bg-[#eef7f7] px-2.5 py-1 text-sm text-[#315266]"
+                        >
+                          [[{link}]]
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-sm leading-7 text-muted-foreground">
+                        当前笔记还没有 `[[双链]]`。写阅读札记或实验想法时，可以直接引用相关主题。
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-sm leading-7 text-muted-foreground">
-                  {activeLinks.length
-                    ? activeLinks.map((link) => `[[${link}]]`).join(" · ")
-                    : "当前笔记还没有 [[双链]] 引用。"}
-                </p>
+
+                <div className="rounded-2xl border border-border/72 bg-white p-5">
+                  <div className="mb-3 flex items-center gap-2 font-medium">
+                    <Sparkles className="size-4 text-primary" />
+                    已匹配到的笔记
+                  </div>
+                  {linkedNotes.length ? (
+                    <div className="grid gap-2">
+                      {linkedNotes.map((note) => (
+                        <Link
+                          key={note.id}
+                          href={`/notes?note=${note.id}`}
+                          className="grid gap-1 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white"
+                        >
+                          <span className="font-medium">{note.title}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {folderLabel(note.folder)} · {formatDateTime(note.updatedAt)}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm leading-7 text-muted-foreground">
+                      暂时没有匹配到同名笔记。以后可以继续补一个“未创建双链”提醒。
+                    </p>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -307,7 +378,7 @@ function NoteForm({
   defaultFolder: string;
 }) {
   return (
-    <form action={action} className="flex h-full min-h-[540px] flex-col lg:min-h-0">
+    <form action={action} className="flex h-full min-h-[580px] flex-col lg:min-h-0">
       {note ? <input type="hidden" name="id" value={note.id} /> : null}
       <div className="grid gap-3 border-b border-border/75 bg-white px-4 py-4 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
         <Field label="标题">
@@ -332,25 +403,43 @@ function NoteForm({
         </Field>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 bg-[#f6f8fb] p-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="font-medium">正文</span>
-          <span>研究日志</span>
+      <div className="flex min-h-0 flex-1 flex-col bg-[#f6f8fb] p-4">
+        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <PenLine className="size-3.5" />
+            正文
+          </span>
+          <span>写完后保存即可更新预览和双链</span>
         </div>
         <Textarea
           name="content"
-          rows={24}
-          className="field-sizing-fixed min-h-[430px] flex-1 resize-none rounded-xl border-border/80 bg-white p-5 text-sm leading-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] focus-visible:ring-2 lg:min-h-0"
-          defaultValue={note?.content ?? "## 记录\n\n可以使用 [[双链标题]]。"}
+          rows={26}
+          className="field-sizing-fixed min-h-[460px] flex-1 resize-none rounded-2xl border-border/80 bg-white p-5 text-sm leading-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_28px_rgba(27,42,56,0.035)] focus-visible:ring-2 lg:min-h-0"
+          defaultValue={note?.content ?? defaultNoteContent}
         />
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border/75 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
         <p className="text-xs text-muted-foreground">
-          临时想法可以先放进收件箱。
+          临时想法可以先放收件箱，后面再整理分类和双链。
         </p>
-        <SubmitButton className="min-w-28">{note ? "保存笔记" : "创建笔记"}</SubmitButton>
+        <div className="flex items-center gap-2">
+          <Button render={<Link href="/notes" />} variant="outline">
+            <ArrowRight className="size-4" />
+            回到列表
+          </Button>
+          <SubmitButton className="min-w-28">{note ? "保存笔记" : "创建笔记"}</SubmitButton>
+        </div>
       </div>
     </form>
   );
 }
+
+const defaultNoteContent = `## 记录
+
+- 背景：
+- 关键观察：
+- 下一步：
+
+可以使用 [[双链标题]] 连接相关文献、实验或想法。
+`;
