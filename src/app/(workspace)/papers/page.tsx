@@ -116,25 +116,30 @@ export default async function PapersPage({ searchParams }: Props) {
   const unreadCount = countStatus(allCounts, "unread");
   const readingCount = countStatus(allCounts, "reading");
   const readCount = countStatus(allCounts, "read");
+  const totalCount = unreadCount + readingCount + readCount;
+  const readingStack = [
+    ...papers.filter((paper) => paper.readStatus === "reading"),
+    ...papers.filter((paper) => paper.readStatus === "unread"),
+  ].slice(0, 3);
 
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.92fr] xl:items-end">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <LibraryBig className="size-3.5" />
                 Zotero 阅读台
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 同步为主 · 手动兜底
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.5rem]">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
               文献不用重复录，重点放在读到哪一步。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
               Zotero 继续作为文献库，研途 Hub 只接管阅读状态、筛选队列、标签和读后笔记。
               需要临时材料时再补录，避免把管理文献变成新的负担。
             </p>
@@ -171,10 +176,34 @@ export default async function PapersPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <MetricCard label="待读" value={`${unreadCount} 篇`} detail="新同步条目" />
-            <MetricCard label="读中" value={`${readingCount} 篇`} detail="当前阅读队列" />
-            <MetricCard label="已读" value={`${readCount} 篇`} detail="可回顾资料" />
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <BookOpenCheck className="size-3.5" />
+                今日阅读栈
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                {readingStack.length ? (
+                  readingStack.map((paper, index) => (
+                    <ReadingStackItem
+                      key={paper.id}
+                      index={`0${index + 1}`}
+                      title={paper.title}
+                      detail={`${statusText(paper.readStatus)} · ${paper.year ?? "年份未知"}`}
+                    />
+                  ))
+                ) : (
+                  <ReadingStackItem
+                    index="01"
+                    title={zotero.ready ? "同步 Zotero 后开始阅读" : "先连接 Zotero"}
+                    detail={zotero.ready ? "当前筛选下没有待读文献" : "设置 API Key 和 Library ID"}
+                  />
+                )}
+              </div>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-white/62">
+              每天只挑少量文献推进，读完再沉淀成阅读笔记或组会素材。
+            </p>
           </div>
         </div>
       </section>
@@ -253,12 +282,27 @@ export default async function PapersPage({ searchParams }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
-              <ProgressLine label="待读" value={unreadCount} total={unreadCount + readingCount + readCount} />
-              <ProgressLine label="读中" value={readingCount} total={unreadCount + readingCount + readCount} />
-              <ProgressLine label="已读" value={readCount} total={unreadCount + readingCount + readCount} />
+              <ProgressLine label="待读" value={unreadCount} total={totalCount} />
+              <ProgressLine label="读中" value={readingCount} total={totalCount} />
+              <ProgressLine label="已读" value={readCount} total={totalCount} />
               <div className="rounded-xl border border-border/70 bg-white/70 p-3 text-xs text-muted-foreground">
                 最近同步：{lastSyncedAt ? formatDate(lastSyncedAt) : "暂无"}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Search className="size-4 text-primary" />
+                快捷视图
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <QuickStatusLink label="全部文献" count={totalCount} statusValue="" currentStatus={status} q={q} category={category} />
+              <QuickStatusLink label="待读队列" count={unreadCount} statusValue="unread" currentStatus={status} q={q} category={category} />
+              <QuickStatusLink label="正在读" count={readingCount} statusValue="reading" currentStatus={status} q={q} category={category} />
+              <QuickStatusLink label="已读回顾" count={readCount} statusValue="read" currentStatus={status} q={q} category={category} />
             </CardContent>
           </Card>
 
@@ -463,15 +507,57 @@ function filterQuery(values: { q?: string; status?: string; category?: string })
   return params.toString();
 }
 
-function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+function ReadingStackItem({
+  index,
+  title,
+  detail,
+}: {
+  index: string;
+  title: string;
+  detail: string;
+}) {
   return (
-    <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
-      <CardContent className="py-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-semibold tracking-tight text-[#173042]">{value}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
+  );
+}
+
+function QuickStatusLink({
+  label,
+  count,
+  statusValue,
+  currentStatus,
+  q,
+  category,
+}: {
+  label: string;
+  count: number;
+  statusValue: string;
+  currentStatus?: string;
+  q?: string;
+  category?: string;
+}) {
+  const active = statusValue ? currentStatus === statusValue : !currentStatus;
+  const href = `/papers?${filterQuery({ q, status: statusValue || undefined, category })}`;
+
+  return (
+    <Link
+      href={href === "/papers?" ? "/papers" : href}
+      className={
+        active
+          ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
+          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+      }
+    >
+      <span>{label}</span>
+      <span className="text-xs text-muted-foreground">{count}</span>
+    </Link>
   );
 }
 
@@ -493,6 +579,7 @@ function ProgressLine({ label, value, total }: { label: string; value: number; t
 
 function PaperCard({ paper }: { paper: Paper }) {
   const authors = parseTags(paper.authors);
+  const nextAction = paper.readStatus === "read" ? "回顾笔记" : paper.readStatus === "reading" ? "继续阅读" : "开始阅读";
 
   return (
     <Card className="workbench-card">
@@ -513,6 +600,9 @@ function PaperCard({ paper }: { paper: Paper }) {
                 <span className="rounded-md border bg-white/80 px-1.5 py-0.5 text-[11px] text-muted-foreground">
                   {paper.category || "未分类"}
                 </span>
+                <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] text-[#365a7d]">
+                  {nextAction}
+                </span>
               </div>
               <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
                 {paper.title}
@@ -523,7 +613,7 @@ function PaperCard({ paper }: { paper: Paper }) {
               </p>
             </div>
           </div>
-          <form action={updatePaperStatus} className="flex gap-2">
+          <form action={updatePaperStatus} className="flex flex-wrap gap-2 lg:justify-end">
             <input type="hidden" name="id" value={paper.id} />
             <select
               name="readStatus"
