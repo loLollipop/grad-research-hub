@@ -1,13 +1,15 @@
-﻿import {
+import {
   BarChart3,
   CheckCircle2,
   Database,
+  Edit3,
   FileChartColumn,
   FlaskConical,
   Layers3,
   Link2,
   Plus,
   RotateCcw,
+  Target,
   Trash2,
 } from "lucide-react";
 import type { Dataset, Experiment, Result } from "@prisma/client";
@@ -26,7 +28,6 @@ import { formatDateTime, metricsFromJson, parseJson, parseTags } from "@/lib/for
 import { EmptyState } from "@/components/shared/empty-state";
 import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
-import { PageHeader } from "@/components/shared/page-header";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { TagList } from "@/components/shared/tag-list";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,9 @@ export default async function DataPage() {
   const verifiedCount = results.filter(
     (result) => parseResultConfig(result.config).reproducibility === "verified",
   ).length;
+  const reproducingCount = results.filter(
+    (result) => parseResultConfig(result.config).reproducibility === "reproducing",
+  ).length;
   const manuscriptReadyCount = results.filter(
     (result) => parseResultConfig(result.config).manuscriptReady,
   ).length;
@@ -84,203 +88,219 @@ export default async function DataPage() {
   const manuscriptResults = results.filter(
     (result) => result.artifactPath || parseResultConfig(result.config).manuscriptReady,
   );
+  const evidenceQueue = results
+    .filter((result) => parseResultConfig(result.config).reproducibility !== "verified")
+    .slice(0, 5);
 
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        eyebrow="成果"
-        title="成果与复现"
-        description="把一次实验真正留下来的东西收拢起来：关键指标、图表位置、复现状态和下一步。数据集只作为辅助信息，不再占据主要流程。"
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <QuickCreate label="记录一次结果" icon={Plus}>
-              <ResultForm
-                action={createResult}
-                datasets={datasets}
-                experiments={experiments}
-              />
-            </QuickCreate>
-            <QuickCreate label="补充数据集" icon={Database}>
-              <DatasetForm action={createDataset} />
-            </QuickCreate>
+    <div className="grid gap-5">
+      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr] xl:items-end">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+                <FileChartColumn className="size-3.5" />
+                结果证据台
+              </span>
+              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+                指标 · 复现 · 论文素材
+              </span>
+            </div>
+            <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.5rem]">
+              不保存一堆日志，只留下能支撑结论的证据。
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
+              成果页只关心三件事：核心指标是什么、结果能不能复现、是否已经能写进周报、
+              组会或论文。数据集作为辅助，不再抢占主流程。
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <CreateDialog
+                title="记录关键结果"
+                description="只填最关键的 1-3 个指标、复现状态和一句话结论。"
+                label="记录结果"
+                icon={Plus}
+                wide
+              >
+                <ResultForm
+                  action={createResult}
+                  datasets={datasets}
+                  experiments={experiments}
+                />
+              </CreateDialog>
+              <CreateDialog
+                title="补充数据集"
+                description="只有当结果需要固定数据来源或版本时，再补这一步。"
+                label="补充数据集"
+                icon={Database}
+              >
+                <DatasetForm action={createDataset} />
+              </CreateDialog>
+            </div>
           </div>
-        }
-      />
 
-      <section className="grid gap-3 md:grid-cols-4">
-        <InsightCard
-          icon={FileChartColumn}
-          label="关键结果"
-          value={`${results.length} 条`}
-          hint="可用于复盘、周报或论文素材"
-        />
-        <InsightCard
-          icon={CheckCircle2}
-          label="已复现"
-          value={`${verifiedCount} 条`}
-          hint="结果能被再次跑通才算稳"
-        />
-        <InsightCard
-          icon={Layers3}
-          label="论文素材"
-          value={`${manuscriptReadyCount} 条`}
-          hint="图表、表格或结论已可引用"
-        />
-        <InsightCard
-          icon={FlaskConical}
-          label="进行中实验"
-          value={`${activeExperiments.length} 个`}
-          hint="优先补齐这些实验的结果"
-        />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SignalCard icon={FileChartColumn} label="关键结果" value={`${results.length} 条`} detail="可复盘证据" />
+            <SignalCard icon={CheckCircle2} label="已复现" value={`${verifiedCount} 条`} detail={`${reproducingCount} 条复现中`} />
+            <SignalCard icon={Layers3} label="论文素材" value={`${manuscriptReadyCount} 条`} detail="周报和论文可引用" />
+            <SignalCard icon={FlaskConical} label="进行中实验" value={`${activeExperiments.length} 个`} detail="优先补结果" />
+          </div>
+        </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="bg-white/95">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <BarChart3 className="size-4 text-[#1f3d33]" />
-              最近一次结果指标
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chartData.length ? (
-              <div className="grid gap-3">
-                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <h2 className="font-semibold">{latestResult?.title}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {latestResult?.experiment?.title ?? "未关联实验"} · 更新{" "}
-                      {formatDateTime(latestResult?.updatedAt)}
-                    </p>
+      <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
+        <aside className="grid content-start gap-4">
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Target className="size-4 text-primary" />
+                待补证据
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              {evidenceQueue.length ? (
+                evidenceQueue.map((result) => (
+                  <div key={result.id} className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="line-clamp-1 font-medium">{result.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {result.experiment?.title ?? "未关联实验"}
+                        </p>
+                      </div>
+                      <ReproducibilityBadge result={result} />
+                    </div>
                   </div>
-                  {latestResult ? <ReproducibilityBadge result={latestResult} /> : null}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">没有待补复现的结果。</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="size-4 text-primary" />
+                记录原则
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2 text-sm">
+              <WorkflowTip title="少填参数" text="参数、脚本和过程放实验日志，这里只保留结论证据。" />
+              <WorkflowTip title="先看复现" text="能复现的结果比单次漂亮指标更值得写进论文。" />
+              <WorkflowTip title="标出素材" text="图表路径、结果文件和一句话结论，是周报时最省时间的东西。" />
+            </CardContent>
+          </Card>
+        </aside>
+
+        <div className="grid gap-4">
+          <Card className="workbench-card overflow-hidden">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="size-4 text-primary" />
+                最近一次结果指标
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {chartData.length ? (
+                <div className="grid gap-3">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <h2 className="font-semibold">{latestResult?.title}</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {latestResult?.experiment?.title ?? "未关联实验"} · 更新{" "}
+                        {formatDateTime(latestResult?.updatedAt)}
+                      </p>
+                    </div>
+                    {latestResult ? <ReproducibilityBadge result={latestResult} /> : null}
+                  </div>
+                  <ResultMetricsChart data={chartData} />
                 </div>
-                <ResultMetricsChart data={chartData} />
-              </div>
-            ) : (
-              <EmptyState
-                icon={BarChart3}
-                title="暂无可视化指标"
-                description="记录结果时填入一两个核心指标，例如准确率、F1、误差或产率，这里会自动画出最近一次结果。"
-              />
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <EmptyState
+                  icon={BarChart3}
+                  title="暂无可视化指标"
+                  description="记录结果时填一两个核心指标，例如准确率、F1、误差或产率，这里会自动画出最近一次结果。"
+                />
+              )}
+            </CardContent>
+          </Card>
 
-        <Card className="bg-[#fbfcfd]">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <RotateCcw className="size-4 text-[#1f3d33]" />
-              今天建议看这里
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 text-sm leading-6">
-            <WorkflowTip
-              title="先确认关键结果"
-              text="只记录能支持结论的指标，不把训练日志、脚本参数都搬进来。"
-            />
-            <WorkflowTip
-              title="再确认能否复现"
-              text="复现状态用一个下拉选项标记，详细过程仍写在实验记录里。"
-            />
-            <WorkflowTip
-              title="最后沉淀论文素材"
-              text="把图、表、截图或结果文件路径写到成果里，周报和论文时能直接找回。"
-            />
-          </CardContent>
-        </Card>
+          <Tabs defaultValue="results" className="grid gap-3">
+            <TabsList className="w-fit">
+              <TabsTrigger value="results">关键结果</TabsTrigger>
+              <TabsTrigger value="manuscript">论文素材</TabsTrigger>
+              <TabsTrigger value="datasets">数据集</TabsTrigger>
+            </TabsList>
+            <TabsContent value="results" className="grid gap-3">
+              {results.length ? (
+                results.map((result) => (
+                  <ResultCard
+                    key={result.id}
+                    result={result}
+                    datasets={datasets}
+                    experiments={experiments}
+                  />
+                ))
+              ) : (
+                <EmptyState
+                  icon={FileChartColumn}
+                  title="暂无关键结果"
+                  description="从最近一次实验开始，记录结论、核心指标和下一步即可。"
+                />
+              )}
+            </TabsContent>
+            <TabsContent value="manuscript" className="grid gap-3">
+              {manuscriptResults.length ? (
+                manuscriptResults.map((result) => (
+                  <ManuscriptCard key={result.id} result={result} />
+                ))
+              ) : (
+                <EmptyState
+                  icon={Layers3}
+                  title="暂无论文素材"
+                  description="把能写进论文、周报或组会的图表路径标出来，这里会自动汇总。"
+                />
+              )}
+            </TabsContent>
+            <TabsContent value="datasets" className="grid gap-3">
+              {datasets.length ? (
+                datasets.map((dataset) => <DatasetCard key={dataset.id} dataset={dataset} />)
+              ) : (
+                <EmptyState
+                  icon={Database}
+                  title="暂无数据集"
+                  description="只有当结果需要固定数据来源或版本时，再补充数据集信息。"
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </section>
-
-      <Tabs defaultValue="results" className="grid gap-3">
-        <TabsList>
-          <TabsTrigger value="results">关键结果</TabsTrigger>
-          <TabsTrigger value="manuscript">论文素材</TabsTrigger>
-          <TabsTrigger value="datasets">数据集</TabsTrigger>
-        </TabsList>
-        <TabsContent value="results" className="grid gap-3">
-          {results.length ? (
-            results.map((result) => (
-              <ResultCard
-                key={result.id}
-                result={result}
-                datasets={datasets}
-                experiments={experiments}
-              />
-            ))
-          ) : (
-            <EmptyState
-              icon={FileChartColumn}
-              title="暂无关键结果"
-              description="从最近一次实验开始，记录结论、核心指标和下一步即可。"
-            />
-          )}
-        </TabsContent>
-        <TabsContent value="manuscript" className="grid gap-3">
-          {manuscriptResults.length ? (
-            manuscriptResults.map((result) => (
-              <ManuscriptCard key={result.id} result={result} />
-            ))
-          ) : (
-            <EmptyState
-              icon={Layers3}
-              title="暂无论文素材"
-              description="把能写进论文、周报或组会的图表路径标出来，这里会自动汇总。"
-            />
-          )}
-        </TabsContent>
-        <TabsContent value="datasets" className="grid gap-3">
-          {datasets.length ? (
-            datasets.map((dataset) => <DatasetCard key={dataset.id} dataset={dataset} />)
-          ) : (
-            <EmptyState
-              icon={Database}
-              title="暂无数据集"
-              description="只有当结果需要固定数据来源或版本时，再补充数据集信息。"
-            />
-          )}
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
 
-function QuickCreate({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-}) {
-  return (
-    <CreateDialog title={label} label={label} icon={Icon} wide>
-      {children}
-    </CreateDialog>
-  );
-}
-
-function InsightCard({
+function SignalCard({
   icon: Icon,
   label,
   value,
-  hint,
+  detail,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  hint: string;
+  detail: string;
 }) {
   return (
-    <Card className="bg-white/95">
-      <CardContent className="flex gap-3 py-4">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#eef4ef] text-[#1f3d33]">
+    <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
+      <CardContent className="flex items-start gap-3 py-4">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
           <Icon className="size-4" />
         </span>
-        <div>
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 text-lg font-semibold">{value}</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{hint}</p>
+          <p className="mt-1 text-xl font-semibold tracking-tight text-[#173042]">{value}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
         </div>
       </CardContent>
     </Card>
@@ -289,9 +309,9 @@ function InsightCard({
 
 function WorkflowTip({ title, text }: { title: string; text: string }) {
   return (
-    <div className="rounded-lg border bg-white/70 p-3">
+    <div className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3">
       <p className="font-medium">{title}</p>
-      <p className="mt-1 text-muted-foreground">{text}</p>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
     </div>
   );
 }
@@ -309,12 +329,11 @@ function ResultCard({
   const config = parseResultConfig(result.config);
 
   return (
-    <Card className="bg-white/95">
+    <Card className="workbench-card">
       <CardContent className="grid gap-3 py-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-semibold">{result.title}</h2>
               <ReproducibilityBadge result={result} />
               {config.manuscriptReady ? (
                 <Badge
@@ -325,6 +344,9 @@ function ResultCard({
                 </Badge>
               ) : null}
             </div>
+            <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
+              {result.title}
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {result.experiment?.title ?? "未关联实验"} ·{" "}
               {result.dataset?.name ?? "未关联数据集"} · 更新 {formatDateTime(result.updatedAt)}
@@ -334,36 +356,35 @@ function ResultCard({
         </div>
 
         {result.notes ? (
-          <p className="rounded-lg border bg-[#fbfcfd] p-3 text-sm leading-6 text-muted-foreground">
+          <p className="rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 text-sm leading-6 text-muted-foreground">
             {result.notes}
           </p>
         ) : null}
 
         {result.artifactPath ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link2 className="size-4" />
-            图表/结果文件：{result.artifactPath}
+          <p className="flex items-center gap-2 rounded-xl border border-border/72 bg-white/70 p-3 text-sm text-muted-foreground">
+            <Link2 className="size-4 shrink-0" />
+            <span className="break-all">{result.artifactPath}</span>
           </p>
         ) : null}
 
-        <details className="rounded-md border p-3">
-          <summary className="cursor-pointer text-sm font-medium">编辑结果</summary>
-          <div className="mt-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/65 pt-3">
+          <CreateDialog title="编辑结果" label="编辑" icon={Edit3} wide>
             <ResultForm
               action={updateResult}
               result={result}
               datasets={datasets}
               experiments={experiments}
             />
-            <form action={deleteResult} className="mt-3">
-              <input type="hidden" name="id" value={result.id} />
-              <Button type="submit" variant="destructive">
-                <Trash2 className="size-4" />
-                删除结果
-              </Button>
-            </form>
-          </div>
-        </details>
+          </CreateDialog>
+          <form action={deleteResult}>
+            <input type="hidden" name="id" value={result.id} />
+            <Button type="submit" variant="destructive" size="sm">
+              <Trash2 className="size-3.5" />
+              删除
+            </Button>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );
@@ -374,13 +395,13 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
   const metrics = parseJson<Record<string, number | string>>(result.metrics, {});
 
   return (
-    <Card className="bg-white/95">
+    <Card className="workbench-card">
       <CardContent className="grid gap-3 py-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-semibold">{result.title}</h2>
               <ReproducibilityBadge result={result} />
+              <h2 className="font-semibold">{result.title}</h2>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {config.manuscriptReady ? "已标记为论文素材" : "有图表或结果文件路径"} ·{" "}
@@ -390,9 +411,9 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
           <MetricPills metrics={metrics} />
         </div>
         {result.artifactPath ? (
-          <p className="flex items-center gap-2 rounded-lg border bg-[#fbfcfd] p-3 text-sm text-muted-foreground">
+          <p className="flex items-center gap-2 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 text-sm text-muted-foreground">
             <Link2 className="size-4 shrink-0" />
-            {result.artifactPath}
+            <span className="break-all">{result.artifactPath}</span>
           </p>
         ) : null}
         {result.notes ? (
@@ -405,10 +426,10 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
 
 function DatasetCard({ dataset }: { dataset: Dataset }) {
   return (
-    <Card className="bg-white/95">
+    <Card className="workbench-card">
       <CardContent className="grid gap-3 py-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-          <div>
+        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+          <div className="min-w-0">
             <h2 className="font-semibold">{dataset.name}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {dataset.source ?? "来源未填"} · {dataset.version ?? "无版本"} ·{" "}
@@ -416,7 +437,7 @@ function DatasetCard({ dataset }: { dataset: Dataset }) {
             </p>
             {dataset.externalUrl ? (
               <a
-                className="mt-1 inline-flex text-xs text-[#1f3d33] underline-offset-4 hover:underline"
+                className="mt-1 inline-flex text-xs text-primary underline-offset-4 hover:underline"
                 href={dataset.externalUrl}
               >
                 外部数据页
@@ -428,19 +449,18 @@ function DatasetCard({ dataset }: { dataset: Dataset }) {
         {dataset.description ? (
           <p className="text-sm leading-6 text-muted-foreground">{dataset.description}</p>
         ) : null}
-        <details className="rounded-md border p-3">
-          <summary className="cursor-pointer text-sm font-medium">编辑数据集</summary>
-          <div className="mt-3">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border/65 pt-3">
+          <CreateDialog title="编辑数据集" label="编辑" icon={Edit3}>
             <DatasetForm action={updateDataset} dataset={dataset} />
-            <form action={deleteDataset} className="mt-3">
-              <input type="hidden" name="id" value={dataset.id} />
-              <Button type="submit" variant="destructive">
-                <Trash2 className="size-4" />
-                删除数据集
-              </Button>
-            </form>
-          </div>
-        </details>
+          </CreateDialog>
+          <form action={deleteDataset}>
+            <input type="hidden" name="id" value={dataset.id} />
+            <Button type="submit" variant="destructive" size="sm">
+              <Trash2 className="size-3.5" />
+              删除
+            </Button>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );
@@ -451,7 +471,7 @@ function MetricPills({ metrics }: { metrics: Record<string, number | string> }) 
 
   if (!entries.length) {
     return (
-      <span className="rounded-md border bg-stone-50 px-2 py-1 text-xs text-muted-foreground">
+      <span className="rounded-lg border bg-stone-50 px-2.5 py-1 text-xs text-muted-foreground">
         未填写指标
       </span>
     );
@@ -460,7 +480,7 @@ function MetricPills({ metrics }: { metrics: Record<string, number | string> }) 
   return (
     <div className="flex flex-wrap gap-2 text-xs">
       {entries.slice(0, 6).map(([key, value]) => (
-        <span key={key} className="rounded-md border bg-[#fbfcfd] px-2 py-1">
+        <span key={key} className="rounded-lg border bg-[#fbfcfd] px-2.5 py-1">
           {key}: {String(value)}
         </span>
       ))}
@@ -644,16 +664,8 @@ function ResultForm({
           placeholder="一句话结论 + 下一步，例如：提升主要来自数据清洗；下一步复现 baseline。"
         />
       </Field>
-      <input
-        type="hidden"
-        name="metrics"
-        value={result?.metrics ?? "{}"}
-      />
-      <input
-        type="hidden"
-        name="config"
-        value={result?.config ?? "{}"}
-      />
+      <input type="hidden" name="metrics" value={result?.metrics ?? "{}"} />
+      <input type="hidden" name="config" value={result?.config ?? "{}"} />
       <SubmitButton>{result ? "保存结果" : "记录结果"}</SubmitButton>
     </form>
   );

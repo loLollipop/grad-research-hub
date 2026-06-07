@@ -13,10 +13,14 @@ type AiResponse = {
   suggestedActions: string[];
 };
 
-export function AiWorkbench() {
-  const [prompt, setPrompt] = useState(
-    "请根据最近的实验记录，帮我整理一份本周组会汇报提纲。",
-  );
+export function AiWorkbench({
+  initialPrompt = "请根据最近的实验记录，帮我整理一份本周组会汇报提纲。",
+  presets = [],
+}: {
+  initialPrompt?: string;
+  presets?: Array<{ label: string; prompt: string }>;
+}) {
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [result, setResult] = useState<AiResponse | null>(null);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -48,6 +52,21 @@ export function AiWorkbench() {
 
   return (
     <div className="grid gap-3">
+      {presets.length ? (
+        <div className="flex flex-wrap gap-2">
+          {presets.map((preset) => (
+            <Button
+              key={preset.label}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPrompt(preset.prompt)}
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       <Textarea
         value={prompt}
         rows={8}
