@@ -1,6 +1,5 @@
 import {
   CalendarClock,
-  CheckCircle2,
   ClipboardList,
   Clock3,
   Edit3,
@@ -39,7 +38,7 @@ import { getMeetingBriefPeriod } from "@/lib/meeting-brief";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ q?: string; type?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; status?: string; scope?: string }>;
 };
 
 const itemTypes = [
@@ -53,12 +52,33 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+type AdminFilters = {
+  q?: string;
+  type?: string;
+  status?: string;
+  scope?: string;
+};
+
+function adminHref(filters: AdminFilters, patch: Partial<AdminFilters>) {
+  const merged = { ...filters, ...patch };
+  const query = new URLSearchParams();
+
+  if (merged.q) query.set("q", merged.q);
+  if (merged.type) query.set("type", merged.type);
+  if (merged.status) query.set("status", merged.status);
+  if (merged.scope) query.set("scope", merged.scope);
+
+  return query.size ? `/admin?${query.toString()}` : "/admin";
+}
+
 export default async function AdminPage({ searchParams }: Props) {
   const params = await searchParams;
   const q = first(params.q)?.trim();
   const type = first(params.type);
   const status = first(params.status);
   const meetingBriefPeriod = getMeetingBriefPeriod();
+  const scope = first(params.scope);
+  const currentFilters = { q, type, status, scope };
 
   const where: Prisma.AdminItemWhereInput = {};
   if (q) {
@@ -74,6 +94,16 @@ export default async function AdminPage({ searchParams }: Props) {
   }
   if (status && ["todo", "doing", "done"].includes(status)) {
     where.status = status;
+  }
+  if (scope === "today") {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setHours(0, 0, 0, 0);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    where.dueDate = { lt: tomorrow };
+    if (!status) {
+      where.status = { not: "done" };
+    }
   }
 
   const [items, typeCounts, statusCounts, currentMeetingBrief] = await Promise.all([
@@ -94,7 +124,6 @@ export default async function AdminPage({ searchParams }: Props) {
   ]);
 
   const openItems = items.filter((item) => item.status !== "done");
-  const doneCount = statusCounts.find((item) => item.status === "done")?._count ?? 0;
   const dueToday = openItems.filter((item) => daysUntil(item.dueDate) === 0);
   const overdue = openItems.filter((item) => {
     const distance = daysUntil(item.dueDate);
@@ -105,27 +134,38 @@ export default async function AdminPage({ searchParams }: Props) {
     return distance !== null && distance >= 0 && distance <= 7;
   });
   const focusItem = overdue[0] ?? dueToday[0] ?? upcoming[0] ?? openItems[0];
+  const adminStack = [...items]
+    .sort((left, right) => adminItemRank(left) - adminItemRank(right))
+    .slice(0, 3);
+  const allItemsCount = statusCounts.reduce((sum, item) => sum + item._count, 0);
+  const doneBaseCount = statusCounts.find((item) => item.status === "done")?._count ?? 0;
+  const openBaseCount = allItemsCount - doneBaseCount;
+  const todayBaseCount = items.filter((item) => {
+    const distance = daysUntil(item.dueDate);
+    return item.status !== "done" && distance !== null && distance <= 0;
+  }).length;
+  const typeCount = (value: string) => typeCounts.find((item) => item.type === value)?._count ?? 0;
 
   return (
     <div className="grid gap-5">
-      <section className="dashboard-hero overflow-hidden rounded-2xl border border-border/70 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.08)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.86fr] xl:items-end">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
+        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/72 px-2.5 py-1 text-xs font-medium text-[#315266]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/76 px-2.5 py-1 text-xs font-medium text-[#274563]">
                 <ClipboardList className="size-3.5" />
                 轻事务时间线
               </span>
-              <span className="rounded-full border border-white/55 bg-white/54 px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
                 组会 · 材料 · 报销 · 截止
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-[2rem] font-semibold leading-tight tracking-tight text-[#173042] md:text-[2.5rem]">
-              把烦人的小事收起来，不让它们偷走科研注意力。
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#16263a] md:text-[2.55rem]">
+              事务页只做一件事：别让小事打断科研节奏。
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#557083]">
-              事务页只登记真正会打断你的事：组会地点、材料截止、报销进度和学院通知。
-              首页会汇总近期事项，这里负责快速筛选和收口。
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#53677a]">
+              只登记真正会偷走注意力的事：组会地点、材料截止、报销进度和学院通知。
+              这里优先告诉你今天要处理什么，处理完就回到科研主线。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
@@ -154,11 +194,45 @@ export default async function AdminPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SignalCard icon={Clock3} label="待处理" value={`${openItems.length} 件`} detail={`${doneCount} 件已完成`} />
-            <SignalCard icon={CalendarClock} label="今天截止" value={`${dueToday.length} 件`} detail={`${overdue.length} 件逾期`} />
-            <SignalCard icon={CheckCircle2} label="7 天内" value={`${upcoming.length} 件`} detail="近期优先看" />
-            <SignalCard icon={ClipboardList} label="当前筛选" value={`${items.length} 件`} detail={q || type || status ? "已应用筛选" : "全部事务"} />
+          <div className="flex min-h-64 flex-col justify-between rounded-2xl bg-[#162235] p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                <Clock3 className="size-3.5" />
+                今日减负栈
+              </p>
+              <div className="mt-4 grid gap-2.5">
+                {adminStack.length ? (
+                  adminStack.map((item, index) => (
+                    <AdminStackItem
+                      key={item.id}
+                      index={`0${index + 1}`}
+                      title={item.title}
+                      detail={`${adminActionLabel(item)} · ${dueText(item.dueDate)}`}
+                    />
+                  ))
+                ) : (
+                  <AdminStackItem
+                    index="01"
+                    title="暂时没有需要处理的小事"
+                    detail="保持科研专注，等有组会或截止再登记"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{openItems.length}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">待处理</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{dueToday.length + overdue.length}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">今天/逾期</p>
+              </div>
+              <div>
+                <p className="text-lg font-semibold tracking-tight">{upcoming.length}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">7 天内</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -196,24 +270,54 @@ export default async function AdminPage({ searchParams }: Props) {
 
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-              <CardTitle>事务分布</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="size-4 text-primary" />
+                快捷视图
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
-              {itemTypes.map(({ value, label, icon: Icon }) => (
-                <a
-                  key={value}
-                  href={`/admin?type=${value}`}
-                  className="flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 transition hover:border-primary/25 hover:bg-white"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Icon className="size-4 text-primary" />
-                    {label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {typeCounts.find((item) => item.type === value)?._count ?? 0}
-                  </span>
-                </a>
-              ))}
+              <QuickAdminLink
+                label="全部事务"
+                count={allItemsCount}
+                href={adminHref(currentFilters, { type: undefined, status: undefined, scope: undefined })}
+                active={!type && !status && !scope}
+              />
+              <QuickAdminLink
+                label="今天/逾期"
+                count={todayBaseCount}
+                href={adminHref(currentFilters, { type: undefined, status: undefined, scope: "today" })}
+                active={scope === "today" && !type && !status}
+              />
+              <QuickAdminLink
+                label="组会"
+                count={typeCount("meeting")}
+                href={adminHref(currentFilters, { type: "meeting", status: undefined, scope: undefined })}
+                active={type === "meeting" && !status && !scope}
+              />
+              <QuickAdminLink
+                label="材料"
+                count={typeCount("material")}
+                href={adminHref(currentFilters, { type: "material", status: undefined, scope: undefined })}
+                active={type === "material" && !status && !scope}
+              />
+              <QuickAdminLink
+                label="报销"
+                count={typeCount("reimbursement")}
+                href={adminHref(currentFilters, { type: "reimbursement", status: undefined, scope: undefined })}
+                active={type === "reimbursement" && !status && !scope}
+              />
+              <QuickAdminLink
+                label="待处理"
+                count={openBaseCount}
+                href={adminHref(currentFilters, { type: undefined, status: "todo", scope: undefined })}
+                active={status === "todo" && !type && !scope}
+              />
+              <QuickAdminLink
+                label="已完成"
+                count={doneBaseCount}
+                href={adminHref(currentFilters, { type: undefined, status: "done", scope: undefined })}
+                active={status === "done" && !type && !scope}
+              />
             </CardContent>
           </Card>
         </aside>
@@ -302,30 +406,50 @@ export default async function AdminPage({ searchParams }: Props) {
   );
 }
 
-function SignalCard({
-  icon: Icon,
-  label,
-  value,
+function AdminStackItem({
+  index,
+  title,
   detail,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
+  index: string;
+  title: string;
   detail: string;
 }) {
   return (
-    <Card className="border-white/72 bg-white/76 shadow-[0_12px_28px_rgba(27,42,56,0.06)] backdrop-blur">
-      <CardContent className="flex items-start gap-3 py-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d7e7ea] bg-[#eef7f7] text-[#315266]">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 text-xl font-semibold tracking-tight text-[#173042]">{value}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
+        <span className="h-px flex-1 bg-white/12" />
+      </div>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
+  );
+}
+
+function QuickAdminLink({
+  label,
+  count,
+  href,
+  active,
+}: {
+  label: string;
+  count: number;
+  href: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={
+        active
+          ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
+          : "flex items-center justify-between rounded-xl border border-border/72 bg-[#fbfcfd]/88 px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
+      }
+    >
+      <span>{label}</span>
+      <span className="text-xs text-muted-foreground">{count}</span>
+    </Link>
   );
 }
 
@@ -344,6 +468,9 @@ function AdminTimelineCard({ item }: { item: AdminItem }) {
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge value={item.type} />
               <StatusBadge value={item.status} />
+              <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] text-[#365a7d]">
+                {adminActionLabel(item)}
+              </span>
               <span className="rounded-md border bg-white/80 px-1.5 py-0.5 text-[11px] text-muted-foreground">
                 {dueText(item.dueDate)}
               </span>
@@ -487,4 +614,51 @@ function dueText(value: Date | null) {
   }
 
   return `${distance} 天后 · ${formatDate(value)}`;
+}
+
+function adminActionLabel(item: AdminItem) {
+  if (item.status === "done") {
+    return "已收口";
+  }
+
+  const distance = daysUntil(item.dueDate);
+
+  if (distance !== null && distance < 0) {
+    return "先补逾期";
+  }
+
+  if (distance === 0) {
+    return "今天处理";
+  }
+
+  if (item.status === "doing") {
+    return "继续推进";
+  }
+
+  if (item.type === "meeting") {
+    return "准备组会";
+  }
+
+  if (item.type === "reimbursement") {
+    return "补报销材料";
+  }
+
+  if (item.type === "material") {
+    return "整理材料";
+  }
+
+  return "安排处理";
+}
+
+function adminItemRank(item: AdminItem) {
+  if (item.status === "done") {
+    return 1000;
+  }
+
+  const distance = daysUntil(item.dueDate);
+  const dueRank = distance === null ? 20 : Math.min(distance, 20);
+  const statusRank = item.status === "doing" ? -2 : 0;
+  const meetingRank = item.type === "meeting" ? -0.5 : 0;
+
+  return dueRank + statusRank + meetingRank;
 }
