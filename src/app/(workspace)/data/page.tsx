@@ -9,10 +9,13 @@ import {
   Link2,
   Plus,
   RotateCcw,
+  Search,
   Target,
   Trash2,
+  X,
 } from "lucide-react";
-import type { Dataset, Experiment, Result } from "@prisma/client";
+import Link from "next/link";
+import type { Dataset, Experiment, Prisma, Result } from "@prisma/client";
 
 import { ResultMetricsChart } from "@/components/charts/result-metrics-chart";
 import {
@@ -49,6 +52,16 @@ type ResultConfig = {
   manuscriptReady?: boolean;
 };
 
+type Props = {
+  searchParams: Promise<{
+    q?: string;
+    reproducibility?: string;
+    manuscript?: string;
+    experiment?: string;
+    dataset?: string;
+  }>;
+};
+
 const reproducibilityOptions = [
   { value: "unknown", label: "待判断" },
   { value: "todo", label: "待复现" },
@@ -63,34 +76,77 @@ const reproducibilityTone: Record<string, string> = {
   verified: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
-export default async function DataPage() {
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function DataPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const q = valueOf(params.q)?.trim();
+  const reproducibility = valueOf(params.reproducibility);
+  const manuscript = valueOf(params.manuscript);
+  const experimentId = valueOf(params.experiment);
+  const datasetId = valueOf(params.dataset);
+  const activeFilterCount = [q, reproducibility, manuscript, experimentId, datasetId].filter(Boolean).length;
+
+  const resultFilters: Prisma.ResultWhereInput[] = [];
+  if (q) {
+    resultFilters.push({
+      OR: [
+        { title: { contains: q, mode: "insensitive" } },
+        { notes: { contains: q, mode: "insensitive" } },
+        { metrics: { contains: q, mode: "insensitive" } },
+        { artifactPath: { contains: q, mode: "insensitive" } },
+        { experiment: { title: { contains: q, mode: "insensitive" } } },
+        { dataset: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    });
+  }
+  if (experimentId) {
+    resultFilters.push({ experimentId });
+  }
+  if (datasetId) {
+    resultFilters.push({ datasetId });
+  }
+  const resultWhere: Prisma.ResultWhereInput = resultFilters.length ? { AND: resultFilters } : {};
+
   const [datasets, experiments, results] = await Promise.all([
     prisma.dataset.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.experiment.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.result.findMany({
+      where: resultWhere,
       orderBy: { updatedAt: "desc" },
       include: { experiment: true, dataset: true },
     }),
   ]);
 
-  const latestResult = results[0];
+  const filteredResults = results.filter((result) => {
+    const config = parseResultConfig(result.config);
+    if (reproducibility && config.reproducibility !== reproducibility) return false;
+    if (manuscript === "ready" && !config.manuscriptReady && !result.artifactPath) return false;
+    if (manuscript === "not-ready" && (config.manuscriptReady || result.artifactPath)) return false;
+    return true;
+  });
+  const latestResult = filteredResults[0];
   const chartData = latestResult ? metricsFromJson(latestResult.metrics) : [];
-  const verifiedCount = results.filter(
+  const verifiedCount = filteredResults.filter(
     (result) => parseResultConfig(result.config).reproducibility === "verified",
   ).length;
-  const reproducingCount = results.filter(
+  const reproducingCount = filteredResults.filter(
     (result) => parseResultConfig(result.config).reproducibility === "reproducing",
   ).length;
-  const manuscriptReadyCount = results.filter(
+  const manuscriptReadyCount = filteredResults.filter(
     (result) => parseResultConfig(result.config).manuscriptReady,
   ).length;
   const activeExperiments = experiments.filter((experiment) => experiment.status === "running");
-  const manuscriptResults = results.filter(
+  const manuscriptResults = filteredResults.filter(
     (result) => result.artifactPath || parseResultConfig(result.config).manuscriptReady,
   );
-  const evidenceQueue = results
+  const evidenceQueue = filteredResults
     .filter((result) => parseResultConfig(result.config).reproducibility !== "verified")
     .slice(0, 5);
+  const selectedExperimentTitle = experiments.find((experiment) => experiment.id === experimentId)?.title;
+  const selectedDatasetName = datasets.find((dataset) => dataset.id === datasetId)?.name;
 
   return (
     <div className="grid gap-5">
@@ -139,7 +195,7 @@ export default async function DataPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <SignalCard icon={FileChartColumn} label="关键结果" value={`${results.length} 条`} detail="可复盘证据" />
+            <SignalCard icon={FileChartColumn} label="关键结果" value={`${filteredResults.length} 条`} detail="当前范围证据" />
             <SignalCard icon={CheckCircle2} label="已复现" value={`${verifiedCount} 条`} detail={`${reproducingCount} 条复现中`} />
             <SignalCard icon={Layers3} label="论文素材" value={`${manuscriptReadyCount} 条`} detail="周报和论文可引用" />
             <SignalCard icon={FlaskConical} label="进行中实验" value={`${activeExperiments.length} 个`} detail="优先补结果" />
@@ -193,6 +249,100 @@ export default async function DataPage() {
         </aside>
 
         <div className="grid gap-4">
+          <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] xl:grid-cols-[1fr_145px_150px_170px_170px_auto]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input name="q" placeholder="搜索结果、指标、结论、文件路径" defaultValue={q} className="pl-8" />
+            </div>
+            <select
+              name="reproducibility"
+              defaultValue={reproducibility ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部复现</option>
+              {reproducibilityOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              name="manuscript"
+              defaultValue={manuscript ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部素材</option>
+              <option value="ready">可写入论文</option>
+              <option value="not-ready">待补素材</option>
+            </select>
+            <select
+              name="experiment"
+              defaultValue={experimentId ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部实验</option>
+              {experiments.map((experiment) => (
+                <option key={experiment.id} value={experiment.id}>
+                  {experiment.title}
+                </option>
+              ))}
+            </select>
+            <select
+              name="dataset"
+              defaultValue={datasetId ?? ""}
+              className="h-9 rounded-lg border bg-background px-2 text-sm"
+            >
+              <option value="">全部数据集</option>
+              {datasets.map((dataset) => (
+                <option key={dataset.id} value={dataset.id}>
+                  {dataset.name}
+                </option>
+              ))}
+            </select>
+            <Button type="submit" variant="outline">
+              筛选
+            </Button>
+          </form>
+
+          <div className="flex flex-col gap-2 rounded-2xl border border-border/72 bg-white/78 p-3 text-sm shadow-[0_10px_24px_rgba(34,48,71,0.04)] md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">当前结果 {filteredResults.length} 条</span>
+              {reproducibility ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {reproducibilityLabel(reproducibility)}
+                </span>
+              ) : null}
+              {manuscript ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {manuscript === "ready" ? "可写入论文" : "待补素材"}
+                </span>
+              ) : null}
+              {selectedExperimentTitle ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {selectedExperimentTitle}
+                </span>
+              ) : null}
+              {selectedDatasetName ? (
+                <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                  {selectedDatasetName}
+                </span>
+              ) : null}
+            </div>
+            {activeFilterCount ? (
+              <Link
+                href="/data"
+                className="inline-flex w-fit items-center gap-1 rounded-full border border-border/70 bg-white/82 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/25 hover:text-primary"
+              >
+                <X className="size-3" />
+                清除 {activeFilterCount} 个筛选
+              </Link>
+            ) : (
+              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                未筛选
+              </span>
+            )}
+          </div>
+
           <Card className="workbench-card overflow-hidden">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -232,8 +382,8 @@ export default async function DataPage() {
               <TabsTrigger value="datasets">数据集</TabsTrigger>
             </TabsList>
             <TabsContent value="results" className="grid gap-3">
-              {results.length ? (
-                results.map((result) => (
+              {filteredResults.length ? (
+                filteredResults.map((result) => (
                   <ResultCard
                     key={result.id}
                     result={result}
@@ -244,8 +394,12 @@ export default async function DataPage() {
               ) : (
                 <EmptyState
                   icon={FileChartColumn}
-                  title="暂无关键结果"
-                  description="从最近一次实验开始，记录结论、核心指标和下一步即可。"
+                  title={activeFilterCount ? "没有匹配的关键结果" : "暂无关键结果"}
+                  description={
+                    activeFilterCount
+                      ? "试着清除筛选，或换一个复现状态、实验、数据集再看。"
+                      : "从最近一次实验开始，记录结论、核心指标和下一步即可。"
+                  }
                 />
               )}
             </TabsContent>
@@ -491,7 +645,7 @@ function MetricPills({ metrics }: { metrics: Record<string, number | string> }) 
 function ReproducibilityBadge({ result }: { result: Pick<Result, "config"> }) {
   const config = parseResultConfig(result.config);
   const value = config.reproducibility ?? "unknown";
-  const label = reproducibilityOptions.find((option) => option.value === value)?.label ?? "待判断";
+  const label = reproducibilityLabel(value);
 
   return (
     <Badge
@@ -501,6 +655,10 @@ function ReproducibilityBadge({ result }: { result: Pick<Result, "config"> }) {
       {label}
     </Badge>
   );
+}
+
+function reproducibilityLabel(value: string) {
+  return reproducibilityOptions.find((option) => option.value === value)?.label ?? "待判断";
 }
 
 function DatasetForm({
