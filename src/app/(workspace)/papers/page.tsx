@@ -18,6 +18,7 @@ import type { Paper, Prisma } from "@prisma/client";
 
 import {
   createPaper,
+  createReadingPlanNote,
   createReadingNoteFromPaper,
   deletePaper,
   syncZoteroPapers,
@@ -51,6 +52,7 @@ type Props = {
     message?: string;
     bulk?: string;
     bulkStatus?: string;
+    plan?: string;
   }>;
 };
 
@@ -69,6 +71,7 @@ export default async function PapersPage({ searchParams }: Props) {
   const bulk = valueOf(params.bulk);
   const bulkCount = Number(valueOf(params.count) ?? 0);
   const bulkStatus = valueOf(params.bulkStatus);
+  const plan = valueOf(params.plan);
   const zotero = await getZoteroConfigStatus();
   const activeFilterCount = [q, status, category].filter(Boolean).length;
   const currentQuery = new URLSearchParams();
@@ -155,6 +158,16 @@ export default async function PapersPage({ searchParams }: Props) {
                 <Settings className="size-4" />
                 Zotero 设置
               </Link>
+              <form action={createReadingPlanNote}>
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {papers.slice(0, 12).map((paper) => (
+                  <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                ))}
+                <SubmitButton variant="outline" disabled={!papers.length}>
+                  <FileText className="size-4" />
+                  整理阅读计划
+                </SubmitButton>
+              </form>
             </div>
           </div>
 
@@ -219,6 +232,14 @@ export default async function PapersPage({ searchParams }: Props) {
           tone="error"
           title="没有选中文献"
           description="先勾选要处理的文献，再批量更新阅读状态。"
+        />
+      ) : null}
+
+      {plan === "empty" ? (
+        <SyncNotice
+          tone="error"
+          title="没有可整理的文献"
+          description="当前列表为空。先同步 Zotero、切换集合，或清除筛选后再生成阅读计划。"
         />
       ) : null}
 
@@ -328,21 +349,33 @@ export default async function PapersPage({ searchParams }: Props) {
                 </span>
               )}
             </div>
-            <form id="paper-bulk-form" action={updatePaperStatuses} className="flex flex-wrap gap-2">
-              <input type="hidden" name="returnTo" value={returnTo} />
-              <select
-                name="readStatus"
-                defaultValue="reading"
-                className="h-9 rounded-lg border bg-background px-2 text-sm"
-              >
-                <option value="unread">标为待读</option>
-                <option value="reading">标为读中</option>
-                <option value="read">标为已读</option>
-              </select>
-              <SubmitButton variant="outline" className="w-fit">
-                批量更新
-              </SubmitButton>
-            </form>
+            <div className="flex flex-wrap gap-2">
+              <form action={createReadingPlanNote} className="contents">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {papers.slice(0, 12).map((paper) => (
+                  <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                ))}
+                <SubmitButton variant="outline" className="w-fit" disabled={!papers.length}>
+                  <FileText className="size-3.5" />
+                  生成阅读计划
+                </SubmitButton>
+              </form>
+              <form id="paper-bulk-form" action={updatePaperStatuses} className="flex flex-wrap gap-2">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <select
+                  name="readStatus"
+                  defaultValue="reading"
+                  className="h-9 rounded-lg border bg-background px-2 text-sm"
+                >
+                  <option value="unread">标为待读</option>
+                  <option value="reading">标为读中</option>
+                  <option value="read">标为已读</option>
+                </select>
+                <SubmitButton variant="outline" className="w-fit">
+                  批量更新
+                </SubmitButton>
+              </form>
+            </div>
           </div>
 
           {papers.length ? (

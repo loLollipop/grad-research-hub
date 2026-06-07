@@ -240,8 +240,134 @@ export async function createReadingNoteFromPaper(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createReadingPlanNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 12);
+  const returnTo = safePapersReturnTo(String(formData.get("returnTo") ?? "/papers"));
+
+  if (!ids.length) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}plan=empty`);
+  }
+
+  const papers = await prisma.paper.findMany({
+    where: { id: { in: ids } },
+    orderBy: [{ readStatus: "asc" }, { updatedAt: "desc" }],
+  });
+
+  if (!papers.length) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}plan=empty`);
+  }
+
+  const marker = readingPlanMarker(papers);
+  const existing = await prisma.note.findFirst({
+    where: {
+      folder: "文献",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `阅读计划 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "文献",
+      content: buildReadingPlanNote(papers, marker),
+      tags: tagsToString(["阅读计划", "文献", "自动整理"]),
+    },
+  });
+
+  await prisma.paper.updateMany({
+    where: {
+      id: {
+        in: papers
+          .filter((paper) => paper.readStatus === "unread")
+          .map((paper) => paper.id),
+      },
+    },
+    data: { readStatus: "reading" },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/papers");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 function paperNoteMarker(id: string) {
   return `paper-reading-note:${id}`;
+}
+
+function readingPlanMarker(papers: Paper[]) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = papers
+    .map((paper) => paper.id)
+    .sort()
+    .join("|");
+  return `reading-plan:${day}:${stableHash(key)}`;
+}
+
+function buildReadingPlanNote(papers: Paper[], marker: string) {
+  const lines = [
+    `<!-- ${marker} -->`,
+    `# 阅读计划 ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "> 先读最相关的 2-3 篇，不追求一次读完。读完后把真正有用的内容沉淀成单篇阅读笔记或项目任务。",
+    "",
+    "## 今天要回答的问题",
+    "",
+    "- [ ] 这组文献共同在解决什么问题？",
+    "- [ ] 哪篇最接近当前课题/实验？",
+    "- [ ] 哪个方法、数据或评价指标可以复用？",
+    "",
+    "## 阅读队列",
+    "",
+  ];
+
+  papers.forEach((paper, index) => {
+    const authors = parseTags(paper.authors).slice(0, 4).join(", ") || "作者未知";
+    const source = [paper.journal, paper.year ? String(paper.year) : "", paper.category]
+      .filter(Boolean)
+      .join("；") || "来源未填";
+
+    lines.push(
+      `### ${index + 1}. ${paper.title}`,
+      "",
+      ...[
+        `- 状态：${paperStatusText(paper.readStatus)}`,
+        `- 作者：${authors}`,
+        `- 来源：${source}`,
+        paper.doi ? `- DOI：${paper.doi}` : null,
+        paper.arxivId ? `- arXiv：${paper.arxivId}` : null,
+        paper.externalUrl ? `- 链接：${paper.externalUrl}` : null,
+      ].filter((line): line is string => Boolean(line)),
+      "",
+      "需要读出的东西：",
+      "- [ ] 一句话问题：",
+      "- [ ] 方法抓手：",
+      "- [ ] 关键结果：",
+      "- [ ] 对当前课题的用处：",
+      "",
+    );
+  });
+
+  lines.push(
+    "## 读完后的动作",
+    "",
+    "- [ ] 给最有用的文献生成单篇阅读笔记",
+    "- [ ] 把可复用方法或待验证想法拆成项目任务",
+    "- [ ] 把需要做对照的部分写进实验日志",
+    "- [ ] 把综述/引言可用句子移到写作笔记",
+  );
+
+  return lines.join("\n");
 }
 
 function buildPaperReadingNote(paper: Paper) {
@@ -1104,6 +1230,10 @@ function extractOpenChecklistItems(content: string) {
 }
 
 function stableTaskKey(value: string) {
+  return stableHash(value);
+}
+
+function stableHash(value: string) {
   let hash = 0;
   for (let index = 0; index < value.length; index += 1) {
     hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
