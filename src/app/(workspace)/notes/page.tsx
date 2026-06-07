@@ -13,7 +13,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import type { Note } from "@prisma/client";
+import type { Note, Prisma } from "@prisma/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -61,6 +61,14 @@ function noteSnippet(content: string) {
     .slice(0, 78);
 }
 
+function normalizeTitle(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function uniqueWikiLinks(content: string) {
+  return [...new Set(extractWikiLinks(content).map((link) => link.trim()).filter(Boolean))];
+}
+
 function openChecklistCount(content: string) {
   return content
     .split("\n")
@@ -90,34 +98,56 @@ export default async function NotesPage({ searchParams }: Props) {
   const noteId = first(params.note);
   const taskSync = first(params.taskSync);
 
-  const notes = await prisma.note.findMany({
-    where: {
-      ...(q
-        ? {
-            OR: [
-              { title: { contains: q, mode: "insensitive" } },
-              { content: { contains: q, mode: "insensitive" } },
-              { tags: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-      ...(folder ? { folder: { contains: folder, mode: "insensitive" } } : {}),
-    },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  const folders = await prisma.note.groupBy({
-    by: ["folder"],
-    _count: true,
-    orderBy: { folder: "asc" },
-  });
-  const totalNotes = folders.reduce((sum, item) => sum + item._count, 0);
-  const selectedNote = noteId ? notes.find((note) => note.id === noteId) : notes[0];
+  const noteWhere: Prisma.NoteWhereInput = {};
+  if (q) {
+    noteWhere.OR = [
+      { title: { contains: q, mode: "insensitive" } },
+      { content: { contains: q, mode: "insensitive" } },
+      { tags: { contains: q, mode: "insensitive" } },
+    ];
+  }
+  if (folder) {
+    noteWhere.folder = { contains: folder, mode: "insensitive" };
+  }
+  const [notes, allNotes, folders] = await Promise.all([
+    prisma.note.findMany({
+      where: noteWhere,
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.note.findMany({
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.note.groupBy({
+      by: ["folder"],
+      _count: true,
+      orderBy: { folder: "asc" },
+    }),
+  ]);
+  const totalNotes = allNotes.length;
+  const selectedNote = noteId ? allNotes.find((note) => note.id === noteId) : notes[0];
   const activeNote = mode === "new" ? undefined : selectedNote;
-  const activeLinks = activeNote ? extractWikiLinks(activeNote.content) : [];
+  const activeLinks = activeNote ? uniqueWikiLinks(activeNote.content) : [];
   const defaultFolder = folder || "Inbox";
-  const linkedNoteTitles = new Set(activeLinks.map((link) => link.toLowerCase()));
-  const linkedNotes = notes.filter((note) => linkedNoteTitles.has(note.title.toLowerCase()));
+  const noteTitleMap = new Map<string, Note>();
+  allNotes.forEach((note) => {
+    const title = normalizeTitle(note.title);
+    if (!noteTitleMap.has(title)) {
+      noteTitleMap.set(title, note);
+    }
+  });
+  const linkedNotes = activeLinks
+    .map((link) => noteTitleMap.get(normalizeTitle(link)))
+    .filter((note): note is Note => Boolean(note));
+  const missingLinks = activeLinks.filter((link) => !noteTitleMap.has(normalizeTitle(link)));
+  const backlinkNotes = activeNote
+    ? allNotes.filter(
+        (note) =>
+          note.id !== activeNote.id &&
+          uniqueWikiLinks(note.content).some(
+            (link) => normalizeTitle(link) === normalizeTitle(activeNote.title),
+          ),
+      )
+    : [];
   const checklistCount = activeNote ? openChecklistCount(activeNote.content) : 0;
 
   return (
@@ -354,55 +384,138 @@ export default async function NotesPage({ searchParams }: Props) {
             </TabsContent>
 
             <TabsContent value="links" className="min-h-0 flex-1 overflow-y-auto bg-[#fbfcfd] p-4 md:p-5">
-              <div className="grid min-h-full gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-                <div className="rounded-2xl border border-border/72 bg-white p-5">
-                  <div className="mb-3 flex items-center gap-2 font-medium">
-                    <Link2 className="size-4 text-primary" />
-                    当前笔记引用
+              <div className="grid min-h-full gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+                <div className="grid content-start gap-4">
+                  <div className="rounded-2xl border border-border/72 bg-white p-5 shadow-[0_10px_24px_rgba(27,42,56,0.035)]">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Link2 className="size-4 text-primary" />
+                        当前笔记引用
+                      </div>
+                      <span className="rounded-full border bg-[#f6f8fb] px-2 py-0.5 text-xs text-muted-foreground">
+                        {activeLinks.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {activeLinks.length ? (
+                        activeLinks.map((link) => {
+                          const matched = noteTitleMap.has(normalizeTitle(link));
+
+                          return (
+                            <span
+                              key={link}
+                              className={cn(
+                                "rounded-lg border px-2.5 py-1 text-sm",
+                                matched
+                                  ? "border-[#c9e5e1] bg-[#eef7f7] text-[#315266]"
+                                  : "border-[#efd9a8] bg-[#fff8e7] text-[#7a5a17]",
+                              )}
+                            >
+                              [[{link}]]
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <p className="text-sm leading-7 text-muted-foreground">
+                          当前笔记还没有 `[[双链]]`。写阅读札记或实验想法时，可以直接引用相关主题。
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {activeLinks.length ? (
-                      activeLinks.map((link) => (
-                        <span
-                          key={link}
-                          className="rounded-lg border bg-[#eef7f7] px-2.5 py-1 text-sm text-[#315266]"
-                        >
-                          [[{link}]]
-                        </span>
-                      ))
+
+                  <div className="rounded-2xl border border-border/72 bg-white p-5 shadow-[0_10px_24px_rgba(27,42,56,0.035)]">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Sparkles className="size-4 text-primary" />
+                        未创建链接
+                      </div>
+                      <span className="rounded-full border bg-[#f6f8fb] px-2 py-0.5 text-xs text-muted-foreground">
+                        {missingLinks.length}
+                      </span>
+                    </div>
+                    {missingLinks.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {missingLinks.map((link) => (
+                          <span
+                            key={link}
+                            className="rounded-lg border border-[#efd9a8] bg-[#fff8e7] px-2.5 py-1 text-sm text-[#7a5a17]"
+                          >
+                            {link}
+                          </span>
+                        ))}
+                      </div>
                     ) : (
                       <p className="text-sm leading-7 text-muted-foreground">
-                        当前笔记还没有 `[[双链]]`。写阅读札记或实验想法时，可以直接引用相关主题。
+                        当前引用都能找到对应笔记。继续写就好，不需要额外维护关系表。
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-border/72 bg-white p-5">
-                  <div className="mb-3 flex items-center gap-2 font-medium">
-                    <Sparkles className="size-4 text-primary" />
-                    已匹配到的笔记
-                  </div>
-                  {linkedNotes.length ? (
-                    <div className="grid gap-2">
-                      {linkedNotes.map((note) => (
-                        <Link
-                          key={note.id}
-                          href={`/notes?note=${note.id}`}
-                          className="grid gap-1 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white"
-                        >
-                          <span className="font-medium">{note.title}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {folderLabel(note.folder)} · {formatDateTime(note.updatedAt)}
-                          </span>
-                        </Link>
-                      ))}
+                <div className="grid content-start gap-4 lg:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                  <div className="rounded-2xl border border-border/72 bg-white p-5 shadow-[0_10px_24px_rgba(27,42,56,0.035)]">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Sparkles className="size-4 text-primary" />
+                        已匹配到的笔记
+                      </div>
+                      <span className="rounded-full border bg-[#f6f8fb] px-2 py-0.5 text-xs text-muted-foreground">
+                        {linkedNotes.length}
+                      </span>
                     </div>
-                  ) : (
-                    <p className="text-sm leading-7 text-muted-foreground">
-                      暂时没有匹配到同名笔记。以后可以继续补一个“未创建双链”提醒。
-                    </p>
-                  )}
+                    {linkedNotes.length ? (
+                      <div className="grid gap-2">
+                        {linkedNotes.map((note) => (
+                          <Link
+                            key={note.id}
+                            href={`/notes?note=${note.id}`}
+                            className="grid gap-1 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white"
+                          >
+                            <span className="line-clamp-1 font-medium">{note.title}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {folderLabel(note.folder)} · {formatDateTime(note.updatedAt)}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-7 text-muted-foreground">
+                        还没有匹配到同名笔记。可以先保留引用，后续补一篇同名主题笔记。
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl border border-border/72 bg-white p-5 shadow-[0_10px_24px_rgba(27,42,56,0.035)]">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Link2 className="size-4 text-primary" />
+                        反向链接
+                      </div>
+                      <span className="rounded-full border bg-[#f6f8fb] px-2 py-0.5 text-xs text-muted-foreground">
+                        {backlinkNotes.length}
+                      </span>
+                    </div>
+                    {backlinkNotes.length ? (
+                      <div className="grid gap-2">
+                        {backlinkNotes.map((note) => (
+                          <Link
+                            key={note.id}
+                            href={`/notes?note=${note.id}`}
+                            className="grid gap-1 rounded-xl border border-border/72 bg-[#fbfcfd]/88 p-3 transition hover:border-primary/25 hover:bg-white"
+                          >
+                            <span className="line-clamp-1 font-medium">{note.title}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {folderLabel(note.folder)} · {formatDateTime(note.updatedAt)}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-7 text-muted-foreground">
+                        暂时没有其他笔记引用当前标题。等阅读摘录、实验复盘写多后，这里会自动长出来。
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
