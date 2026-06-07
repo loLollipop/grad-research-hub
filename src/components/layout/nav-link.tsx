@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -43,27 +42,18 @@ export function NavLink({
   compact?: boolean;
 }) {
   const pathname = usePathname();
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const active =
     href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
-  const selected = active || pendingHref === href;
   const Icon = icon ? icons[icon] : null;
-
-  function handleNavigate() {
-    if (!active) {
-      setPendingHref(href);
-    }
-  }
 
   if (compact) {
     return (
       <Link
         href={href}
         prefetch={true}
-        onNavigate={handleNavigate}
         className={cn(
           "relative rounded-md border px-2 py-1 text-xs transition",
-          selected
+          active
             ? "border-[#1f3d33] bg-[#1f3d33] text-white"
             : "bg-white text-muted-foreground hover:border-[#b9c9c0] hover:text-[#1f3d33]",
         )}
@@ -78,11 +68,10 @@ export function NavLink({
     <Link
       href={href}
       prefetch={true}
-      onNavigate={handleNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative flex items-center gap-2 overflow-hidden rounded-lg px-3 py-2 text-sm transition",
-        selected
+        active
           ? "bg-[#1f3d33] font-medium text-white shadow-sm hover:bg-[#1f3d33] hover:text-white"
           : "text-muted-foreground hover:bg-[#eef4ef] hover:text-[#1f3d33]",
       )}
