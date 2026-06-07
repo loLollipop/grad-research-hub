@@ -13,7 +13,7 @@ const navItems = [
   { href: "/experiments", label: "实验", icon: "experiments" },
   { href: "/projects", label: "项目", icon: "projects" },
   { href: "/notes", label: "笔记", icon: "notes" },
-  { href: "/data", label: "数据", icon: "data" },
+  { href: "/data", label: "成果", icon: "data" },
   { href: "/admin", label: "事务", icon: "admin" },
 ] as const;
 
@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mt-auto rounded-lg border bg-[#fbfaf4] p-3">
           <p className="text-xs font-medium">本周节奏</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            先固定数据版本，再推进实验复现和周报汇总。
+            今天先收束一个关键结果，再写清楚下一步。
           </p>
         </div>
       </aside>

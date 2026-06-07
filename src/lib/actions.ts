@@ -50,6 +50,62 @@ function parseJsonText(value: string, fallback: string) {
   }
 }
 
+function parseJsonObject(value: FormDataEntryValue | null) {
+  if (typeof value !== "string" || !value.trim()) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function resultFormData(formData: FormData) {
+  return {
+    ...data(formData),
+    metrics: resultMetricsJson(formData),
+    config: resultConfigJson(formData),
+  };
+}
+
+function resultMetricsJson(formData: FormData) {
+  const names = formData.getAll("metricName");
+  const values = formData.getAll("metricValue");
+  const metrics: Record<string, number | string> = {};
+
+  names.forEach((rawName, index) => {
+    const name = typeof rawName === "string" ? rawName.trim() : "";
+    const rawValue = values[index];
+    const value = typeof rawValue === "string" ? rawValue.trim() : "";
+    if (!name || !value) return;
+
+    const numericValue = Number(value);
+    metrics[name] = Number.isFinite(numericValue) ? numericValue : value;
+  });
+
+  if (Object.keys(metrics).length) {
+    return JSON.stringify(metrics);
+  }
+
+  const existing = formData.get("metrics");
+  return typeof existing === "string" && existing.trim() ? existing : "{}";
+}
+
+function resultConfigJson(formData: FormData) {
+  const existing = parseJsonObject(formData.get("config"));
+  const reproducibility = String(formData.get("reproducibility") ?? "unknown");
+  const allowed = ["unknown", "todo", "reproducing", "verified"];
+
+  return JSON.stringify({
+    ...existing,
+    reproducibility: allowed.includes(reproducibility) ? reproducibility : "unknown",
+    manuscriptReady: formData.get("manuscriptReady") === "true",
+  });
+}
+
 export async function createPaper(formData: FormData) {
   const parsed = paperSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
@@ -434,7 +490,7 @@ export async function deleteDataset(formData: FormData) {
 }
 
 export async function createResult(formData: FormData) {
-  const parsed = resultSchema.safeParse(data(formData));
+  const parsed = resultSchema.safeParse(resultFormData(formData));
   if (!parsed.success) fail(parsed.error);
 
   const { metrics, config, ...value } = parsed.data;
@@ -452,7 +508,7 @@ export async function createResult(formData: FormData) {
 
 export async function updateResult(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  const parsed = resultSchema.safeParse(data(formData));
+  const parsed = resultSchema.safeParse(resultFormData(formData));
   if (!id) return;
   if (!parsed.success) fail(parsed.error);
 
