@@ -1,4 +1,4 @@
-import { BarChart3, Flag, ListTodo, Plus, Trash2 } from "lucide-react";
+﻿import { BarChart3, Flag, ListTodo, Plus, Trash2 } from "lucide-react";
 import type { Milestone, Project, Task } from "@prisma/client";
 
 import {
@@ -85,7 +85,7 @@ export default async function ProjectsPage() {
 
       <section className="grid gap-4 lg:grid-cols-3">
         {columns.map((column) => (
-          <Card key={column.id} className="rounded-lg bg-white/95">
+          <Card key={column.id} className="bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>{column.label}</span>
@@ -150,7 +150,7 @@ function TaskCard({
   milestones: Array<Milestone & { project: Project }>;
 }) {
   return (
-    <div className="rounded-lg border bg-[#fffdf7] p-3">
+    <div className="rounded-lg border bg-[#fbfcfd] p-3">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-medium">{task.title}</p>
@@ -199,7 +199,7 @@ function TaskCard({
 
 function ProjectCard({ project }: { project: ProjectFull }) {
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="grid gap-4 py-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>

@@ -1,4 +1,4 @@
-import {
+﻿import {
   BarChart3,
   CheckCircle2,
   Database,
@@ -135,7 +135,7 @@ export default async function DataPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="rounded-lg bg-white/95">
+        <Card className="bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <BarChart3 className="size-4 text-[#1f3d33]" />
@@ -167,7 +167,7 @@ export default async function DataPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg bg-[#fffdf7]">
+        <Card className="bg-[#fbfcfd]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <RotateCcw className="size-4 text-[#1f3d33]" />
@@ -272,7 +272,7 @@ function InsightCard({
   hint: string;
 }) {
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="flex gap-3 py-4">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#eef4ef] text-[#1f3d33]">
           <Icon className="size-4" />
@@ -309,7 +309,7 @@ function ResultCard({
   const config = parseResultConfig(result.config);
 
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="grid gap-3 py-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
@@ -334,7 +334,7 @@ function ResultCard({
         </div>
 
         {result.notes ? (
-          <p className="rounded-lg border bg-[#fffdf7] p-3 text-sm leading-6 text-muted-foreground">
+          <p className="rounded-lg border bg-[#fbfcfd] p-3 text-sm leading-6 text-muted-foreground">
             {result.notes}
           </p>
         ) : null}
@@ -374,7 +374,7 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
   const metrics = parseJson<Record<string, number | string>>(result.metrics, {});
 
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="grid gap-3 py-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>
@@ -390,7 +390,7 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
           <MetricPills metrics={metrics} />
         </div>
         {result.artifactPath ? (
-          <p className="flex items-center gap-2 rounded-lg border bg-[#fffdf7] p-3 text-sm text-muted-foreground">
+          <p className="flex items-center gap-2 rounded-lg border bg-[#fbfcfd] p-3 text-sm text-muted-foreground">
             <Link2 className="size-4 shrink-0" />
             {result.artifactPath}
           </p>
@@ -405,7 +405,7 @@ function ManuscriptCard({ result }: { result: ResultFull }) {
 
 function DatasetCard({ dataset }: { dataset: Dataset }) {
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="grid gap-3 py-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>
@@ -460,7 +460,7 @@ function MetricPills({ metrics }: { metrics: Record<string, number | string> }) 
   return (
     <div className="flex flex-wrap gap-2 text-xs">
       {entries.slice(0, 6).map(([key, value]) => (
-        <span key={key} className="rounded-md border bg-[#fffdf7] px-2 py-1">
+        <span key={key} className="rounded-md border bg-[#fbfcfd] px-2 py-1">
           {key}: {String(value)}
         </span>
       ))}
@@ -626,7 +626,7 @@ function ResultForm({
           placeholder="例如：figures/ablation_attention.png 或服务器结果路径"
         />
       </Field>
-      <label className="flex items-center gap-2 rounded-lg border bg-[#fffdf7] px-3 py-2 text-sm">
+      <label className="flex items-center gap-2 rounded-lg border bg-[#fbfcfd] px-3 py-2 text-sm">
         <input
           type="checkbox"
           name="manuscriptReady"

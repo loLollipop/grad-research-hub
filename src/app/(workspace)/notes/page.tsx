@@ -100,15 +100,17 @@ export default async function NotesPage({ searchParams }: Props) {
         }
       />
 
-      <section className="grid flex-1 gap-4 lg:h-[calc(100vh-220px)] lg:min-h-[680px] lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="workbench-card flex min-h-[540px] flex-col overflow-hidden rounded-lg border bg-white/95 py-0 lg:min-h-0">
-          <div className="border-b border-border/80 p-3">
+      <section className="grid flex-1 gap-4 lg:h-[calc(100vh-232px)] lg:min-h-[690px] lg:grid-cols-[330px_minmax(0,1fr)]">
+        <aside className="workbench-card flex min-h-[560px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0">
+          <div className="border-b border-border/75 bg-muted/20 p-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Search className="size-4 text-primary" />
                 检索笔记
               </div>
-              <span className="text-xs text-muted-foreground">{notes.length} / {totalNotes}</span>
+              <span className="rounded-full border bg-white px-2 py-0.5 text-xs text-muted-foreground">
+                {notes.length} / {totalNotes}
+              </span>
             </div>
             <form className="mt-3 grid gap-2">
               <div className="relative">
@@ -127,7 +129,7 @@ export default async function NotesPage({ searchParams }: Props) {
             </form>
           </div>
 
-          <div className="border-b border-border/80 p-3">
+          <div className="border-b border-border/75 p-3.5">
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <FolderOpen className="size-4 text-primary" />
               分类
@@ -137,7 +139,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 href="/notes"
                 className={cn(
                   "flex items-center justify-between rounded-md px-2.5 py-2 transition hover:bg-muted/60",
-                  !folder && "bg-primary/8 text-primary ring-1 ring-primary/15",
+                  !folder && "bg-primary/9 text-primary ring-1 ring-primary/18",
                 )}
               >
                 <span>全部笔记</span>
@@ -152,7 +154,7 @@ export default async function NotesPage({ searchParams }: Props) {
                     href={`/notes?folder=${encodeURIComponent(item.folder)}`}
                     className={cn(
                       "flex items-center justify-between rounded-md px-2.5 py-2 transition hover:bg-muted/60",
-                      selected && "bg-primary/8 text-primary ring-1 ring-primary/15",
+                      selected && "bg-primary/9 text-primary ring-1 ring-primary/18",
                     )}
                   >
                     <span className="truncate">{folderLabel(item.folder)}</span>
@@ -164,7 +166,7 @@ export default async function NotesPage({ searchParams }: Props) {
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex items-center justify-between px-3 py-3">
+            <div className="flex items-center justify-between px-3.5 py-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Clock3 className="size-4 text-primary" />
                 最近笔记
@@ -175,7 +177,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 </Button>
               ) : null}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+            <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3.5">
               {notes.length ? (
                 <div className="grid gap-2">
                   {notes.map((note) => {
@@ -187,8 +189,8 @@ export default async function NotesPage({ searchParams }: Props) {
                         key={note.id}
                         href={`/notes?note=${note.id}`}
                         className={cn(
-                          "rounded-md border border-border/80 bg-white/70 px-3 py-2.5 text-sm transition hover:border-primary/25 hover:bg-muted/40",
-                          selected && "border-primary/35 bg-primary/7 shadow-sm",
+                          "rounded-xl border border-border/75 bg-white/72 px-3 py-2.5 text-sm transition hover:border-primary/25 hover:bg-white",
+                          selected && "border-primary/35 bg-primary/9 shadow-[0_8px_20px_rgba(37,99,235,0.08)]",
                         )}
                       >
                         <span className="line-clamp-1 font-medium">{note.title}</span>
@@ -222,9 +224,9 @@ export default async function NotesPage({ searchParams }: Props) {
 
         <section
           id={activeNote ? `note-${activeNote.id}` : "new-note"}
-          className="workbench-card flex min-h-[620px] flex-col overflow-hidden rounded-lg border bg-white/95 py-0 lg:min-h-0"
+          className="workbench-card flex min-h-[640px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0"
         >
-          <div className="flex flex-col gap-3 border-b border-border/80 px-4 py-3 md:flex-row md:items-start md:justify-between">
+          <div className="flex flex-col gap-3 border-b border-border/75 bg-muted/16 px-4 py-3.5 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <FileText className="size-3.5 text-primary" />
@@ -249,8 +251,8 @@ export default async function NotesPage({ searchParams }: Props) {
           </div>
 
           <Tabs defaultValue="edit" className="flex min-h-0 flex-1 flex-col gap-0">
-            <div className="flex flex-col gap-2 border-b border-border/80 bg-muted/20 px-4 py-2 md:flex-row md:items-center md:justify-between">
-              <TabsList className="h-8">
+            <div className="flex flex-col gap-2 border-b border-border/75 bg-white px-4 py-2.5 md:flex-row md:items-center md:justify-between">
+              <TabsList className="h-8 bg-muted/70">
                 <TabsTrigger value="edit">编辑</TabsTrigger>
                 <TabsTrigger value="preview">预览</TabsTrigger>
                 <TabsTrigger value="links">双链</TabsTrigger>
@@ -268,7 +270,7 @@ export default async function NotesPage({ searchParams }: Props) {
 
             <TabsContent
               value="preview"
-              className="min-h-0 flex-1 overflow-y-auto bg-[#fffdf7] p-5 text-sm leading-7"
+              className="min-h-0 flex-1 overflow-y-auto bg-white p-6 text-sm leading-7"
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {activeNote?.content || "保存一篇笔记后，这里会显示 Markdown 预览。"}
@@ -276,7 +278,7 @@ export default async function NotesPage({ searchParams }: Props) {
             </TabsContent>
 
             <TabsContent value="links" className="min-h-0 flex-1 overflow-y-auto p-5">
-              <div className="flex min-h-full flex-col rounded-md border border-dashed bg-muted/25 p-5">
+              <div className="flex min-h-full flex-col rounded-xl border border-dashed bg-muted/25 p-5">
                 <div className="mb-3 flex items-center gap-2 font-medium">
                   <Link2 className="size-4 text-primary" />
                   当前笔记引用
@@ -305,9 +307,9 @@ function NoteForm({
   defaultFolder: string;
 }) {
   return (
-    <form action={action} className="flex h-full min-h-[520px] flex-col lg:min-h-0">
+    <form action={action} className="flex h-full min-h-[540px] flex-col lg:min-h-0">
       {note ? <input type="hidden" name="id" value={note.id} /> : null}
-      <div className="grid gap-3 border-b border-border/80 bg-white px-4 py-4 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
+      <div className="grid gap-3 border-b border-border/75 bg-white px-4 py-4 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
         <Field label="标题">
           <Input
             name="title"
@@ -330,7 +332,7 @@ function NoteForm({
         </Field>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 bg-[#fbfaf5] p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 bg-[#f6f8fb] p-4">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="font-medium">正文</span>
           <span>研究日志</span>
@@ -338,12 +340,12 @@ function NoteForm({
         <Textarea
           name="content"
           rows={24}
-          className="field-sizing-fixed min-h-[420px] flex-1 resize-none rounded-md border-border/80 bg-white/85 p-4 text-sm leading-7 shadow-inner focus-visible:ring-2 lg:min-h-0"
+          className="field-sizing-fixed min-h-[430px] flex-1 resize-none rounded-xl border-border/80 bg-white p-5 text-sm leading-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] focus-visible:ring-2 lg:min-h-0"
           defaultValue={note?.content ?? "## 记录\n\n可以使用 [[双链标题]]。"}
         />
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border/80 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-2 border-t border-border/75 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
         <p className="text-xs text-muted-foreground">
           临时想法可以先放进收件箱。
         </p>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GraduationCap, Search, Sparkles } from "lucide-react";
+import { CircleDot, Command, GraduationCap, Search, Sparkles } from "lucide-react";
 
 import { quickCapture } from "@/lib/actions";
 import { NavLink } from "@/components/layout/nav-link";
@@ -25,19 +25,26 @@ const utilityItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="workbench-surface min-h-screen text-foreground">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-sidebar-border bg-sidebar/92 px-4 py-4 backdrop-blur md:flex md:flex-col">
-        <Link href="/" className="flex items-center gap-3 rounded-md px-2 py-2">
-          <span className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
+      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border px-4 py-4 text-sidebar-foreground shadow-[12px_0_44px_rgba(2,6,23,0.16)] md:flex md:flex-col">
+        <Link href="/" className="group flex items-center gap-3 rounded-lg px-2 py-2">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-[#0f172a] shadow-[0_10px_24px_rgba(45,212,191,0.22)] transition group-hover:scale-[1.02]">
             <GraduationCap className="size-5" />
           </span>
-          <span>
-            <span className="block text-sm font-semibold tracking-tight">研途 Hub</span>
-            <span className="block text-xs text-muted-foreground">研究生工作台</span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold tracking-tight text-white">研途 Hub</span>
+            <span className="block text-xs text-sidebar-foreground/58">研究生科研工作台</span>
           </span>
         </Link>
 
-        <Separator className="my-4 bg-sidebar-border" />
-        <p className="mb-2 px-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="mt-4 rounded-lg border border-white/8 bg-white/[0.045] p-2">
+          <div className="flex items-center gap-2 rounded-md border border-white/8 bg-black/12 px-2.5 py-2 text-xs text-sidebar-foreground/72">
+            <Command className="size-3.5 text-sidebar-primary" />
+            <span className="truncate">科研节奏 · 今日工作流</span>
+          </div>
+        </div>
+
+        <Separator className="my-4 bg-sidebar-border/80" />
+        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/44">
           工作流
         </p>
         <nav className="grid gap-1.5">
@@ -46,43 +53,51 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <nav className="mt-4 grid gap-1.5 border-t border-sidebar-border pt-4">
+        <nav className="mt-4 grid gap-1.5 border-t border-sidebar-border/80 pt-4">
           {utilityItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
         </nav>
 
-        <div className="workbench-panel mt-auto rounded-md p-3">
+        <div className="mt-auto rounded-lg border border-white/8 bg-white/[0.055] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
           <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-primary" />
-            <p className="text-xs font-medium">本周节奏</p>
+            <Sparkles className="size-4 text-sidebar-primary" />
+            <p className="text-xs font-semibold text-white">本周节奏</p>
           </div>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+          <p className="mt-2 text-xs leading-5 text-sidebar-foreground/62">
             今天先收束一个关键结果，再写清楚下一步。
           </p>
+          <div className="mt-3 flex items-center gap-2 text-[11px] text-sidebar-foreground/48">
+            <CircleDot className="size-3 text-sidebar-primary" />
+            <span>记录越轻，复盘越稳</span>
+          </div>
         </div>
       </aside>
 
-      <div className="md:pl-64">
-        <header className="sticky top-0 z-30 border-b border-border/80 bg-background/82 backdrop-blur">
-          <div className="flex min-h-14 flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+      <div className="md:pl-[17rem]">
+        <header className="sticky top-0 z-30 border-b border-border/75 bg-white/74 backdrop-blur-xl">
+          <div className="flex min-h-16 flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-7">
             <div className="flex items-center gap-2 md:hidden">
               <GraduationCap className="size-5 text-primary" />
               <span className="text-sm font-semibold">研途 Hub</span>
             </div>
-            <form action={quickCapture} className="flex w-full max-w-2xl items-center gap-2">
+            <form action={quickCapture} className="flex w-full max-w-3xl items-center gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
                   placeholder="快速捕捉：灵感、导师提醒、待办..."
-                  className="h-9 bg-white/90 pl-8 shadow-sm"
+                  className="h-10 rounded-lg border-border/75 bg-white/95 pl-8 shadow-[0_1px_1px_rgba(15,23,42,0.04)]"
                 />
               </div>
-              <Button type="submit" variant="outline" className="h-9 shrink-0 bg-white/90">
+              <Button type="submit" className="h-10 shrink-0 px-4">
                 捕捉
               </Button>
             </form>
+            <div className="hidden items-center gap-2 rounded-lg border bg-white/80 px-3 py-2 text-xs text-muted-foreground shadow-sm xl:flex">
+              <CircleDot className="size-3 text-emerald-600" />
+              <span>本地数据 · 自托管</span>
+            </div>
             <div className="flex items-center gap-2 overflow-x-auto md:hidden">
               {navItems.map((item) => (
                 <NavLink key={item.href} href={item.href} label={item.label} compact />
@@ -90,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="workspace-page mx-auto w-full max-w-7xl px-4 py-6 lg:px-6">
+        <main className="workspace-page mx-auto w-full max-w-[92rem] px-4 py-6 lg:px-7">
           {children}
         </main>
       </div>

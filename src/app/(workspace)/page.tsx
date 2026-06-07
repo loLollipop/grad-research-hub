@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ArrowRight,
   CalendarClock,
   ClipboardList,
   FlaskConical,
@@ -49,9 +50,10 @@ export default async function DashboardPage() {
   const done = taskCounts.find((item) => item.status === "done")?._count ?? 0;
   const totalTasks = todo + doing + done;
   const openTasks = todo + doing;
+  const completion = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHeader
         eyebrow="首页"
         title="今天只看最要紧的事"
@@ -70,37 +72,49 @@ export default async function DashboardPage() {
         }
       />
 
-      <section className="grid gap-3 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-[1.1fr_1fr_1fr]">
         <TodayCard
           label="待处理"
           value={`${openTasks} 个`}
           detail={totalTasks ? `已完成 ${done} / ${totalTasks}` : "还没有任务"}
+          accent="blue"
         />
         <TodayCard
           label="下一件事"
           value={upcomingTasks[0]?.title ?? "暂无"}
           detail={upcomingTasks[0] ? dueText(upcomingTasks[0].dueDate) : "可以先去项目页建任务"}
+          accent="amber"
         />
         <TodayCard
           label="最近实验"
           value={recentExperiments[0]?.title ?? "暂无"}
           detail={recentExperiments[0]?.project?.title ?? "保持记录节奏"}
+          accent="teal"
         />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="rounded-lg bg-white/95">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="size-4" />
-              近期任务
-            </CardTitle>
+      <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+        <Card className="bg-white/95">
+          <CardHeader className="border-b border-border/70 bg-muted/18 pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <CalendarClock className="size-4 text-primary" />
+                近期任务
+              </CardTitle>
+              <Link href="/projects" className="flex items-center gap-1 text-xs font-medium text-primary">
+                查看项目
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             {upcomingTasks.length ? (
               <div className="grid gap-2">
                 {upcomingTasks.map((task) => (
-                  <div key={task.id} className="rounded-lg border bg-[#fffdf7] p-3">
+                  <div
+                    key={task.id}
+                    className="rounded-xl border border-border/75 bg-[#fbfcfd] p-3.5 transition hover:border-primary/25 hover:bg-white"
+                  >
                     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -129,6 +143,21 @@ export default async function DashboardPage() {
         </Card>
 
         <div className="grid gap-4">
+          <Card className="overflow-hidden bg-[#172033] text-white ring-[#172033]">
+            <CardContent className="py-4">
+              <p className="text-xs font-medium text-white/58">任务完成度</p>
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <p className="text-3xl font-semibold tracking-tight">{completion}%</p>
+                <p className="pb-1 text-xs text-white/54">{done} / {totalTasks || 0}</p>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/12">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#2dd4bf,#60a5fa)]"
+                  style={{ width: `${completion}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
           <MiniListCard
             title="最近实验"
             icon={FlaskConical}
@@ -152,17 +181,26 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <Card className="rounded-lg bg-white/95">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ScrollText className="size-4" />
-            最近文献
-          </CardTitle>
+      <Card className="bg-white/95">
+        <CardHeader className="border-b border-border/70 bg-muted/18 pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="size-4 text-primary" />
+              最近文献
+            </CardTitle>
+            <Link href="/papers" className="flex items-center gap-1 text-xs font-medium text-primary">
+              去文献库
+              <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           {recentPapers.length ? (
             recentPapers.map((paper) => (
-              <div key={paper.id} className="rounded-lg border p-3">
+              <div
+                key={paper.id}
+                className="rounded-xl border border-border/75 bg-[#fbfcfd] p-3.5 transition hover:border-primary/25 hover:bg-white"
+              >
                 <p className="line-clamp-2 font-medium">{paper.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {paper.year ?? "年份未知"} / {statusLabel(paper.readStatus)}
@@ -185,16 +223,25 @@ function TodayCard({
   label,
   value,
   detail,
+  accent,
 }: {
   label: string;
   value: string;
   detail: string;
+  accent: "blue" | "amber" | "teal";
 }) {
+  const accents = {
+    blue: "from-blue-500/14 to-cyan-500/6 text-blue-700",
+    amber: "from-amber-500/16 to-orange-500/6 text-amber-800",
+    teal: "from-teal-500/14 to-emerald-500/6 text-teal-800",
+  };
+
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="py-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 line-clamp-1 text-lg font-semibold">{value}</p>
+        <div className={`mb-3 h-1.5 w-12 rounded-full bg-gradient-to-r ${accents[accent]}`} />
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="mt-1 line-clamp-1 text-xl font-semibold tracking-tight">{value}</p>
         <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
       </CardContent>
     </Card>
@@ -213,17 +260,20 @@ function MiniListCard({
   empty: string;
 }) {
   return (
-    <Card className="rounded-lg bg-white/95">
-      <CardHeader>
+    <Card className="bg-white/95">
+      <CardHeader className="border-b border-border/70 bg-muted/18 pb-4">
         <CardTitle className="flex items-center gap-2">
-          <Icon className="size-4" />
+          <Icon className="size-4 text-primary" />
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
         {items.length ? (
           items.map((item) => (
-            <div key={item.id} className="rounded-lg border p-3">
+            <div
+              key={item.id}
+              className="rounded-xl border border-border/75 bg-[#fbfcfd] p-3 transition hover:border-primary/25 hover:bg-white"
+            >
               <p className="line-clamp-1 font-medium">{item.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">{item.meta}</p>
             </div>

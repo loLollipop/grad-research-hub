@@ -1,4 +1,4 @@
-import {
+﻿import {
   Bot,
   Database,
   Download,
@@ -78,7 +78,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">
-        <Card className="rounded-lg bg-white/95">
+        <Card className="bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="size-4" />
@@ -91,7 +91,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg bg-white/95">
+        <Card className="bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UploadCloud className="size-4" />
@@ -104,7 +104,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg bg-white/95">
+        <Card className="bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="size-4" />
@@ -121,7 +121,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card className="rounded-lg bg-white/95">
+        <Card className="bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KeyRound className="size-4" />
@@ -136,7 +136,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg bg-white/95">
+        <Card className="bg-white/95">
           <CardHeader>
             <CardTitle>备份</CardTitle>
             <CardDescription>搬家、重部署或整理资料前导出一次。</CardDescription>
@@ -341,7 +341,7 @@ function HealthCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="flex items-center justify-between gap-3 py-4">
         <div>
           <p className="text-sm font-medium">{label}</p>

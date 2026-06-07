@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { Bot, Loader2, Send } from "lucide-react";
@@ -71,7 +71,7 @@ export function AiWorkbench() {
       ) : null}
 
       {result ? (
-        <div className="rounded-lg border bg-[#fffdf7] p-4">
+        <div className="rounded-lg border bg-[#fbfcfd] p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Bot className="size-4 text-[#1f3d33]" />
             占位响应

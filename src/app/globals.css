@@ -49,38 +49,38 @@
 }
 
 :root {
-  --background: oklch(0.982 0.006 95);
-  --foreground: oklch(0.18 0.028 230);
+  --background: oklch(0.972 0.009 218);
+  --foreground: oklch(0.18 0.026 238);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.028 230);
+  --card-foreground: oklch(0.18 0.026 238);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.028 230);
-  --primary: oklch(0.34 0.076 222);
-  --primary-foreground: oklch(0.985 0.006 95);
-  --secondary: oklch(0.938 0.017 235);
-  --secondary-foreground: oklch(0.24 0.04 225);
-  --muted: oklch(0.952 0.01 236);
-  --muted-foreground: oklch(0.45 0.026 230);
-  --accent: oklch(0.928 0.026 185);
-  --accent-foreground: oklch(0.25 0.046 205);
+  --popover-foreground: oklch(0.18 0.026 238);
+  --primary: oklch(0.43 0.102 232);
+  --primary-foreground: oklch(0.99 0.005 210);
+  --secondary: oklch(0.93 0.015 224);
+  --secondary-foreground: oklch(0.24 0.038 230);
+  --muted: oklch(0.945 0.012 225);
+  --muted-foreground: oklch(0.46 0.026 235);
+  --accent: oklch(0.78 0.12 168);
+  --accent-foreground: oklch(0.18 0.04 190);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.01 235);
-  --input: oklch(0.9 0.01 235);
-  --ring: oklch(0.56 0.08 222);
-  --chart-1: oklch(0.52 0.11 222);
-  --chart-2: oklch(0.58 0.12 180);
-  --chart-3: oklch(0.65 0.13 72);
-  --chart-4: oklch(0.58 0.16 28);
-  --chart-5: oklch(0.45 0.08 285);
+  --border: oklch(0.875 0.014 226);
+  --input: oklch(0.87 0.014 226);
+  --ring: oklch(0.55 0.09 232);
+  --chart-1: oklch(0.48 0.12 232);
+  --chart-2: oklch(0.62 0.13 168);
+  --chart-3: oklch(0.72 0.14 82);
+  --chart-4: oklch(0.58 0.15 26);
+  --chart-5: oklch(0.52 0.1 286);
   --radius: 0.5rem;
-  --sidebar: oklch(0.965 0.009 235);
-  --sidebar-foreground: oklch(0.24 0.035 230);
-  --sidebar-primary: oklch(0.34 0.076 222);
+  --sidebar: oklch(0.205 0.026 238);
+  --sidebar-foreground: oklch(0.93 0.012 224);
+  --sidebar-primary: oklch(0.77 0.12 168);
   --sidebar-primary-foreground: oklch(0.985 0.006 95);
-  --sidebar-accent: oklch(0.925 0.022 220);
-  --sidebar-accent-foreground: oklch(0.25 0.04 225);
-  --sidebar-border: oklch(0.88 0.012 235);
-  --sidebar-ring: oklch(0.56 0.08 222);
+  --sidebar-accent: oklch(0.285 0.03 238);
+  --sidebar-accent-foreground: oklch(0.96 0.008 224);
+  --sidebar-border: oklch(0.32 0.03 238);
+  --sidebar-ring: oklch(0.72 0.1 168);
 }
 
 .dark {
@@ -123,6 +123,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family:
+      var(--font-geist-sans),
+      "Noto Sans SC",
+      "Microsoft YaHei",
+      system-ui,
+      sans-serif;
     text-rendering: optimizeLegibility;
   }
   html {
@@ -133,16 +139,35 @@
 @layer utilities {
   .workbench-surface {
     background:
-      linear-gradient(180deg, color-mix(in oklch, var(--background), white 46%) 0%, var(--background) 42%),
-      radial-gradient(circle at 18% 0%, color-mix(in oklch, var(--accent), white 52%) 0, transparent 28rem);
+      linear-gradient(color-mix(in oklch, var(--border), transparent 72%) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--border), transparent 78%) 1px, transparent 1px),
+      linear-gradient(180deg, oklch(0.992 0.004 210) 0%, var(--background) 44%, oklch(0.955 0.012 224) 100%);
+    background-size:
+      32px 32px,
+      32px 32px,
+      auto;
   }
 
   .workbench-card {
-    @apply border-border/80 bg-white/90 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+    @apply border-border/80 bg-white/94 shadow-[0_1px_1px_rgba(15,23,42,0.04),0_18px_46px_rgba(15,23,42,0.08)];
   }
 
   .workbench-panel {
-    @apply border-border/80 bg-[#f8faf7]/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)];
+    @apply border-border/80 bg-[#f7f9fb]/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)];
+  }
+
+  .sidebar-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+      color-mix(in oklch, var(--sidebar), black 4%);
+  }
+
+  .fine-divider {
+    @apply border-border/75;
+  }
+
+  .surface-lift {
+    @apply border border-border/80 bg-white/88 shadow-[0_1px_1px_rgba(15,23,42,0.04),0_12px_32px_rgba(15,23,42,0.06)];
   }
 
   .workspace-page {

@@ -1,4 +1,4 @@
-import { ClipboardList, MapPin, Plus, Trash2 } from "lucide-react";
+﻿import { ClipboardList, MapPin, Plus, Trash2 } from "lucide-react";
 import type { AdminItem, Prisma } from "@prisma/client";
 
 import {
@@ -87,7 +87,7 @@ export default async function AdminPage({ searchParams }: Props) {
 
       <section className="grid gap-4 lg:grid-cols-[0.42fr_1.58fr]">
         <div className="grid gap-4">
-          <Card className="rounded-lg bg-white/95">
+          <Card className="bg-white/95">
             <CardHeader>
               <CardTitle>事务分布</CardTitle>
             </CardHeader>
@@ -152,7 +152,7 @@ export default async function AdminPage({ searchParams }: Props) {
 
 function AdminItemCard({ item }: { item: AdminItem }) {
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="grid gap-3 py-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>

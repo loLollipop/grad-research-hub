@@ -1,4 +1,4 @@
-import { Edit3, ExternalLink, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
+﻿import { Edit3, ExternalLink, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
 import type { Paper, Prisma } from "@prisma/client";
 
 import {
@@ -148,7 +148,7 @@ export default async function PapersPage({ searchParams }: Props) {
 
 function StatusCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="py-4">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="mt-1 text-lg font-semibold">{value}</p>
@@ -159,7 +159,7 @@ function StatusCard({ label, value }: { label: string; value: string }) {
 
 function PaperCard({ paper }: { paper: Paper }) {
   return (
-    <Card className="rounded-lg bg-white/95">
+    <Card className="bg-white/95">
       <CardContent className="grid gap-3 py-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>

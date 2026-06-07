@@ -1,4 +1,4 @@
-import { KeyRound, ServerCog, Sparkles } from "lucide-react";
+﻿import { KeyRound, ServerCog, Sparkles } from "lucide-react";
 
 import { AiWorkbench } from "@/components/ai/ai-workbench";
 import { PageHeader } from "@/components/shared/page-header";
@@ -31,7 +31,7 @@ export default function AiPage() {
       />
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="rounded-lg bg-white/95">
+        <Card className="bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="size-4" />
@@ -45,7 +45,7 @@ export default function AiPage() {
         </Card>
 
         <div className="grid gap-4">
-          <Card className="rounded-lg bg-white/95">
+          <Card className="bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="size-4" />
@@ -62,7 +62,7 @@ export default function AiPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg bg-white/95">
+          <Card className="bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ServerCog className="size-4" />

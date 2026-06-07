@@ -1,4 +1,4 @@
-import { GraduationCap } from "lucide-react";
+﻿import { GraduationCap } from "lucide-react";
 
 export default function WorkspaceLoading() {
   return (
@@ -44,7 +44,7 @@ export default function WorkspaceLoading() {
             ))}
           </div>
         </div>
-        <div className="h-72 rounded-lg border bg-[#fffdf7] p-4">
+        <div className="h-72 rounded-lg border bg-[#fbfcfd] p-4">
           <div className="mb-4 h-5 w-32 rounded-md bg-[#dfe8e1]" />
           <div className="grid gap-3">
             {Array.from({ length: 3 }).map((_, index) => (

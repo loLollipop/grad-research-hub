@@ -1,4 +1,4 @@
-import { FlaskConical, Plus, Trash2 } from "lucide-react";
+﻿import { FlaskConical, Plus, Trash2 } from "lucide-react";
 import type { Experiment, Paper, Project } from "@prisma/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -62,7 +62,7 @@ export default async function ExperimentsPage() {
       <section className="grid gap-3">
         {experiments.length ? (
           experiments.map((experiment) => (
-            <Card key={experiment.id} className="rounded-lg bg-white/95">
+            <Card key={experiment.id} className="bg-white/95">
               <CardContent className="grid gap-3 py-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -102,7 +102,7 @@ export default async function ExperimentsPage() {
                   </TabsList>
                   <TabsContent
                     value="content"
-                    className="rounded-lg border bg-[#fffdf7] p-4 text-sm leading-6"
+                    className="rounded-lg border bg-[#fbfcfd] p-4 text-sm leading-6"
                   >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {experiment.content || "暂无实验内容。"}
