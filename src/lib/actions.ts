@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
 import { prisma } from "@/lib/db";
 import { splitTags, tagsToString } from "@/lib/format";
 import {
@@ -16,7 +17,12 @@ import {
   resultSchema,
   taskSchema,
 } from "@/lib/validators";
-import { saveAiSettings } from "@/lib/settings";
+import {
+  saveAccessPassword,
+  saveAiSettings,
+  saveZoteroSettings,
+  verifyAccessPasswordInput,
+} from "@/lib/settings";
 import { fetchZoteroPapers } from "@/lib/zotero";
 
 function data(formData: FormData) {
@@ -530,4 +536,26 @@ export async function updateAiSettings(formData: FormData) {
   await saveAiSettings(parsed.data);
   revalidatePath("/settings");
   revalidatePath("/ai");
+}
+
+export async function updateAccessSettings(formData: FormData) {
+  const parsed = accessSettingsSchema.safeParse(data(formData));
+  if (!parsed.success) fail(parsed.error);
+
+  const valid = await verifyAccessPasswordInput(parsed.data.currentPassword);
+  if (!valid) {
+    throw new Error("Current password is incorrect.");
+  }
+
+  await saveAccessPassword(parsed.data.newPassword);
+  revalidatePath("/settings");
+}
+
+export async function updateZoteroSettings(formData: FormData) {
+  const parsed = zoteroSettingsSchema.safeParse(data(formData));
+  if (!parsed.success) fail(parsed.error);
+
+  await saveZoteroSettings(parsed.data);
+  revalidatePath("/settings");
+  revalidatePath("/papers");
 }

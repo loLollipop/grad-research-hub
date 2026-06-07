@@ -16,15 +16,12 @@ export async function hasValidAccessCookie(value: string | undefined) {
   return constantTimeEqual(value, await accessSignature());
 }
 
-export async function verifyAccessPassword(password: string) {
-  const expected = process.env.APP_PASSWORD?.trim();
-  return Boolean(expected && password === expected);
-}
-
 export async function accessSignature() {
-  const password = process.env.APP_PASSWORD?.trim() ?? "";
-  const secret = process.env.APP_ENCRYPTION_KEY?.trim() || password;
-  const payload = `${password}:${secret}:grad-research-hub`;
+  const secret =
+    process.env.APP_ENCRYPTION_KEY?.trim() ||
+    process.env.APP_PASSWORD?.trim() ||
+    "grad-research-hub-dev-secret";
+  const payload = `${secret}:grad-research-hub-access`;
   const bytes = new TextEncoder().encode(payload);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
 

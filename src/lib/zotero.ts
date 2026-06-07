@@ -1,4 +1,5 @@
 import { tagsToString } from "@/lib/format";
+import { getZoteroRuntimeConfig, getZoteroSettings } from "@/lib/settings";
 
 const ZOTERO_API_BASE = "https://api.zotero.org";
 
@@ -59,25 +60,21 @@ export type ZoteroConfigStatus = {
   hasApiKey: boolean;
 };
 
-export function getZoteroConfigStatus(): ZoteroConfigStatus {
-  const libraryType =
-    process.env.ZOTERO_LIBRARY_TYPE === "group" ? "group" : "user";
-  const libraryId = process.env.ZOTERO_LIBRARY_ID?.trim() ?? "";
-  const collectionKey = process.env.ZOTERO_COLLECTION_KEY?.trim() ?? "";
-  const hasApiKey = Boolean(process.env.ZOTERO_API_KEY?.trim());
+export async function getZoteroConfigStatus(): Promise<ZoteroConfigStatus> {
+  const settings = await getZoteroSettings();
 
   return {
-    ready: Boolean(libraryId && hasApiKey),
-    libraryId,
-    libraryType,
-    collectionKey,
-    hasApiKey,
+    ready: settings.ready,
+    libraryId: settings.libraryId,
+    libraryType: settings.libraryType,
+    collectionKey: settings.collectionKey,
+    hasApiKey: settings.apiKeyConfigured,
   };
 }
 
 export async function fetchZoteroPapers(): Promise<ZoteroPaper[]> {
-  const config = getZoteroConfigStatus();
-  const apiKey = process.env.ZOTERO_API_KEY?.trim();
+  const config = await getZoteroRuntimeConfig();
+  const apiKey = config.apiKey;
 
   if (!config.ready || !apiKey) {
     throw new Error("Zotero 尚未配置：需要 ZOTERO_API_KEY 和 ZOTERO_LIBRARY_ID。");
@@ -92,7 +89,7 @@ export async function fetchZoteroPapers(): Promise<ZoteroPaper[]> {
   );
   url.searchParams.set("format", "json");
   url.searchParams.set("include", "data");
-  url.searchParams.set("limit", process.env.ZOTERO_SYNC_LIMIT ?? "100");
+  url.searchParams.set("limit", String(config.syncLimit));
 
   const response = await fetch(url, {
     headers: {

@@ -37,7 +37,7 @@ export default async function PapersPage({ searchParams }: Props) {
   const q = valueOf(params.q)?.trim();
   const status = valueOf(params.status);
   const category = valueOf(params.category)?.trim();
-  const zotero = getZoteroConfigStatus();
+  const zotero = await getZoteroConfigStatus();
 
   const where: Prisma.PaperWhereInput = {};
   if (q) {

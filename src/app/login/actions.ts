@@ -4,13 +4,14 @@ import { cookies } from "next/headers";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { ACCESS_COOKIE, accessSignature, verifyAccessPassword } from "@/lib/auth";
+import { ACCESS_COOKIE, accessSignature } from "@/lib/auth";
+import { verifyAccessPasswordInput } from "@/lib/settings";
 
 export async function login(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const nextPath = String(formData.get("next") ?? "/");
 
-  if (!(await verifyAccessPassword(password))) {
+  if (!(await verifyAccessPasswordInput(password))) {
     redirect(`/login?error=1&next=${encodeURIComponent(nextPath)}`);
   }
 

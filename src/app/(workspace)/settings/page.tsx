@@ -3,14 +3,14 @@ import {
   Database,
   Download,
   FileText,
+  Key,
   KeyRound,
   Settings,
   ShieldCheck,
   UploadCloud,
 } from "lucide-react";
 
-import { updateAiSettings } from "@/lib/actions";
-import { isAccessControlEnabled } from "@/lib/auth";
+import { updateAccessSettings, updateAiSettings, updateZoteroSettings } from "@/lib/actions";
 import { Field } from "@/components/shared/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { SubmitButton } from "@/components/shared/submit-button";
@@ -24,15 +24,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { prisma } from "@/lib/db";
-import { getAiSettings } from "@/lib/settings";
-import { getZoteroConfigStatus } from "@/lib/zotero";
+import { getAccessSettings, getAiSettings, getZoteroSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [zotero, aiSettings, counts] = await Promise.all([
-    Promise.resolve(getZoteroConfigStatus()),
+  const [zotero, aiSettings, accessSettings, counts] = await Promise.all([
+    getZoteroSettings(),
     getAiSettings(),
+    getAccessSettings(),
     Promise.all([
       prisma.paper.count(),
       prisma.project.count(),
@@ -47,7 +47,7 @@ export default async function SettingsPage() {
 
   const totalRecords = counts.reduce((sum, count) => sum + count, 0);
   const databaseReady = Boolean(process.env.DATABASE_URL);
-  const accessReady = isAccessControlEnabled();
+  const accessReady = accessSettings.configured;
   const encryptionReady = Boolean(process.env.APP_ENCRYPTION_KEY);
 
   return (
@@ -55,7 +55,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="设置"
         title="设置中心"
-        description="这里保留真正会变动的东西：AI 连接、数据导出和部署健康状态。"
+        description="常换的 Key、Zotero 和访问密码在这里改；数据库和端口这类底层部署项仍然留在服务器。"
         actions={
           <>
             <a className={buttonVariants({ variant: "outline" })} href="/api/export/bibtex" download>
@@ -77,7 +77,7 @@ export default async function SettingsPage() {
         <HealthCard label="AI Key" ready={aiSettings.apiKeyConfigured} detail="用于后续助手能力" icon={Bot} />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="grid gap-4 xl:grid-cols-3">
         <Card className="rounded-lg bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -91,39 +91,67 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4">
-          <Card className="rounded-lg bg-white/95">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <KeyRound className="size-4" />
-                当前状态
-              </CardTitle>
-              <CardDescription>只看结论，不展示密钥。</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 text-sm">
-              <InfoRow label="模型" value={aiSettings.model} />
-              <InfoRow label="Base URL" value={aiSettings.baseUrl} />
-              <InfoRow label="记录数" value={`${totalRecords} 条`} />
-            </CardContent>
-          </Card>
+        <Card className="rounded-lg bg-white/95">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UploadCloud className="size-4" />
+              Zotero 同步
+            </CardTitle>
+            <CardDescription>文献库 API、用户/群组库和同步数量可以随时改。</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ZoteroSettingsForm settings={zotero} />
+          </CardContent>
+        </Card>
 
-          <Card className="rounded-lg bg-white/95">
-            <CardHeader>
-              <CardTitle>备份</CardTitle>
-              <CardDescription>搬家、重部署或整理资料前导出一次。</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <a className={buttonVariants({ variant: "outline" })} href="/api/export" download>
-                <Download className="size-4" />
-                导出完整 JSON
-              </a>
-              <a className={buttonVariants({ variant: "outline" })} href="/api/export/bibtex" download>
-                <FileText className="size-4" />
-                导出文献 BibTeX
-              </a>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="rounded-lg bg-white/95">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="size-4" />
+              访问密码
+            </CardTitle>
+            <CardDescription>
+              当前密码来自{accessSettings.source === "settings" ? "设置中心" : ".env 初始配置"}。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AccessSettingsForm />
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <Card className="rounded-lg bg-white/95">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="size-4" />
+              当前状态
+            </CardTitle>
+            <CardDescription>只看结论，不展示密钥。</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
+            <InfoRow label="模型" value={aiSettings.model} />
+            <InfoRow label="Base URL" value={aiSettings.baseUrl} />
+            <InfoRow label="记录数" value={`${totalRecords} 条`} />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-lg bg-white/95">
+          <CardHeader>
+            <CardTitle>备份</CardTitle>
+            <CardDescription>搬家、重部署或整理资料前导出一次。</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            <a className={buttonVariants({ variant: "outline" })} href="/api/export" download>
+              <Download className="size-4" />
+              导出完整 JSON
+            </a>
+            <a className={buttonVariants({ variant: "outline" })} href="/api/export/bibtex" download>
+              <FileText className="size-4" />
+              导出文献 BibTeX
+            </a>
+          </CardContent>
+        </Card>
       </section>
 
       <details className="rounded-lg border bg-white/95 p-4">
@@ -140,9 +168,9 @@ export default async function SettingsPage() {
             <CardContent className="grid gap-2">
               {[
                 ["DATABASE_URL", databaseReady],
-                ["APP_PASSWORD", accessReady],
+                ["访问密码", accessReady],
                 ["APP_ENCRYPTION_KEY", encryptionReady],
-                ["ZOTERO_API_KEY", zotero.hasApiKey],
+                ["Zotero API Key", zotero.apiKeyConfigured],
                 ["ZOTERO_LIBRARY_ID", Boolean(zotero.libraryId)],
               ].map(([name, ready]) => (
                 <EnvStatus key={String(name)} label={String(name)} ready={Boolean(ready)} />
@@ -219,6 +247,84 @@ function AiSettingsForm({
         Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
       </p>
       <SubmitButton className="w-fit">保存 AI 连接</SubmitButton>
+    </form>
+  );
+}
+
+function ZoteroSettingsForm({
+  settings,
+}: {
+  settings: {
+    apiKeyConfigured: boolean;
+    libraryId: string;
+    libraryType: "user" | "group";
+    collectionKey: string;
+    syncLimit: number;
+  };
+}) {
+  return (
+    <form action={updateZoteroSettings} className="grid gap-3">
+      <Field label="API Key">
+        <Input
+          name="apiKey"
+          type="password"
+          autoComplete="off"
+          placeholder={settings.apiKeyConfigured ? "已配置，留空不改" : "粘贴 Zotero Key"}
+        />
+      </Field>
+      <div className="grid gap-3 sm:grid-cols-[1fr_110px]">
+        <Field label="Library ID">
+          <Input name="libraryId" defaultValue={settings.libraryId} required />
+        </Field>
+        <Field label="类型">
+          <select
+            name="libraryType"
+            defaultValue={settings.libraryType}
+            className="h-8 rounded-lg border bg-background px-2 text-sm"
+          >
+            <option value="user">个人</option>
+            <option value="group">群组</option>
+          </select>
+        </Field>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-[1fr_110px]">
+        <Field label="Collection Key">
+          <Input name="collectionKey" defaultValue={settings.collectionKey} placeholder="可留空" />
+        </Field>
+        <Field label="同步数量">
+          <Input name="syncLimit" type="number" min={1} max={500} defaultValue={settings.syncLimit} />
+        </Field>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        API Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
+      </p>
+      <SubmitButton className="w-fit">保存 Zotero</SubmitButton>
+    </form>
+  );
+}
+
+function AccessSettingsForm() {
+  return (
+    <form action={updateAccessSettings} className="grid gap-3">
+      <Field label="当前密码">
+        <Input name="currentPassword" type="password" autoComplete="current-password" required />
+      </Field>
+      <Field label="新密码">
+        <Input name="newPassword" type="password" autoComplete="new-password" minLength={8} required />
+      </Field>
+      <Field label="确认新密码">
+        <Input
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+        />
+      </Field>
+      <p className="text-xs text-muted-foreground">
+        保存后后续登录使用新密码；已经登录的当前浏览器不会被立刻踢下线。
+      </p>
+      <SubmitButton className="w-fit">更新密码</SubmitButton>
     </form>
   );
 }

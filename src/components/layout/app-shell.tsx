@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { quickCapture } from "@/lib/actions";
+import { NavLink } from "@/components/layout/nav-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -48,26 +49,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Separator className="my-4" />
         <nav className="grid gap-1">
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-[#eef4ef] hover:text-[#1f3d33]"
-            >
-              <item.icon className="size-4" />
-              {item.label}
-            </Link>
+            <NavLink key={item.href} {...item} />
           ))}
         </nav>
         <nav className="mt-4 grid gap-1 border-t pt-4">
           {utilityItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-[#eef4ef] hover:text-[#1f3d33]"
-            >
-              <item.icon className="size-4" />
-              {item.label}
-            </Link>
+            <NavLink key={item.href} {...item} />
           ))}
         </nav>
         <div className="mt-auto rounded-lg border bg-[#fbfaf4] p-3">
@@ -97,13 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </form>
             <div className="flex items-center gap-2 overflow-x-auto md:hidden">
               {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-md border bg-white px-2 py-1 text-xs text-muted-foreground"
-                >
-                  {item.label}
-                </Link>
+                <NavLink key={item.href} href={item.href} label={item.label} compact />
               ))}
             </div>
           </div>
