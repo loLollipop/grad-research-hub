@@ -25,6 +25,7 @@ import {
   createExperiment,
   createExperimentReviewNote,
   createExperimentReviewTask,
+  createResultFromExperiment,
   deleteExperiment,
   setExperimentStatus,
   updateExperiment,
@@ -713,9 +714,26 @@ function ExperimentResultActions({ experiment }: { experiment: ExperimentFull })
                 还有 {experiment.results.length - 3} 条结果，可到成果页查看。
               </p>
             ) : null}
+            <form action={createResultFromExperiment} className="pt-1">
+              <input type="hidden" name="id" value={experiment.id} />
+              <Button type="submit" variant="outline" size="sm">
+                再记一条证据
+              </Button>
+            </form>
           </div>
         ) : (
-          <p className="mt-1 text-sm">暂无</p>
+          <div className="mt-2 grid gap-2">
+            <p className="text-sm text-muted-foreground">
+              暂无结果。实验完成或出现关键观察后，先生成一条结果证据草稿。
+            </p>
+            <form action={createResultFromExperiment}>
+              <input type="hidden" name="id" value={experiment.id} />
+              <Button type="submit" variant="outline" size="sm">
+                <FileChartColumn className="size-3.5" />
+                生成结果证据
+              </Button>
+            </form>
+          </div>
         )}
       </div>
     </div>

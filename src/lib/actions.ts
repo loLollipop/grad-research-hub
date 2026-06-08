@@ -1875,6 +1875,51 @@ export async function createResult(formData: FormData) {
   revalidatePath("/data");
 }
 
+export async function createResultFromExperiment(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const experiment = await prisma.experiment.findUnique({ where: { id } });
+  if (!experiment) return;
+
+  const marker = `"sourceExperimentId":"${experiment.id}"`;
+  const existing = await prisma.result.findFirst({
+    where: {
+      experimentId: experiment.id,
+      config: { contains: marker },
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/data?experiment=${experiment.id}`);
+  }
+
+  await prisma.result.create({
+    data: {
+      title: `结果证据：${experiment.title}`.slice(0, 100),
+      experimentId: experiment.id,
+      metrics: "{}",
+      config: JSON.stringify({
+        reproducibility: experiment.status === "completed" ? "todo" : "unknown",
+        manuscriptReady: false,
+        sourceExperimentId: experiment.id,
+      }),
+      notes: [
+        "结论：待从实验观察中提炼。",
+        `来源实验：${experiment.title}`,
+        `实验摘要：${experimentSnippet(experiment.content)}`,
+        "下一步：补 1-3 个核心指标、复现状态和图表路径。",
+      ].join("\n"),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/experiments");
+  revalidatePath("/data");
+  redirect(`/data?experiment=${experiment.id}`);
+}
+
 export async function updateResult(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const parsed = resultSchema.safeParse(resultFormData(formData));
