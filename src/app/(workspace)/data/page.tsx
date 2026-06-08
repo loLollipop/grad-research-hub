@@ -1,6 +1,8 @@
 ﻿import {
+  AlertCircle,
   ArrowRight,
   BarChart3,
+  CheckCircle2,
   ClipboardList,
   Database,
   Edit3,
@@ -14,6 +16,7 @@
   Target,
   Trash2,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import type { Dataset, Experiment, Prisma, Result } from "@prisma/client";
@@ -198,6 +201,11 @@ export default async function DataPage({ searchParams }: Props) {
   const manuscriptBaseCount = quickBaseResults.filter(
     (result) => parseResultConfig(result.config).manuscriptReady || result.artifactPath,
   ).length;
+  const evidenceTodoBaseCount = todoCount + reproducingBaseCount;
+  const notReadyBaseCount = quickBaseResults.filter((result) => {
+    const config = parseResultConfig(result.config);
+    return !config.manuscriptReady && !result.artifactPath;
+  }).length;
   const selectedExperimentTitle = experiments.find((experiment) => experiment.id === experimentId)?.title;
   const selectedDatasetName = datasets.find((dataset) => dataset.id === datasetId)?.name;
 
@@ -323,6 +331,9 @@ export default async function DataPage({ searchParams }: Props) {
                         <p className="mt-1 text-xs text-muted-foreground">
                           {resultActionLabel(result)} · {result.experiment?.title ?? "未关联实验"}
                         </p>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                          {resultActionReason(result)}
+                        </p>
                       </div>
                       <ReproducibilityBadge result={result} />
                     </div>
@@ -334,6 +345,49 @@ export default async function DataPage({ searchParams }: Props) {
               ) : (
                 <p className="text-sm text-muted-foreground">没有待补证据的结果。</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Target className="size-4 text-primary" />
+                证据雷达
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <ResultEvidenceRadarItem
+                icon={AlertCircle}
+                label="待判断"
+                value={`${unknownCount} 条`}
+                detail="先决定这条结果是否值得复现或汇报"
+                href={dataHref(currentFilters, { reproducibility: "unknown", manuscript: undefined })}
+                tone={unknownCount ? "warm" : "quiet"}
+              />
+              <ResultEvidenceRadarItem
+                icon={RotateCcw}
+                label="复现实验"
+                value={`${evidenceTodoBaseCount} 条`}
+                detail="把待复现和复现中的结果先收成可信证据"
+                href={dataHref(currentFilters, { reproducibility: "todo", manuscript: undefined })}
+                tone={evidenceTodoBaseCount ? "blue" : "quiet"}
+              />
+              <ResultEvidenceRadarItem
+                icon={FileChartColumn}
+                label="待补素材"
+                value={`${notReadyBaseCount} 条`}
+                detail="缺图表路径或写作标记，汇报前容易找不到"
+                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: "not-ready" })}
+                tone={notReadyBaseCount ? "warm" : "quiet"}
+              />
+              <ResultEvidenceRadarItem
+                icon={CheckCircle2}
+                label="可写入"
+                value={`${manuscriptBaseCount} 条`}
+                detail="已经能进入组会、周报或论文素材池"
+                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: "ready" })}
+                tone={manuscriptBaseCount ? "green" : "quiet"}
+              />
             </CardContent>
           </Card>
 
@@ -654,6 +708,49 @@ function QuickDataLink({
   );
 }
 
+function ResultEvidenceRadarItem({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+  tone = "blue",
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone?: "blue" | "warm" | "green" | "quiet";
+}) {
+  const toneClass = {
+    blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+    warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    quiet: "border-border/70 bg-white/72 text-muted-foreground",
+  }[tone];
+
+  return (
+    <Link
+      href={href}
+      className="group grid gap-3 rounded-xl border border-border/70 bg-white/72 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center xl:grid-cols-[auto_1fr]"
+    >
+      <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">{label}</span>
+          <span className="text-xs font-medium text-primary">{value}</span>
+        </span>
+        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {detail}
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 function ResultCard({
   result,
   datasets,
@@ -666,6 +763,7 @@ function ResultCard({
   const metrics = parseJson<Record<string, number | string>>(result.metrics, {});
   const config = parseResultConfig(result.config);
   const nextAction = resultActionLabel(result);
+  const actionReason = resultActionReason(result);
 
   return (
     <Card className="workbench-card">
@@ -709,6 +807,18 @@ function ResultCard({
             <span className="break-all">{result.artifactPath}</span>
           </p>
         ) : null}
+
+        <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3">
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg border border-[#d5e4e8] bg-white/72 text-primary">
+              <Target className="size-3.5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{nextAction}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{actionReason}</p>
+            </div>
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/65 pt-3">
           <CreateWritingNoteFromResultButton result={result} />
@@ -833,6 +943,33 @@ function resultActionLabel(result: ResultFull) {
   }
 
   return "已成证据";
+}
+
+function resultActionReason(result: ResultFull) {
+  const config = parseResultConfig(result.config);
+  const reproducibility = config.reproducibility ?? "unknown";
+
+  if (reproducibility === "unknown") {
+    return "先判断这条结果是否值得复现、汇报或放弃，避免把精力耗在低价值指标上。";
+  }
+
+  if (reproducibility === "todo") {
+    return "还没有复现实验，先生成待补证据任务，把数据、脚本和对照条件补齐。";
+  }
+
+  if (reproducibility === "reproducing") {
+    return "复现正在进行中，优先补上对照、日志和最新指标，避免结果停在半路。";
+  }
+
+  if (!result.artifactPath) {
+    return "缺少图表或结果文件路径，组会、周报和论文写作时会很难追溯。";
+  }
+
+  if (!config.manuscriptReady) {
+    return "结果已有路径，但还没标成写作素材；确认后生成素材笔记最省时间。";
+  }
+
+  return "证据基本闭环，可以进入组会、周报或论文写作素材池。";
 }
 
 function resultEvidenceRank(result: ResultFull) {
