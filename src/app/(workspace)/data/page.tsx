@@ -1150,37 +1150,99 @@ function DatasetForm({
   dataset?: Dataset;
 }) {
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-4">
       {dataset ? <input type="hidden" name="id" value={dataset.id} /> : null}
-      <Field label="数据集名称">
-        <Input name="name" required defaultValue={dataset?.name ?? ""} />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-2">
+
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary">
+            <Database className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {dataset ? "调整数据来源卡" : "登记一个会影响结果复现的数据来源"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              只登记关键数据版本和位置，细节文档继续放在实验记录或数据目录里。
+            </p>
+          </div>
+        </div>
+        <Input
+          name="name"
+          required
+          defaultValue={dataset?.name ?? ""}
+          placeholder="例如：2026-05 清洗后岩石破裂图像数据"
+          className="mt-3 h-11 border-[#cadbe1] bg-white/92 text-base font-medium"
+        />
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-2">
         <Field label="来源">
-          <Input name="source" defaultValue={dataset?.source ?? ""} />
+          <Input
+            name="source"
+            defaultValue={dataset?.source ?? ""}
+            placeholder="实验台架 / 公开数据 / 仿真输出"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
         </Field>
         <Field label="版本">
-          <Input name="version" defaultValue={dataset?.version ?? ""} />
+          <Input
+            name="version"
+            defaultValue={dataset?.version ?? ""}
+            placeholder="例如：v1.2 / 2026-05-30 / clean-final"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
         </Field>
       </div>
-      <Field label="位置或链接">
-        <Input name="path" defaultValue={dataset?.path ?? ""} />
-      </Field>
-      <Field label="外部链接">
-        <Input name="externalUrl" defaultValue={dataset?.externalUrl ?? ""} />
-      </Field>
+
+      <div className="grid gap-3 md:grid-cols-[1fr_0.8fr]">
+        <Field label="本地位置或服务器路径" hint="写能让你以后找回数据的位置，不需要上传文件。">
+          <Input
+            name="path"
+            defaultValue={dataset?.path ?? ""}
+            placeholder="例如：/data/rock/clean/v1 或 NAS 路径"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
+        </Field>
+        <Field label="外部链接">
+          <Input
+            name="externalUrl"
+            defaultValue={dataset?.externalUrl ?? ""}
+            placeholder="DOI / OSF / GitHub / 云盘链接"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
+        </Field>
+      </div>
+
       <Field label="标签">
-        <Input name="tags" defaultValue={parseTags(dataset?.tags).join(", ")} />
-      </Field>
-      <Field label="一句话说明">
-        <Textarea
-          name="description"
-          rows={3}
-          defaultValue={dataset?.description ?? ""}
-          placeholder="例如：最终实验使用的清洗后数据，来自 2026-05 版本。"
+        <Input
+          name="tags"
+          defaultValue={parseTags(dataset?.tags).join(", ")}
+          placeholder="实验, 清洗后, baseline"
+          className="h-9 border-[#d4e0e5] bg-white/90"
         />
       </Field>
-      <SubmitButton>{dataset ? "保存数据集" : "保存数据集"}</SubmitButton>
+
+      <Field
+        label="复现说明"
+        hint="写清它用于哪个实验、是否清洗、是否可公开、哪些结果依赖它。"
+      >
+        <Textarea
+          name="description"
+          rows={5}
+          defaultValue={dataset?.description ?? ""}
+          placeholder={"用途：\n处理状态：\n依赖结果："}
+          className="min-h-36 border-[#d4e0e5] bg-[#fffef9]/96 leading-6"
+        />
+      </Field>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+          <Link2 className="size-3.5 shrink-0" />
+          保存后可在结果证据卡里关联，帮助以后追溯图表和复现实验。
+        </p>
+        <SubmitButton>{dataset ? "保存来源" : "登记来源"}</SubmitButton>
+      </div>
     </form>
   );
 }
