@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { createAiDraft } from "@/lib/ai";
 import { getAiRuntimeConfig } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -24,20 +25,20 @@ export async function POST(request: Request) {
   }
 
   const runtime = await getAiRuntimeConfig();
-  const configured = Boolean(runtime.apiKey);
   const prompt = parsed.data.prompt;
 
-  return NextResponse.json({
-    mode: "placeholder",
-    configured,
-    summary: configured
-      ? `已读取设置中心的 ${runtime.provider} 配置：${runtime.model}。MVP 暂未接入真实模型调用，这里预留给后续 LLM、RAG 或 Zotero 同步工作流。`
-      : "当前未配置模型 API Key。可以在设置中心填写 Key、Base URL 和模型名。",
-    suggestedActions: [
-      `收到请求：${prompt.slice(0, 80)}${prompt.length > 80 ? "..." : ""}`,
-      `当前 Base URL：${runtime.baseUrl}`,
-      "后续可以把最近实验、未完成任务和文献笔记作为上下文注入。",
-      "建议先支持周报提纲、实验复盘、论文阅读卡片三类低风险功能。",
-    ],
-  });
+  try {
+    const draft = await createAiDraft({ ...runtime, prompt });
+    return NextResponse.json(draft);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "AI 草稿生成失败。请检查 Key、Base URL、模型名或网关状态。",
+      },
+      { status: 502 },
+    );
+  }
 }

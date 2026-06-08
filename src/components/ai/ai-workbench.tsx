@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type AiResponse = {
-  mode: "placeholder";
+  mode: "live" | "placeholder";
   configured: boolean;
+  provider?: string;
   summary: string;
   suggestedActions: string[];
 };
@@ -75,11 +76,11 @@ export function AiWorkbench({
       />
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          当前接口只返回结构化占位结果，用来验证前端调用、鉴权和后续模型接入位置。
+          只粘贴已脱敏材料；生成内容是草稿，事实、引用和结论要人工核对。
         </p>
         <Button type="button" onClick={submit} disabled={isPending || !prompt.trim()}>
           {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-          试运行
+          生成草稿
         </Button>
       </div>
 
@@ -93,7 +94,10 @@ export function AiWorkbench({
         <div className="soft-tile rounded-xl p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Bot className="size-4 text-[#1f3d33]" />
-            占位响应
+            {result.mode === "live" ? "AI 草稿" : "配置提示"}
+            <span className="rounded-full border bg-white px-2 py-0.5 text-[11px] text-muted-foreground">
+              {result.mode === "live" ? result.provider ?? "live" : "placeholder"}
+            </span>
           </div>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.summary}</p>
           <div className="mt-3 grid gap-2">

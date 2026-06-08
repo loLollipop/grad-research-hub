@@ -199,7 +199,7 @@ export default async function AiPage() {
           <CardContent className="grid gap-4">
             {!settings.apiKeyConfigured ? (
               <div className="rounded-xl border border-amber-200 bg-[#fff8eb] p-3 text-sm leading-6 text-amber-950">
-                还没有配置 AI Key。先去设置中心填 Key、Base URL 和模型名；当前试验台仍会返回结构化占位结果。
+                还没有配置 AI Key。先去设置中心填 Key、Base URL 和模型名；未配置时这里只给连接指引，配置后会调用真实模型生成草稿。
               </div>
             ) : null}
             <AiWorkbench
