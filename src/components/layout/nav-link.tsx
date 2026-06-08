@@ -67,7 +67,7 @@ export function NavLink({
         className={cn(
           "relative shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
           active
-            ? "border-primary/30 bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(34,69,120,0.12)]"
+            ? "border-primary/35 bg-[#2f5275] text-white shadow-[0_8px_18px_rgba(34,69,120,0.12)]"
             : "border-border/70 bg-white/72 text-muted-foreground hover:border-primary/20 hover:bg-white hover:text-primary active:bg-white/80",
         )}
       >
@@ -85,7 +85,7 @@ export function NavLink({
       className={cn(
         "group relative flex min-h-10 items-center gap-2.5 overflow-hidden rounded-xl border px-2.5 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
         active
-          ? "border-primary/22 bg-[linear-gradient(135deg,rgba(236,244,248,0.96),rgba(239,248,244,0.86))] font-semibold text-sidebar-foreground shadow-[0_8px_18px_rgba(34,69,120,0.055)]"
+          ? "border-[#2f5275]/26 bg-[linear-gradient(135deg,rgba(234,243,248,0.98),rgba(238,248,244,0.92))] font-semibold text-[#17324c] shadow-[0_8px_18px_rgba(34,69,120,0.055)]"
           : "border-transparent text-muted-foreground hover:border-sidebar-border/80 hover:bg-white/70 hover:text-sidebar-foreground active:bg-white/80",
       )}
     >
@@ -97,7 +97,7 @@ export function NavLink({
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-md border transition",
             active
-              ? "border-primary/20 bg-white/78 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.92)]"
+              ? "border-[#2f5275]/24 bg-[#2f5275] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"
               : "border-sidebar-border/60 bg-white/54 group-hover:bg-white/80",
             !active && accent,
           )}

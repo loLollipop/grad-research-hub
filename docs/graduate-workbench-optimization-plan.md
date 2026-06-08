@@ -170,3 +170,38 @@ Obsidian 的双链和 backlinks 说明研究笔记的关键价值是“看见关
 - 页面切换时不再像传统后台骨架屏。
 - 表单仍然紧凑，但要更像人填写的工作记录，而不是机器参数面板。
 - 所有动效必须轻，并遵守 `prefers-reduced-motion`。
+
+## 9. 第三轮调研更新与落地计划
+
+### 调研更新
+
+本轮继续确认一个边界：研途 Hub 不应该复制 Zotero、eLabFTW、OSF 或 Obsidian，而应该连接它们在研究生日常中的断点。
+
+- Zotero Web API v3 已覆盖 items、collections、tags、按集合读取条目和 API key 权限检查，文献页继续坚持“Zotero 同步优先，手动补录兜底”。
+- eLabFTW 这类 ELN 的高频价值在实验条目、模板和状态，而不是让个人研究生维护完整 LIMS。
+- OSF components 的价值是把大课题拆成可描述、可复现的部分；研途 Hub 只吸收“课题容器 + 阶段推进”，不做协作仓库。
+- Obsidian 的内链和 backlinks 说明笔记核心价值是关联可见；研途 Hub 保留 `[[双链]]` 和反向链接，不做复杂知识图谱。
+- 研究数据管理与 FAIR 思路提醒我们：结果要能被找到、复现、解释和复用；个人平台先回答“这条结果能否汇报/写作”，不要上来做重型数据平台。
+
+### 本轮优先落地
+
+1. 全局视觉继续降疲劳：减少深色大块压迫感，把行动栈从“重后台深色卡”改成更柔和的钴蓝-青绿研究指挥条。
+2. 侧边栏从模块菜单继续改成研究闭环：强调“文献 -> 实验 -> 成果 -> 写作”，让用户知道每天打开后平台服务什么流程。
+3. 导航选中态更明确：当前页使用稳定深色选中态，离开后自动恢复，避免点过的标签残留深色。
+4. 顶部快速捕捉更像研究命令入口：减少说明感，保留自然短句示例，帮助忙碌用户不用找页面也能记录。
+5. 不新增表、不新增配置、不引入新依赖；只优化每天高频触达的工作台体验。
+
+### 验收标准
+
+- 侧边栏和顶部不再像通用后台管理系统。
+- 深色区域仍有重点，但不压眼、不大面积黑蓝。
+- 当前导航页清晰可见，切换后旧页面不保留深色状态。
+- `npm run lint` 和 `npm run build` 通过。
+- GitHub 与服务器同步到同一提交。
+
+### 本轮参考来源
+
+- Zotero Web API v3: <https://www.zotero.org/support/dev/web_api/v3/basics>
+- eLabFTW Documentation: <https://doc.elabftw.net/>
+- OSF Components: <https://help.osf.io/article/622-utilize-components-for-detailed-project-management>
+- Obsidian Internal Links: <https://obsidian.md/help/links>

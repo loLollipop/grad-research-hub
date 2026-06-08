@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   BookOpenText,
+  CheckCircle2,
   CircleDot,
   Command,
   FileChartColumn,
@@ -49,15 +50,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </Link>
 
-        <div className="mt-4 rounded-2xl border border-sidebar-border/70 bg-white/64 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_24px_rgba(34,48,71,0.026)]">
+        <div className="research-loop-card mt-4">
           <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/65 bg-white/86 px-2.5 py-2 text-xs text-muted-foreground">
             <Command className="size-3.5 text-sidebar-primary" />
-            <span className="truncate">随手写，自动分流</span>
+            <span className="truncate">一句话进入研究流</span>
           </div>
-          <div className="mt-3 grid gap-2">
-            <FlowHint icon={BookOpenText} label="文献 补读综述" detail="进入待读" />
-            <FlowHint icon={FlaskConical} label="实验 复现第3组" detail="生成日志" />
-            <FlowHint icon={FileChartColumn} label="写作 周报开头" detail="进入写作" />
+          <div className="research-loop-rail mt-3">
+            <FlowHint icon={BookOpenText} label="文献" detail="Zotero 队列" />
+            <FlowHint icon={FlaskConical} label="实验" detail="目的/观察" />
+            <FlowHint icon={FileChartColumn} label="成果" detail="证据/复现" />
+            <FlowHint icon={CheckCircle2} label="写作" detail="周报/论文" />
           </div>
         </div>
 
@@ -84,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <p className="text-xs font-semibold text-sidebar-foreground">今天只做三件事</p>
           </div>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            推进一个关键任务，留下一个实验证据，写清楚下一步。
+            推进一个关键任务，留下一个实验证据，把下一步写回笔记。
           </p>
           <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
             <CircleDot className="size-3 text-sidebar-primary" />
@@ -110,7 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
-                  placeholder="快速捕捉：任务 整理结果 / 实验 复现第3组 / 写作 周报开头"
+                  placeholder="一句话捕捉：任务 整理结果 / 实验 复现第3组 / 文献 补读综述 / 写作 周报开头"
                   className="h-9 rounded-xl border-transparent bg-white/0 pl-8 text-sm shadow-none focus-visible:bg-white/88 md:h-10"
                 />
               </div>
@@ -121,7 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </form>
             <div className="hidden items-center gap-2 rounded-2xl border bg-white/76 px-3 py-2 text-xs text-muted-foreground shadow-sm xl:flex">
               <CircleDot className="size-3 text-primary" />
-              <span>本地数据 · 自托管</span>
+              <span>本地数据 · Zotero / AI 在设置中心维护</span>
             </div>
             <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-0.5 md:hidden">
               {mobileItems.map((item) => (
@@ -148,14 +150,14 @@ function FlowHint({
   detail: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl border border-sidebar-border/55 bg-white/58 px-2.5 py-2">
+    <div className="research-loop-step">
       <span className="flex min-w-0 items-center gap-2">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#eef4fb] text-sidebar-primary">
+        <span className="research-loop-step-icon">
           <Icon className="size-3.5" />
         </span>
-        <span className="truncate text-xs font-medium text-sidebar-foreground">{label}</span>
+        <span className="truncate">{label}</span>
       </span>
-      <span className="truncate text-[11px] text-muted-foreground">{detail}</span>
+      <span className="ml-auto truncate text-[11px] font-normal text-muted-foreground">{detail}</span>
     </div>
   );
 }
