@@ -25,7 +25,11 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createDailyPlanNote, createMeetingBriefNote } from "@/lib/actions";
+import {
+  createDailyPlanNote,
+  createFirstRunGuideNote,
+  createMeetingBriefNote,
+} from "@/lib/actions";
 import { getDailyPlanPeriod } from "@/lib/daily-plan";
 import { prisma } from "@/lib/db";
 import { daysUntil, formatDateTime, parseJson, statusLabel } from "@/lib/format";
@@ -760,10 +764,12 @@ function FirstRunDashboard() {
               建一个正在做的课题，再写下第一条实验/笔记，首页就会开始帮你排序。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Link className={buttonVariants({ variant: "default" })} href="/settings">
-                <Settings className="size-4" />
-                先填设置
-              </Link>
+              <form action={createFirstRunGuideNote}>
+                <SubmitButton variant="default">
+                  <FileText className="size-4" />
+                  生成上手清单
+                </SubmitButton>
+              </form>
               <Link className={buttonVariants({ variant: "outline" })} href="/papers">
                 <UploadCloud className="size-4" />
                 同步文献
@@ -784,9 +790,9 @@ function FirstRunDashboard() {
               <div className="mt-4 grid gap-2.5">
                 <FirstRunStep
                   index="01"
-                  title="设置访问密码、Zotero 和 AI Key"
-                  detail="高频变动项都在设置中心，不用回服务器改。"
-                  href="/settings"
+                  title="生成 10 分钟上手清单"
+                  detail="先得到一篇可勾选路线图，之后在笔记里继续改。"
+                  action={createFirstRunGuideNote}
                 />
                 <FirstRunStep
                   index="02"
@@ -886,23 +892,44 @@ function FirstRunStep({
   title,
   detail,
   href,
+  action,
 }: {
   index: string;
   title: string;
   detail: string;
-  href: string;
+  href?: string;
+  action?: () => Promise<void>;
 }) {
-  return (
-    <Link
-      href={href}
-      className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.07] p-3 transition hover:border-white/20 hover:bg-white/[0.1] sm:grid-cols-[auto_1fr_auto] sm:items-center"
-    >
+  const content = (
+    <>
       <span className="font-mono text-xs font-semibold text-white/50">{index}</span>
       <span className="min-w-0">
         <span className="block font-medium text-white">{title}</span>
         <span className="mt-1 block text-xs leading-5 text-white/58">{detail}</span>
       </span>
       <ArrowRight className="hidden size-4 text-white/45 sm:block" />
+    </>
+  );
+
+  const className =
+    "grid w-full gap-3 rounded-xl border border-white/10 bg-white/[0.07] p-3 text-left transition hover:border-white/20 hover:bg-white/[0.1] sm:grid-cols-[auto_1fr_auto] sm:items-center";
+
+  if (action) {
+    return (
+      <form action={action}>
+        <button type="submit" className={className}>
+          {content}
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <Link
+      href={href ?? "/"}
+      className={className}
+    >
+      {content}
     </Link>
   );
 }

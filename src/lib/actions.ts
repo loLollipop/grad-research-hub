@@ -1688,6 +1688,36 @@ export async function createDailyPlanNote() {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createFirstRunGuideNote() {
+  const marker = firstRunGuideMarker();
+  const existingNote = await prisma.note.findFirst({
+    where: {
+      folder: "上手",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existingNote) {
+    redirect(`/notes?note=${existingNote.id}`);
+  }
+
+  const now = new Date();
+  const note = await prisma.note.create({
+    data: {
+      title: "研途 Hub 10 分钟上手清单",
+      folder: "上手",
+      content: firstRunGuideMarkdown(now, marker),
+      tags: tagsToString(["上手清单", "开箱", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createDataset(formData: FormData) {
   const parsed = datasetSchema.safeParse(data(formData));
   if (!parsed.success) fail(parsed.error);
@@ -2608,6 +2638,64 @@ function dailyPlanMarkdown({
   );
 
   return lines.join("\n");
+}
+
+function firstRunGuideMarker() {
+  return "first-run-guide:v1";
+}
+
+function firstRunGuideMarkdown(generatedAt: Date, marker: string) {
+  return [
+    `<!-- ${marker} -->`,
+    "",
+    "# 研途 Hub 10 分钟上手清单",
+    "",
+    `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
+    "",
+    "> 第一天不要迁移历史资料，也不要研究所有设置。只让工作台开始接住你的真实科研流。",
+    "",
+    "## 0. 今天的原则",
+    "",
+    "- [ ] 只放当前正在推进的课题，不搬旧项目",
+    "- [ ] 只同步或补录正在读的文献，不整理全部 PDF",
+    "- [ ] 只写第一条能复盘的实验、笔记或组会提醒",
+    "- [ ] 配置只处理 Zotero、AI Key 和访问密码这些常改项",
+    "",
+    "## 1. 连接文献源",
+    "",
+    "- [ ] 到设置中心填写 Zotero API Key、Library ID 和同步数量",
+    "- [ ] 到文献页点击同步 Zotero",
+    "- [ ] 把最要读的 3 篇标成“读中”或“待读”",
+    "- [ ] 从当前列表生成一篇阅读计划",
+    "",
+    "## 2. 建一个真实课题",
+    "",
+    "- [ ] 到课题页创建当前正在推进的课题",
+    "- [ ] 写一句话目标：我想验证什么，近期交付物是什么",
+    "- [ ] 创建 1 个里程碑",
+    "- [ ] 创建 1-3 个下一步任务，优先写今天或本周能推进的动作",
+    "",
+    "## 3. 留下第一条研究记录",
+    "",
+    "- [ ] 如果今天做实验：到实验页写目的、方法、观察、结论、下一步",
+    "- [ ] 如果今天读文献：到文献页生成阅读笔记",
+    "- [ ] 如果今天要组会：到事务页生成周报草稿",
+    "- [ ] 如果只是一个想法：在顶部快速捕捉里直接写一句话",
+    "",
+    "## 4. 晚上收口",
+    "",
+    "- [ ] 首页是否能显示今天最该推进的事",
+    "- [ ] 有没有一条实验、文献或笔记能复盘",
+    "- [ ] 明天第一件事是否已经写成任务",
+    "- [ ] 哪些资料暂时不用迁移",
+    "",
+    "## 暂时不要做",
+    "",
+    "- 不要把 Zotero 里所有 PDF 搬进平台",
+    "- 不要把旧实验日志一次性补完",
+    "- 不要为每个项目填很多字段",
+    "- 不要把 AI 输出当最终结论；它只负责草稿和结构",
+  ].join("\n");
 }
 
 function taskOwnerText(task: DailyPlanTask | MeetingBriefTask) {
