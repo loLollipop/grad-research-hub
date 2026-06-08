@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   Edit3,
+  FileText,
   Flag,
   FolderKanban,
   ListChecks,
@@ -1392,51 +1393,45 @@ function TaskForm({
   defaultMilestoneId?: string;
 }) {
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-4">
       {task ? <input type="hidden" name="id" value={task.id} /> : null}
-      <Field label="任务">
+
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary">
+            <ListTodo className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {task ? "调整下一步行动" : "写下下一步行动"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              任务只记录能在今天或本周推进的动作，不写成项目说明书。
+            </p>
+          </div>
+        </div>
         <Input
           name="title"
           required
-          placeholder="例如：整理第三组实验结果"
+          placeholder="例如：整理第三组实验结果并标出可写入的图表"
           defaultValue={task?.title ?? ""}
+          className="mt-3 h-11 border-[#cadbe1] bg-white/92 text-base font-medium"
         />
-      </Field>
-      <Field label="归属里程碑">
-        <select
-          name="milestoneId"
-          defaultValue={task?.milestoneId ?? defaultMilestoneId ?? ""}
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
-        >
-          <option value="">独立任务</option>
-          {milestones.map((milestone) => (
-            <option key={milestone.id} value={milestone.id}>
-              {milestone.project.title} / {milestone.title}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <div className="grid gap-3 md:grid-cols-3">
-        <Field label="优先级">
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-[1.3fr_0.7fr]">
+        <Field label="挂到哪条路线">
           <select
-            name="priority"
-            defaultValue={task?.priority ?? "medium"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            name="milestoneId"
+            defaultValue={task?.milestoneId ?? defaultMilestoneId ?? ""}
+            className="h-9 min-w-0 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
-            <option value="high">高</option>
-            <option value="medium">中</option>
-            <option value="low">低</option>
-          </select>
-        </Field>
-        <Field label="状态">
-          <select
-            name="status"
-            defaultValue={task?.status ?? "todo"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
-          >
-            <option value="todo">待办</option>
-            <option value="doing">进行中</option>
-            <option value="done">完成</option>
+            <option value="">独立任务，稍后再归档</option>
+            {milestones.map((milestone) => (
+              <option key={milestone.id} value={milestone.id}>
+                {milestone.project.title} / {milestone.title}
+              </option>
+            ))}
           </select>
         </Field>
         <Field label="截止">
@@ -1444,18 +1439,55 @@ function TaskForm({
             name="dueDate"
             type="date"
             defaultValue={task?.dueDate ? task.dueDate.toISOString().slice(0, 10) : ""}
+            className="h-9 border-[#d4e0e5] bg-white/90"
           />
         </Field>
+        <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
+          <Field label="优先级">
+            <select
+              name="priority"
+              defaultValue={task?.priority ?? "medium"}
+              className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
+            >
+              <option value="high">高：导师沟通 / 关键实验 / 论文主线</option>
+              <option value="medium">中：本周推进</option>
+              <option value="low">低：有空再做</option>
+            </select>
+          </Field>
+          <Field label="当前状态">
+            <select
+              name="status"
+              defaultValue={task?.status ?? "todo"}
+              className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
+            >
+              <option value="todo">待办：还没开始</option>
+              <option value="doing">进行中：今天继续</option>
+              <option value="done">完成：已收口</option>
+            </select>
+          </Field>
+        </div>
       </div>
-      <Field label="备注">
+
+      <Field
+        label="必要上下文"
+        hint="只写会影响执行的信息，例如验收标准、数据位置、相关文献或需要导师确认的问题。"
+      >
         <Textarea
           name="description"
-          rows={4}
-          placeholder="只写必要上下文，例如数据、文献或验收标准。"
+          rows={5}
+          placeholder={"验收标准：\n证据/数据：\n卡点："}
           defaultValue={task?.description ?? ""}
+          className="min-h-36 border-[#d4e0e5] bg-[#fffef9]/96 leading-6"
         />
       </Field>
-      <SubmitButton>{task ? "保存任务" : "创建任务"}</SubmitButton>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+          <FileText className="size-3.5 shrink-0" />
+          保存后可转实验、生成推进笔记，或进入今日队列继续推进。
+        </p>
+        <SubmitButton>{task ? "保存行动" : "加入队列"}</SubmitButton>
+      </div>
     </form>
   );
 }
