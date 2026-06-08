@@ -91,7 +91,7 @@
   --workspace-title: #17283b;
   --workspace-copy: #52677a;
   --workspace-chip: #eef5f4;
-  --workspace-line: rgba(85, 103, 116, 0.13);
+  --workspace-line: rgba(85, 103, 116, 0.09);
 }
 
 .dark {
@@ -151,8 +151,10 @@
   .workbench-surface {
     background:
       linear-gradient(90deg, transparent 0 31px, var(--workspace-line) 31px 32px, transparent 32px 100%),
-      linear-gradient(180deg, transparent 0 31px, rgba(85, 103, 116, 0.08) 31px 32px, transparent 32px 100%),
-      linear-gradient(180deg, rgba(252, 251, 245, 0.98) 0%, rgba(247, 250, 244, 0.96) 48%, rgba(240, 247, 246, 0.98) 100%);
+      linear-gradient(180deg, transparent 0 31px, rgba(85, 103, 116, 0.055) 31px 32px, transparent 32px 100%),
+      radial-gradient(circle at 18% 8%, rgba(230, 239, 246, 0.52), transparent 34rem),
+      radial-gradient(circle at 88% 12%, rgba(229, 241, 236, 0.46), transparent 30rem),
+      linear-gradient(180deg, rgba(252, 251, 246, 0.98) 0%, rgba(248, 250, 246, 0.98) 50%, rgba(241, 248, 246, 0.98) 100%);
     background-attachment: fixed;
     background-size:
       32px 32px,
@@ -162,6 +164,20 @@
 
   .workbench-card {
     @apply border-border/70 bg-white/88 shadow-[0_1px_1px_rgba(15,23,42,0.022),0_14px_30px_rgba(34,48,71,0.042)];
+  }
+
+  .workbench-column {
+    @apply rounded-2xl border border-border/65 bg-white/54 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_12px_28px_rgba(34,48,71,0.035)];
+  }
+
+  .workbench-dual-grid {
+    @apply items-stretch;
+  }
+
+  .workbench-dual-grid > aside,
+  .workbench-dual-grid > .workbench-column,
+  .workbench-dual-grid > [data-slot="card"] {
+    @apply h-full min-h-full;
   }
 
   .workbench-panel {
@@ -303,6 +319,12 @@
   @media (width >= 48rem) {
     .workspace-page {
       min-height: 100dvh;
+    }
+  }
+
+  @media (width >= 80rem) {
+    .workbench-dual-grid {
+      min-height: max(42rem, calc(100dvh - 22rem));
     }
   }
 }

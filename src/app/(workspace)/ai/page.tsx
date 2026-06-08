@@ -125,7 +125,7 @@ export default async function AiPage() {
         </div>
       </section>
 
-      <section className="grid items-stretch gap-4 xl:grid-cols-[0.34fr_0.66fr]">
+      <section className="workbench-dual-grid grid gap-4 xl:grid-cols-[0.34fr_0.66fr]">
         <aside className="grid content-start gap-4">
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">

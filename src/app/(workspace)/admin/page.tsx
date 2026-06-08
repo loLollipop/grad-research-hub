@@ -257,7 +257,7 @@ export default async function AdminPage({ searchParams }: Props) {
         </div>
       </section>
 
-      <section className="grid items-stretch gap-4 xl:grid-cols-[0.34fr_0.66fr]">
+      <section className="workbench-dual-grid grid gap-4 xl:grid-cols-[0.34fr_0.66fr]">
         <aside className="grid content-start gap-4">
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
@@ -393,7 +393,7 @@ export default async function AdminPage({ searchParams }: Props) {
           </Card>
         </aside>
 
-        <div className="stretch-panel gap-3">
+        <div className="workbench-column stretch-panel gap-3">
           <CaptureNotice kind={captured} />
 
           <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
@@ -461,7 +461,7 @@ export default async function AdminPage({ searchParams }: Props) {
           </form>
 
           {items.length ? (
-            <div className="grid gap-3">
+            <div className="grid flex-1 content-start gap-3">
               {items.map((item) => (
                 <AdminTimelineCard key={item.id} item={item} />
               ))}
