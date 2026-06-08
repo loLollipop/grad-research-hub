@@ -13,6 +13,7 @@ import {
   Search,
   Sparkles,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import type { Note, Prisma } from "@prisma/client";
 import ReactMarkdown from "react-markdown";
@@ -129,6 +130,31 @@ function noteActionLabel(note: Note, allNotes: Note[]) {
   return "继续写";
 }
 
+function noteActionReason(note: Note, allNotes: Note[]) {
+  const checklist = openChecklistCount(note.content);
+  const links = uniqueWikiLinks(note.content);
+  const allTitles = new Set(allNotes.map((item) => normalizeTitle(item.title)));
+  const missingLinkCount = links.filter((link) => !allTitles.has(normalizeTitle(link))).length;
+
+  if (checklist > 0) {
+    return "这篇里还有待办清单，适合拆回课题任务，避免笔记变成死清单。";
+  }
+
+  if (missingLinkCount > 0) {
+    return "有未创建的双链主题，补齐后阅读、实验和写作上下文会更容易接上。";
+  }
+
+  if (isWritingMaterial(note)) {
+    return "这篇已经接近写作素材，适合继续打磨成组会、周报或论文段落。";
+  }
+
+  if (links.length > 0) {
+    return "这篇已经有上下文关系，可以回顾它连接到哪些文献、实验或想法。";
+  }
+
+  return "先继续补背景、关键观察和下一步，让它以后能被检索和复用。";
+}
+
 function noteActionScore(note: Note, allNotes: Note[]) {
   const ageHours = Math.max(1, (Date.now() - note.updatedAt.getTime()) / 36e5);
   const recency = 1 / ageHours;
@@ -219,6 +245,10 @@ export default async function NotesPage({ searchParams }: Props) {
   const notesWithTasks = allNotes.filter((note) => openChecklistCount(note.content) > 0).length;
   const linkedNoteCount = allNotes.filter((note) => uniqueWikiLinks(note.content).length > 0).length;
   const writingNoteCount = allNotes.filter(isWritingMaterial).length;
+  const missingLinkNoteCount = allNotes.filter((note) =>
+    uniqueWikiLinks(note.content).some((link) => !noteTitleMap.has(normalizeTitle(link))),
+  ).length;
+  const inboxNoteCount = allNotes.filter((note) => !note.folder || note.folder === "Inbox").length;
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-5">
@@ -328,6 +358,46 @@ export default async function NotesPage({ searchParams }: Props) {
               </div>
             </div>
           </div>
+          <div className="border-b border-border/75 bg-white/72 p-3.5">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              <Sparkles className="size-4 text-primary" />
+              沉淀雷达
+            </div>
+            <div className="grid gap-2">
+              <NoteRadarItem
+                icon={ListTodo}
+                label="可拆任务"
+                value={`${notesWithTasks} 篇`}
+                detail="把笔记里的待办清单拆回课题任务"
+                href="/notes"
+                tone={notesWithTasks ? "blue" : "quiet"}
+              />
+              <NoteRadarItem
+                icon={Link2}
+                label="待补双链"
+                value={`${missingLinkNoteCount} 篇`}
+                detail="未创建主题会让阅读、实验和写作上下文断开"
+                href="/notes"
+                tone={missingLinkNoteCount ? "warm" : "quiet"}
+              />
+              <NoteRadarItem
+                icon={FileText}
+                label="写作素材"
+                value={`${writingNoteCount} 篇`}
+                detail="可进入组会、周报或论文草稿"
+                href="/notes?folder=写作"
+                tone={writingNoteCount ? "green" : "quiet"}
+              />
+              <NoteRadarItem
+                icon={FolderOpen}
+                label="收件箱"
+                value={`${inboxNoteCount} 篇`}
+                detail="临时想法先收住，之后再归档"
+                href="/notes?folder=Inbox"
+                tone={inboxNoteCount ? "warm" : "quiet"}
+              />
+            </div>
+          </div>
           <div className="border-b border-border/75 bg-white/62 p-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-semibold">
@@ -410,6 +480,7 @@ export default async function NotesPage({ searchParams }: Props) {
                     const selected = activeNote?.id === note.id;
                     const snippet = noteSnippet(note.content);
                     const action = noteActionLabel(note, allNotes);
+                    const actionReason = noteActionReason(note, allNotes);
 
                     return (
                       <Link
@@ -437,6 +508,9 @@ export default async function NotesPage({ searchParams }: Props) {
                             {snippet}
                           </span>
                         ) : null}
+                        <span className="mt-2 block line-clamp-2 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
+                          {actionReason}
+                        </span>
                       </Link>
                     );
                   })}
@@ -691,6 +765,51 @@ function NoteStackItem({
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
       <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
     </div>
+  );
+}
+
+function NoteRadarItem({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+  tone = "blue",
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone?: "blue" | "warm" | "green" | "quiet";
+}) {
+  const toneClass = {
+    blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+    warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    quiet: "border-border/70 bg-white/72 text-muted-foreground",
+  }[tone];
+
+  return (
+    <Link
+      href={href}
+      className="group grid gap-2 rounded-xl border border-border/70 bg-white/74 p-2.5 transition hover:border-primary/25 hover:bg-white"
+    >
+      <span className="flex items-center gap-2">
+        <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg border ${toneClass}`}>
+          <Icon className="size-3.5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">{label}</span>
+            <span className="text-xs font-medium text-primary">{value}</span>
+          </span>
+          <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+            {detail}
+          </span>
+        </span>
+      </span>
+    </Link>
   );
 }
 
