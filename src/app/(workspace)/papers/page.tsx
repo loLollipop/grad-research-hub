@@ -24,6 +24,7 @@ import type { Paper, Prisma } from "@prisma/client";
 
 import {
   createExperimentFromPaper,
+  createLiteratureMatrixNote,
   createPaper,
   createReadingPlanNote,
   createReadingNoteFromPaper,
@@ -66,6 +67,7 @@ type Props = {
     captured?: string;
     bulk?: string;
     bulkStatus?: string;
+    matrix?: string;
     plan?: string;
   }>;
 };
@@ -91,6 +93,7 @@ export default async function PapersPage({ searchParams }: Props) {
   const bulk = valueOf(params.bulk);
   const bulkCount = Number(valueOf(params.count) ?? 0);
   const bulkStatus = valueOf(params.bulkStatus);
+  const matrix = valueOf(params.matrix);
   const plan = valueOf(params.plan);
   const zotero = await getZoteroConfigStatus();
   const activeFilterCount = [q, status, category].filter(Boolean).length;
@@ -304,6 +307,14 @@ export default async function PapersPage({ searchParams }: Props) {
         />
       ) : null}
 
+      {matrix === "empty" ? (
+        <SyncNotice
+          tone="error"
+          title="没有可对比的文献"
+          description="当前列表为空。先同步 Zotero、切换集合，或清除筛选后再生成文献综述矩阵。"
+        />
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
         <aside className="grid content-start gap-4">
           <Card className="workbench-card">
@@ -471,6 +482,16 @@ export default async function PapersPage({ searchParams }: Props) {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              <form action={createLiteratureMatrixNote} className="contents">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {papers.slice(0, 12).map((paper) => (
+                  <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                ))}
+                <SubmitButton variant="outline" className="w-fit" disabled={!papers.length}>
+                  <BookOpenText className="size-3.5" />
+                  生成综述矩阵
+                </SubmitButton>
+              </form>
               <form action={createReadingPlanNote} className="contents">
                 <input type="hidden" name="returnTo" value={returnTo} />
                 {papers.slice(0, 12).map((paper) => (

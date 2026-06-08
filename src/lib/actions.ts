@@ -347,6 +347,56 @@ export async function createReadingPlanNote(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createLiteratureMatrixNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 12);
+  const returnTo = safePapersReturnTo(String(formData.get("returnTo") ?? "/papers"));
+
+  if (!ids.length) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}matrix=empty`);
+  }
+
+  const papers = await prisma.paper.findMany({
+    where: { id: { in: ids } },
+    orderBy: [{ readStatus: "asc" }, { updatedAt: "desc" }],
+  });
+
+  if (!papers.length) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}matrix=empty`);
+  }
+
+  const marker = literatureMatrixMarker(papers);
+  const existing = await prisma.note.findFirst({
+    where: {
+      folder: "文献",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `文献综述矩阵 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "文献",
+      content: buildLiteratureMatrixNote(papers, marker),
+      tags: tagsToString(["文献综述", "对比矩阵", "related-work", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/papers");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 function paperNoteMarker(id: string) {
   return `paper-reading-note:${id}`;
 }
@@ -362,6 +412,15 @@ function readingPlanMarker(papers: Paper[]) {
     .sort()
     .join("|");
   return `reading-plan:${day}:${stableHash(key)}`;
+}
+
+function literatureMatrixMarker(papers: Paper[]) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = papers
+    .map((paper) => paper.id)
+    .sort()
+    .join("|");
+  return `literature-matrix:${day}:${stableHash(key)}`;
 }
 
 function buildReadingPlanNote(papers: Paper[], marker: string) {
@@ -418,6 +477,68 @@ function buildReadingPlanNote(papers: Paper[], marker: string) {
   );
 
   return lines.join("\n");
+}
+
+function buildLiteratureMatrixNote(papers: Paper[], marker: string) {
+  const lines = [
+    `<!-- ${marker} -->`,
+    `# 文献综述矩阵 ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "> 这是人工综述前的结构化表格，不自动补事实。先把每篇论文的问题、方法、数据、指标和可复用点补齐，再改写成 related work 或组会材料。",
+    "",
+    "## 本轮综述要回答的问题",
+    "",
+    "- [ ] 这批文献共同在解决什么问题？",
+    "- [ ] 哪些方法或实验设置可以直接迁移到当前课题？",
+    "- [ ] 哪些数据、指标或对照需要我们补实验？",
+    "- [ ] related work 应该按什么维度分组？",
+    "",
+    "## 对比矩阵",
+    "",
+    "| 文献 | 状态 | 问题/任务 | 方法抓手 | 数据/实验设置 | 指标/结果 | 可复用点 | 待补问题 |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+  ];
+
+  papers.forEach((paper) => {
+    const authors = parseTags(paper.authors).slice(0, 2).join(", ") || "作者未知";
+    const source = [paper.year ? String(paper.year) : "", paper.journal || paper.category]
+      .filter(Boolean)
+      .join(" · ") || "来源未填";
+    const briefNote = matrixCell(paper.notes || paper.abstract || "");
+    const titleCell = `${paper.title}<br>${authors} · ${source}`;
+
+    lines.push(
+      `| ${matrixCell(titleCell)} | ${paperStatusText(paper.readStatus)} | 待补 | 待补 | 待补 | ${briefNote || "待补"} | 待补 | 待补 |`,
+    );
+  });
+
+  lines.push(
+    "",
+    "## 分组草稿",
+    "",
+    "- 方法路线 A：",
+    "- 方法路线 B：",
+    "- 数据/实验设置差异：",
+    "- 与当前课题最相关的 3 篇：",
+    "",
+    "## 读后动作",
+    "",
+    "- [ ] 把可复现实验生成实验草稿",
+    "- [ ] 把关键结果或指标登记到成果页",
+    "- [ ] 把 related work 可用表述沉淀到写作笔记",
+    "- [ ] 把仍然模糊的问题列给导师/组会讨论",
+  );
+
+  return lines.join("\n");
+}
+
+function matrixCell(value: string) {
+  return value
+    .replace(/\r?\n/g, "<br>")
+    .replace(/\|/g, "\\|")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180);
 }
 
 function buildPaperReadingNote(paper: Paper) {
