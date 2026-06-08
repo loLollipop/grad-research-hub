@@ -6,6 +6,7 @@
   Edit3,
   FileCheck2,
   FileText,
+  Inbox,
   MapPin,
   Plus,
   ReceiptText,
@@ -664,17 +665,38 @@ function AdminItemForm({
   item?: AdminItem;
 }) {
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-4">
       {item ? <input type="hidden" name="id" value={item.id} /> : null}
-      <Field label="事务标题">
-        <Input name="title" required defaultValue={item?.title ?? ""} />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-3">
+
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary">
+            <Inbox className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {item ? "调整事务减负卡" : "把小事从脑子里移走"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              只记录会影响科研节奏的组会、材料、报销和硬截止，处理完就回到研究主线。
+            </p>
+          </div>
+        </div>
+        <Input
+          name="title"
+          required
+          placeholder="例如：周五组会准备两页结果图 / 报销单补导师签字"
+          defaultValue={item?.title ?? ""}
+          className="mt-3 h-11 border-[#cadbe1] bg-white/92 text-base font-medium"
+        />
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-3">
         <Field label="类型">
           <select
             name="type"
             defaultValue={item?.type ?? "meeting"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
             {itemTypes.map((type) => (
               <option key={type.value} value={type.value}>
@@ -687,11 +709,11 @@ function AdminItemForm({
           <select
             name="status"
             defaultValue={item?.status ?? "todo"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
-            <option value="todo">待办</option>
-            <option value="doing">进行中</option>
-            <option value="done">完成</option>
+            <option value="todo">待处理</option>
+            <option value="doing">处理中</option>
+            <option value="done">已收口</option>
           </select>
         </Field>
         <Field label="截止">
@@ -699,24 +721,50 @@ function AdminItemForm({
             name="dueDate"
             type="date"
             defaultValue={item?.dueDate ? item.dueDate.toISOString().slice(0, 10) : ""}
+            className="h-9 border-[#d4e0e5] bg-white/90"
           />
         </Field>
       </div>
-      <Field label="地点 / 渠道">
-        <Input name="location" defaultValue={item?.location ?? ""} />
-      </Field>
-      <Field label="标签">
-        <Input name="tags" defaultValue={parseTags(item?.tags).join(", ")} />
-      </Field>
-      <Field label="备注">
+
+      <div className="grid gap-3 md:grid-cols-[1fr_0.78fr]">
+        <Field label="地点 / 渠道" hint="会议室、微信群、学院系统、报销平台等。">
+          <Input
+            name="location"
+            defaultValue={item?.location ?? ""}
+            placeholder="例如：腾讯会议 / 学院系统 / 财务处"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
+        </Field>
+        <Field label="标签">
+          <Input
+            name="tags"
+            defaultValue={parseTags(item?.tags).join(", ")}
+            placeholder="组会, 学院, 报销"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
+        </Field>
+      </div>
+
+      <Field
+        label="处理所需上下文"
+        hint="把入口、单号、需要谁确认、缺什么材料写清楚；不要写成完整流程文档。"
+      >
         <Textarea
           name="notes"
-          rows={4}
+          rows={5}
           defaultValue={item?.notes ?? ""}
-          placeholder="只写关键上下文，例如会议地点、材料入口、报销单号。"
+          placeholder={"入口/地点：\n需要确认：\n缺项："}
+          className="min-h-36 border-[#d4e0e5] bg-[#fffef9]/96 leading-6"
         />
       </Field>
-      <SubmitButton>{item ? "保存事务" : "创建事务"}</SubmitButton>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+          <FileCheck2 className="size-3.5 shrink-0" />
+          保存后会进入减负栈，周报草稿也能自动带上相关提醒。
+        </p>
+        <SubmitButton>{item ? "保存事务" : "加入减负栈"}</SubmitButton>
+      </div>
     </form>
   );
 }
