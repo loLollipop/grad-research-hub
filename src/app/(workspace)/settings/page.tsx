@@ -310,18 +310,41 @@ function AiSettingsForm({
   encryptionReady: boolean;
 }) {
   return (
-    <form action={updateAiSettings} className="grid gap-3">
+    <form action={updateAiSettings} className="grid gap-4">
       {!encryptionReady ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           保存 API Key 前，需要先在服务器 `.env` 中设置 `APP_ENCRYPTION_KEY`。
         </div>
       ) : null}
-      <div className="grid gap-3 md:grid-cols-3">
+
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span
+            className={
+              settings.apiKeyConfigured
+                ? "flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary"
+            }
+          >
+            <Bot className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {settings.apiKeyConfigured ? "AI 草稿助手已接入" : "先接上一个可用的 AI 网关"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              这里只维护经常会换的 Key、模型和 Base URL。输入材料仍由你主动粘贴，输出只当草稿。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-[0.85fr_1fr]">
         <Field label="服务商">
           <select
             name="provider"
             defaultValue={settings.provider}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
             <option value="openai">OpenAI 兼容</option>
             <option value="anthropic">Anthropic</option>
@@ -329,28 +352,46 @@ function AiSettingsForm({
           </select>
         </Field>
         <Field label="模型">
-          <Input name="model" defaultValue={settings.model} required />
+          <Input
+            name="model"
+            defaultValue={settings.model}
+            required
+            placeholder="例如：gpt-4.1-mini / claude-sonnet-4"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
         </Field>
+        <div className="md:col-span-2">
+          <Field label="Base URL" hint="OpenAI 兼容网关通常以 /v1 结尾；Anthropic 可填官方或中转地址。">
+            <Input
+              name="baseUrl"
+              defaultValue={settings.baseUrl}
+              required
+              className="h-9 border-[#d4e0e5] bg-white/90"
+            />
+          </Field>
+        </div>
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-[#d5e4e8] bg-[#fbfcfd]/86 p-3 md:grid-cols-[1fr_auto] md:items-end">
         <Field label="API Key">
           <Input
             name="apiKey"
             type="password"
             autoComplete="off"
             placeholder={settings.apiKeyConfigured ? "已配置，留空不改" : "粘贴 Key"}
+            className="h-9 border-[#d4e0e5] bg-white/90"
           />
         </Field>
-      </div>
-      <Field label="Base URL">
-        <Input name="baseUrl" defaultValue={settings.baseUrl} required />
-      </Field>
-      <p className="text-xs text-muted-foreground">
-        Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <SubmitButton className="w-fit">保存 AI 连接</SubmitButton>
         <SubmitButton formAction={testAiSettings} variant="outline" className="w-fit">
           测试当前配置
         </SubmitButton>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="text-xs leading-5 text-[#315266]">
+          Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
+        </p>
+        <SubmitButton className="w-fit">保存 AI 连接</SubmitButton>
       </div>
     </form>
   );
@@ -368,46 +409,91 @@ function ZoteroSettingsForm({
   };
 }) {
   return (
-    <form action={updateZoteroSettings} className="grid gap-3">
-      <Field label="API Key">
-        <Input
-          name="apiKey"
-          type="password"
-          autoComplete="off"
-          placeholder={settings.apiKeyConfigured ? "已配置，留空不改" : "粘贴 Zotero Key"}
-        />
-      </Field>
-      <div className="grid gap-3 sm:grid-cols-[1fr_110px]">
+    <form action={updateZoteroSettings} className="grid gap-4">
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span
+            className={
+              settings.apiKeyConfigured && settings.libraryId
+                ? "flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary"
+            }
+          >
+            <UploadCloud className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {settings.apiKeyConfigured && settings.libraryId ? "Zotero 文献源已准备好" : "把 Zotero 当作文献源头接进来"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              研途 Hub 不接管 PDF，只同步条目、集合和标签，用来安排阅读和生成笔记。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 sm:grid-cols-[1fr_130px]">
         <Field label="Library ID">
-          <Input name="libraryId" defaultValue={settings.libraryId} required />
+          <Input
+            name="libraryId"
+            defaultValue={settings.libraryId}
+            required
+            placeholder="个人库或群组库 ID"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
         </Field>
         <Field label="类型">
           <select
             name="libraryType"
             defaultValue={settings.libraryType}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
             <option value="user">个人</option>
             <option value="group">群组</option>
           </select>
         </Field>
+        <div className="sm:col-span-2">
+          <Field label="API Key" hint="留空不改；输入 CLEAR 可以清除当前 Key。">
+            <Input
+              name="apiKey"
+              type="password"
+              autoComplete="off"
+              placeholder={settings.apiKeyConfigured ? "已配置，留空不改" : "粘贴 Zotero Key"}
+              className="h-9 border-[#d4e0e5] bg-white/90"
+            />
+          </Field>
+        </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_110px]">
+
+      <div className="grid gap-3 rounded-2xl border border-[#d5e4e8] bg-[#fbfcfd]/86 p-3 sm:grid-cols-[1fr_130px_auto] sm:items-end">
         <Field label="Collection Key">
-          <Input name="collectionKey" defaultValue={settings.collectionKey} placeholder="可留空" />
+          <Input
+            name="collectionKey"
+            defaultValue={settings.collectionKey}
+            placeholder="可留空，只同步某个集合时填写"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
         </Field>
         <Field label="同步数量">
-          <Input name="syncLimit" type="number" min={1} max={500} defaultValue={settings.syncLimit} />
+          <Input
+            name="syncLimit"
+            type="number"
+            min={1}
+            max={500}
+            defaultValue={settings.syncLimit}
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
         </Field>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        API Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。同步数量超过 100 时会自动分页读取。
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <SubmitButton className="w-fit">保存 Zotero</SubmitButton>
         <SubmitButton formAction={testZoteroSettings} variant="outline" className="w-fit">
           测试当前配置
         </SubmitButton>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="text-xs leading-5 text-[#315266]">
+          同步数量超过 100 时会自动分页读取；大型库建议先用 Collection Key 分批同步。
+        </p>
+        <SubmitButton className="w-fit">保存 Zotero</SubmitButton>
       </div>
     </form>
   );
