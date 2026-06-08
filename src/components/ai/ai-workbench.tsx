@@ -9,6 +9,7 @@ import {
   Loader2,
   Send,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ export function AiWorkbench({
   presets = [],
 }: {
   initialPrompt?: string;
-  presets?: Array<{ label: string; prompt: string }>;
+  presets?: Array<{ label: string; prompt: string; detail?: string }>;
 }) {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [result, setResult] = useState<AiResponse | null>(null);
@@ -70,11 +71,18 @@ export function AiWorkbench({
               type="button"
               variant="outline"
               size="sm"
-              className="h-auto justify-start whitespace-normal rounded-xl bg-white/78 px-3 py-2 text-left"
+              className="h-auto min-h-20 items-start justify-start whitespace-normal rounded-xl bg-white/78 px-3 py-3 text-left"
               onClick={() => setPrompt(preset.prompt)}
             >
-              <ClipboardCheck className="size-3.5" />
-              <span className="line-clamp-1">{preset.label}</span>
+              <ClipboardCheck className="mt-0.5 size-3.5" />
+              <span className="grid min-w-0 gap-1">
+                <span className="line-clamp-1 font-medium">{preset.label}</span>
+                {preset.detail ? (
+                  <span className="line-clamp-2 text-xs font-normal leading-5 text-muted-foreground">
+                    {preset.detail}
+                  </span>
+                ) : null}
+              </span>
             </Button>
           ))}
         </div>
@@ -95,12 +103,29 @@ export function AiWorkbench({
                 草稿输入
               </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                粘贴脱敏材料，或先选一个场景模板后再补上下文。
+                先选场景，再粘贴脱敏材料；没有提供的事实会被要求标为待补。
               </p>
             </div>
             <span className="rounded-full border border-white/80 bg-white/72 px-2 py-0.5 text-[11px] text-muted-foreground">
               {prompt.trim().length} 字
             </span>
+          </div>
+
+          <div className="border-b border-border/70 bg-[#f8fbf8]/86 px-4 py-2">
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d5e4e8] bg-white/78 px-2 py-1 text-[#315266]">
+                <ShieldCheck className="size-3" />
+                已脱敏
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d5e4e8] bg-white/78 px-2 py-1 text-[#315266]">
+                <Sparkles className="size-3" />
+                只基于粘贴材料
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#ead9ad] bg-[#fff8e7] px-2 py-1 text-[#765a23]">
+                <ClipboardCheck className="size-3" />
+                输出后人工核对
+              </span>
+            </div>
           </div>
 
           <Textarea

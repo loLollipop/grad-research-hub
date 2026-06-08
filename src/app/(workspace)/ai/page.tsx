@@ -25,7 +25,7 @@ const presets = [
     action: "整理组会",
     detail: "任务、实验、文献、结果合成汇报骨架",
     prompt:
-      "请把我最近一周的任务、实验、文献和结果整理成组会汇报提纲，结构包括：本周完成、关键证据、遇到的问题、下周计划。",
+      "请只基于我下面粘贴的材料整理组会汇报提纲。不要补充我没有提供的事实、数据或引用；如果材料不足，请列出需要我补充的问题。\n\n【粘贴材料】\n- 本周任务：\n- 实验记录：\n- 关键结果：\n- 阅读文献：\n- 卡点/需要导师确认：\n\n【输出结构】\n1. 本周完成\n2. 关键证据\n3. 遇到的问题\n4. 需要导师确认\n5. 下周最小计划",
     icon: ClipboardList,
   },
   {
@@ -33,7 +33,7 @@ const presets = [
     action: "复盘实验",
     detail: "把观察、失败原因和下一步收成清单",
     prompt:
-      "请根据最近的实验记录生成一份复盘：实验目的、关键观察、失败原因或风险、下一步最小动作。",
+      "请只基于我粘贴的实验材料生成复盘，不要编造参数、结果或原因。材料不足时先指出缺口。\n\n【粘贴材料】\n- 实验目的：\n- 设置/对照：\n- 观察现象：\n- 指标或结果：\n- 失败/异常：\n\n【输出结构】\n1. 实验目的\n2. 关键观察\n3. 可能原因与风险\n4. 下一步最小动作\n5. 需要补充记录的证据",
     icon: FlaskConical,
   },
   {
@@ -41,7 +41,7 @@ const presets = [
     action: "提炼论文",
     detail: "从论文摘录变成可回顾阅读卡片",
     prompt:
-      "请把最近阅读的论文整理成阅读卡片：研究问题、方法、关键结论、可借鉴点、和我当前课题的关系。",
+      "请只基于我粘贴的论文摘录整理阅读卡片。不要生成不存在的引用、页码或实验结论；不确定的地方标为待核对。\n\n【粘贴材料】\n- 题名/来源：\n- 摘录：\n- 我关心的问题：\n- 和当前课题的关系：\n\n【输出结构】\n1. 研究问题\n2. 方法与数据\n3. 关键结论\n4. 可借鉴点\n5. 与我课题的关系\n6. 待读/待核对问题",
     icon: BookOpenText,
   },
   {
@@ -49,7 +49,7 @@ const presets = [
     action: "打磨表达",
     detail: "优化结构和清晰度，事实由用户把关",
     prompt:
-      "请把我的中文研究笔记改成更适合论文或组会汇报的表达，保持事实不变，只提升结构和清晰度。",
+      "请把我粘贴的中文研究笔记改成更适合论文或组会汇报的表达。保持事实、数值和结论不变；不要新增引用或实验结果；不清楚的地方用【待确认】标出。\n\n【粘贴原文】\n\n\n【输出要求】\n1. 先给一版更清晰的改写\n2. 再列出我需要人工核对的事实、引用和结论\n3. 最后给 3 条后续写作建议",
     icon: PenLine,
   },
 ];
@@ -76,7 +76,7 @@ export default async function AiPage() {
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               不做万能聊天框，也不替你下结论。先围绕组会提纲、实验复盘、阅读卡片和写作润色，
-              把已有笔记整理成可人工核对的结构化草稿，再保存回笔记工作室继续编辑。
+              把你主动粘贴的脱敏材料整理成可人工核对的结构化草稿，再保存回笔记工作室继续编辑。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link className={buttonVariants({ variant: "default" })} href="/settings">
@@ -204,7 +204,7 @@ export default async function AiPage() {
             ) : null}
             <AiWorkbench
               initialPrompt={presets[0].prompt}
-              presets={presets.map(({ label, prompt }) => ({ label, prompt }))}
+              presets={presets.map(({ label, prompt, detail }) => ({ label, prompt, detail }))}
             />
           </CardContent>
         </Card>
