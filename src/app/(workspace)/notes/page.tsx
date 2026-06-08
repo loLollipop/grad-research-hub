@@ -43,6 +43,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   searchParams: Promise<{
+    focus?: string;
     folder?: string;
     mode?: string;
     note?: string;
@@ -52,8 +53,18 @@ type Props = {
   }>;
 };
 
+type NoteFocus = "inbox" | "links" | "tasks" | "writing";
+
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function parseNoteFocus(value: string | undefined): NoteFocus | undefined {
+  if (value === "inbox" || value === "links" || value === "tasks" || value === "writing") {
+    return value;
+  }
+
+  return undefined;
 }
 
 function folderLabel(value: string | null | undefined) {
@@ -168,8 +179,56 @@ function noteActionScore(note: Note, allNotes: Note[]) {
   return recency + checklist * 5 + missingLinkCount * 2 + links.length + (isWritingMaterial(note) ? 1.5 : 0);
 }
 
+function noteMatchesFocus(note: Note, focus: NoteFocus, titleMap: Map<string, Note>) {
+  if (focus === "tasks") {
+    return openChecklistCount(note.content) > 0;
+  }
+
+  if (focus === "links") {
+    return uniqueWikiLinks(note.content).some((link) => !titleMap.has(normalizeTitle(link)));
+  }
+
+  if (focus === "writing") {
+    return isWritingMaterial(note);
+  }
+
+  return !note.folder || note.folder === "Inbox";
+}
+
+function notesHref({
+  focus,
+  folder,
+  note,
+  q,
+}: {
+  focus?: NoteFocus;
+  folder?: string;
+  note?: string;
+  q?: string;
+}) {
+  const query = new URLSearchParams();
+  if (focus) query.set("focus", focus);
+  if (folder) query.set("folder", folder);
+  if (q) query.set("q", q);
+  if (note) query.set("note", note);
+
+  return query.size ? `/notes?${query.toString()}` : "/notes";
+}
+
+function noteFocusLabel(focus?: NoteFocus) {
+  const labels: Record<NoteFocus, string> = {
+    inbox: "收件箱",
+    links: "待补双链",
+    tasks: "可拆任务",
+    writing: "写作素材",
+  };
+
+  return focus ? labels[focus] : "最近笔记";
+}
+
 export default async function NotesPage({ searchParams }: Props) {
   const params = await searchParams;
+  const focus = parseNoteFocus(first(params.focus));
   const q = first(params.q)?.trim();
   const folder = first(params.folder)?.trim();
   const mode = first(params.mode);
@@ -211,11 +270,6 @@ export default async function NotesPage({ searchParams }: Props) {
       select: { id: true, updatedAt: true },
     }),
   ]);
-  const totalNotes = allNotes.length;
-  const selectedNote = noteId ? allNotes.find((note) => note.id === noteId) : notes[0];
-  const activeNote = mode === "new" ? undefined : selectedNote;
-  const activeLinks = activeNote ? uniqueWikiLinks(activeNote.content) : [];
-  const defaultFolder = folder || "Inbox";
   const noteTitleMap = new Map<string, Note>();
   allNotes.forEach((note) => {
     const title = normalizeTitle(note.title);
@@ -223,6 +277,16 @@ export default async function NotesPage({ searchParams }: Props) {
       noteTitleMap.set(title, note);
     }
   });
+  const focusFilteredNotes = focus
+    ? notes.filter((note) => noteMatchesFocus(note, focus, noteTitleMap))
+    : notes;
+  const totalNotes = allNotes.length;
+  const selectedNote = noteId
+    ? allNotes.find((note) => note.id === noteId)
+    : focusFilteredNotes[0];
+  const activeNote = mode === "new" ? undefined : selectedNote;
+  const activeLinks = activeNote ? uniqueWikiLinks(activeNote.content) : [];
+  const defaultFolder = folder || "Inbox";
   const linkedNotes = activeLinks
     .map((link) => noteTitleMap.get(normalizeTitle(link)))
     .filter((note): note is Note => Boolean(note));
@@ -372,7 +436,8 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="可拆任务"
                 value={`${notesWithTasks} 篇`}
                 detail="把笔记里的待办清单拆回课题任务"
-                href="/notes"
+                href="/notes?focus=tasks"
+                active={focus === "tasks"}
                 tone={notesWithTasks ? "blue" : "quiet"}
               />
               <NoteRadarItem
@@ -380,7 +445,8 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="待补双链"
                 value={`${missingLinkNoteCount} 篇`}
                 detail="未创建主题会让阅读、实验和写作上下文断开"
-                href="/notes"
+                href="/notes?focus=links"
+                active={focus === "links"}
                 tone={missingLinkNoteCount ? "warm" : "quiet"}
               />
               <NoteRadarItem
@@ -388,7 +454,8 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="写作素材"
                 value={`${writingNoteCount} 篇`}
                 detail="可进入组会、周报或论文草稿"
-                href="/notes?folder=写作"
+                href="/notes?focus=writing"
+                active={focus === "writing"}
                 tone={writingNoteCount ? "green" : "quiet"}
               />
               <NoteRadarItem
@@ -396,7 +463,8 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="收件箱"
                 value={`${inboxNoteCount} 篇`}
                 detail="临时想法先收住，之后再归档"
-                href="/notes?folder=Inbox"
+                href="/notes?focus=inbox"
+                active={focus === "inbox"}
                 tone={inboxNoteCount ? "warm" : "quiet"}
               />
             </div>
@@ -408,7 +476,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 检索笔记
               </div>
               <span className="rounded-full border bg-white px-2 py-0.5 text-xs text-muted-foreground">
-                {notes.length} / {totalNotes}
+                {focusFilteredNotes.length} / {totalNotes}
               </span>
             </div>
             <form className="mt-3 grid gap-2">
@@ -438,7 +506,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 href="/notes"
                 className={cn(
                   "flex items-center justify-between rounded-lg px-2.5 py-2 transition hover:bg-muted/60",
-                  !folder && "bg-primary/9 text-primary ring-1 ring-primary/18",
+                  !folder && !focus && "bg-primary/9 text-primary ring-1 ring-primary/18",
                 )}
               >
                 <span>全部笔记</span>
@@ -468,18 +536,18 @@ export default async function NotesPage({ searchParams }: Props) {
             <div className="flex items-center justify-between px-3.5 py-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Clock3 className="size-4 text-primary" />
-                最近笔记
+                {noteFocusLabel(focus)}
               </div>
-              {q || folder ? (
+              {q || folder || focus ? (
                 <Button render={<Link href="/notes" />} variant="ghost" size="sm">
                   清除
                 </Button>
               ) : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3.5">
-              {notes.length ? (
+              {focusFilteredNotes.length ? (
                 <div className="grid gap-2">
-                  {notes.map((note) => {
+                  {focusFilteredNotes.map((note) => {
                     const selected = activeNote?.id === note.id;
                     const snippet = noteSnippet(note.content);
                     const action = noteActionLabel(note, allNotes);
@@ -488,7 +556,7 @@ export default async function NotesPage({ searchParams }: Props) {
                     return (
                       <Link
                         key={note.id}
-                        href={`/notes?note=${note.id}`}
+                        href={notesHref({ focus, folder, note: note.id, q })}
                         className={cn(
                           "rounded-xl border border-border/75 bg-white/72 px-3 py-2.5 text-sm transition hover:border-primary/25 hover:bg-white",
                           selected && "border-primary/35 bg-primary/9 shadow-[0_8px_20px_rgba(37,99,235,0.08)]",
@@ -774,6 +842,7 @@ function NoteStackItem({
 }
 
 function NoteRadarItem({
+  active = false,
   icon: Icon,
   label,
   value,
@@ -781,6 +850,7 @@ function NoteRadarItem({
   href,
   tone = "blue",
 }: {
+  active?: boolean;
   icon: LucideIcon;
   label: string;
   value: string;
@@ -798,7 +868,10 @@ function NoteRadarItem({
   return (
     <Link
       href={href}
-      className="group grid gap-2 rounded-xl border border-border/70 bg-white/74 p-2.5 transition hover:border-primary/25 hover:bg-white"
+      className={cn(
+        "group grid gap-2 rounded-xl border border-border/70 bg-white/74 p-2.5 transition hover:border-primary/25 hover:bg-white",
+        active && "border-primary/30 bg-primary/8 shadow-[0_8px_22px_rgba(27,42,56,0.055)]",
+      )}
     >
       <span className="flex items-center gap-2">
         <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg border ${toneClass}`}>
@@ -807,7 +880,14 @@ function NoteRadarItem({
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
             <span className="text-sm font-medium">{label}</span>
-            <span className="text-xs font-medium text-primary">{value}</span>
+            <span className="flex shrink-0 items-center gap-1.5">
+              {active ? (
+                <span className="rounded-full border border-primary/20 bg-primary/8 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                  筛选中
+                </span>
+              ) : null}
+              <span className="text-xs font-medium text-primary">{value}</span>
+            </span>
           </span>
           <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
             {detail}
