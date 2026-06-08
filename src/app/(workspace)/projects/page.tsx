@@ -63,6 +63,7 @@ type Props = {
     status?: string;
     priority?: string;
     scope?: string;
+    focus?: string;
     taskBulk?: string;
     taskBulkCount?: string;
     taskBulkStatus?: string;
@@ -106,6 +107,8 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const priority = valueOf(params.priority);
   const rawScope = valueOf(params.scope);
   const scope = rawScope && ["today", "week"].includes(rawScope) ? rawScope : undefined;
+  const rawFocus = valueOf(params.focus);
+  const focus = rawFocus === "experiment" ? rawFocus : undefined;
   const taskBulk = valueOf(params.taskBulk);
   const taskBulkCount = Number(valueOf(params.taskBulkCount) ?? 0);
   const taskBulkStatus = valueOf(params.taskBulkStatus);
@@ -114,14 +117,15 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const taskAttach = valueOf(params.taskAttach);
   const taskPlan = valueOf(params.taskPlan);
   const captured = valueOf(params.captured);
-  const activeFilterCount = [q, projectId, status, priority, scope].filter(Boolean).length;
-  const currentFilters = { q, project: projectId, status, priority, scope };
+  const activeFilterCount = [q, projectId, status, priority, scope, focus].filter(Boolean).length;
+  const currentFilters = { focus, q, project: projectId, status, priority, scope };
   const currentQuery = new URLSearchParams();
   if (q) currentQuery.set("q", q);
   if (projectId) currentQuery.set("project", projectId);
   if (status) currentQuery.set("status", status);
   if (priority) currentQuery.set("priority", priority);
   if (scope) currentQuery.set("scope", scope);
+  if (focus) currentQuery.set("focus", focus);
   const returnTo = currentQuery.size ? `/projects?${currentQuery.toString()}` : "/projects";
   const todayStart = startOfDay(new Date());
   const tomorrowStart = addDays(todayStart, 1);
@@ -155,6 +159,27 @@ export default async function ProjectsPage({ searchParams }: Props) {
   }
   if (scope && !status) {
     taskFilters.push({ status: { not: "done" } });
+  }
+  if (focus === "experiment") {
+    taskFilters.push({
+      status: { not: "done" },
+      OR: [
+        { title: { contains: "实验", mode: "insensitive" } },
+        { title: { contains: "试验", mode: "insensitive" } },
+        { title: { contains: "复现", mode: "insensitive" } },
+        { title: { contains: "对照", mode: "insensitive" } },
+        { title: { contains: "数据", mode: "insensitive" } },
+        { title: { contains: "指标", mode: "insensitive" } },
+        { description: { contains: "实验", mode: "insensitive" } },
+        { description: { contains: "试验", mode: "insensitive" } },
+        { description: { contains: "复现", mode: "insensitive" } },
+        { description: { contains: "对照", mode: "insensitive" } },
+        { description: { contains: "数据", mode: "insensitive" } },
+        { description: { contains: "指标", mode: "insensitive" } },
+        { tags: { contains: "实验", mode: "insensitive" } },
+        { tags: { contains: "复现", mode: "insensitive" } },
+      ],
+    });
   }
   const taskWhere: Prisma.TaskWhereInput = taskFilters.length ? { AND: taskFilters } : {};
 
@@ -211,6 +236,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
   });
   const highOpenTasks = quickOpenTasks.filter((task) => task.priority === "high");
   const doingTasks = quickOpenTasks.filter((task) => task.status === "doing");
+  const experimentCandidateTasks = quickOpenTasks.filter(isExperimentCandidateTask);
 
   return (
     <div className="grid gap-5">
@@ -366,9 +392,10 @@ export default async function ProjectsPage({ searchParams }: Props) {
               <ProjectRadarItem
                 icon={Beaker}
                 label="可转实验"
-                value={`${quickOpenTasks.filter((task) => task.status !== "done").length} 个`}
+                value={`${experimentCandidateTasks.length} 个`}
                 detail="任务能落到实验时，一键生成实验日志"
-                href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: undefined })}
+                href={projectsHref(currentFilters, { focus: "experiment", status: undefined, priority: undefined, scope: undefined })}
+                tone={experimentCandidateTasks.length ? "green" : "quiet"}
               />
             </CardContent>
           </Card>
@@ -407,6 +434,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
               <QuickProjectLink label="今天/逾期" count={todayOpenTasks.length} href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: "today" })} active={scope === "today" && !status && !priority} />
               <QuickProjectLink label="高优先级" count={highOpenTasks.length} href={projectsHref(currentFilters, { status: undefined, priority: "high", scope: undefined })} active={priority === "high" && !status && !scope} />
               <QuickProjectLink label="进行中" count={doingTasks.length} href={projectsHref(currentFilters, { status: "doing", priority: undefined, scope: undefined })} active={status === "doing" && !priority && !scope} />
+              <QuickProjectLink label="可转实验" count={experimentCandidateTasks.length} href={projectsHref(currentFilters, { focus: "experiment", status: undefined, priority: undefined, scope: undefined })} active={focus === "experiment" && !status && !priority && !scope} />
               <QuickProjectLink label="本周收口" count={weekOpenTasks.length} href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: "week" })} active={scope === "week" && !status && !priority} />
             </CardContent>
           </Card>
@@ -475,6 +503,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
               <Input name="q" placeholder="搜索任务、里程碑、项目" defaultValue={q} className="pl-8" />
             </div>
             {scope ? <input type="hidden" name="scope" value={scope} /> : null}
+            {focus ? <input type="hidden" name="focus" value={focus} /> : null}
             <select
               name="project"
               defaultValue={projectId ?? ""}
@@ -533,6 +562,11 @@ export default async function ProjectsPage({ searchParams }: Props) {
               {scope ? (
                 <span className="rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
                   {scopeLabel(scope)}
+                </span>
+              ) : null}
+              {focus === "experiment" ? (
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">
+                  可转实验
                 </span>
               ) : null}
             </div>
@@ -749,10 +783,11 @@ function ProjectRadarItem({
   value: string;
   detail: string;
   href: string;
-  tone?: "blue" | "warm" | "quiet";
+  tone?: "blue" | "green" | "warm" | "quiet";
 }) {
   const toneClass = {
     blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
     warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
     quiet: "border-border/70 bg-white/72 text-muted-foreground",
   }[tone];
@@ -1000,6 +1035,7 @@ function scopeLabel(value: string) {
 
 function projectsHref(
   current: {
+    focus?: string;
     q?: string;
     project?: string;
     status?: string;
@@ -1007,6 +1043,7 @@ function projectsHref(
     scope?: string;
   },
   patch: Partial<{
+    focus: string;
     q: string;
     project: string;
     status: string;
@@ -1023,6 +1060,16 @@ function projectsHref(
 
   const query = params.toString();
   return query ? `/projects?${query}` : "/projects";
+}
+
+function isExperimentCandidateTask(task: Task) {
+  if (task.status === "done") {
+    return false;
+  }
+
+  return /实验|试验|复现|对照|数据|指标|样本|采集|测量|仿真|simulation|experiment|dataset|metric|ablation/i.test(
+    [task.title, task.description, task.tags].filter(Boolean).join(" "),
+  );
 }
 
 function taskMatchesProjectBase(task: TaskFull, q?: string, projectId?: string) {
