@@ -223,6 +223,14 @@
     @apply border border-border/72 bg-[#fbfcf8]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)];
   }
 
+  .stretch-panel {
+    @apply flex h-full min-h-full flex-col;
+  }
+
+  .stretch-panel > [data-slot="card-content"] {
+    @apply flex flex-1 flex-col;
+  }
+
   .soft-chip {
     @apply border border-[#d5e5e6] bg-[#eef6f4] text-[#2d6154];
   }

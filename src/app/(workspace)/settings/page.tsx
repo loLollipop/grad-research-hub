@@ -174,7 +174,7 @@ export default async function SettingsPage({ searchParams }: Props) {
 
       <SettingsFeedback {...feedback} />
 
-      <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
+      <section className="grid items-stretch gap-4 xl:grid-cols-[0.35fr_0.65fr]">
         <aside className="grid content-start gap-4">
           <Card className="workbench-card bg-white/95">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
@@ -210,7 +210,7 @@ export default async function SettingsPage({ searchParams }: Props) {
           </Card>
         </aside>
 
-        <div className="grid gap-4">
+        <div className="stretch-panel gap-4 rounded-2xl border border-border/70 bg-white/58 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_12px_28px_rgba(34,48,71,0.035)]">
           <Card className="workbench-card bg-white/95">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
