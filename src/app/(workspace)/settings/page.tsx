@@ -401,7 +401,7 @@ function ZoteroSettingsForm({
         </Field>
       </div>
       <p className="text-xs text-muted-foreground">
-        API Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
+        API Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。同步数量超过 100 时会自动分页读取。
       </p>
       <div className="flex flex-wrap gap-2">
         <SubmitButton className="w-fit">保存 Zotero</SubmitButton>

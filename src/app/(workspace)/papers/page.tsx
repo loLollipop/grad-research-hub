@@ -288,6 +288,13 @@ export default async function PapersPage({ searchParams }: Props) {
               <div className="rounded-xl border border-border/70 bg-white/70 p-3 text-xs text-muted-foreground">
                 最近同步：{lastSyncedAt ? formatDate(lastSyncedAt) : "暂无"}
               </div>
+              <div className="rounded-xl border border-border/70 bg-white/70 p-3 text-xs leading-5 text-muted-foreground">
+                <p className="font-medium text-foreground">同步范围</p>
+                <p className="mt-1">
+                  {zotero.collectionKey ? `仅同步集合 ${zotero.collectionKey}` : "同步库内顶层文献"}
+                </p>
+                <p>单次最多 {zotero.syncLimit} 条，系统会自动分页读取。</p>
+              </div>
             </CardContent>
           </Card>
 

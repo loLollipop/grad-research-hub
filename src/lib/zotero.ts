@@ -65,6 +65,7 @@ export type ZoteroConfigStatus = {
   libraryType: "user" | "group";
   collectionKey: string;
   hasApiKey: boolean;
+  syncLimit: number;
 };
 
 export type ZoteroConnectionResult = {
@@ -81,6 +82,7 @@ export async function getZoteroConfigStatus(): Promise<ZoteroConfigStatus> {
     libraryType: settings.libraryType,
     collectionKey: settings.collectionKey,
     hasApiKey: settings.apiKeyConfigured,
+    syncLimit: settings.syncLimit,
   };
 }
 
@@ -92,22 +94,8 @@ export async function fetchZoteroPapers(): Promise<ZoteroPaper[]> {
     throw new Error("Zotero 尚未配置：需要 ZOTERO_API_KEY 和 ZOTERO_LIBRARY_ID。");
   }
 
-  const url = zoteroItemsUrl(config);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("include", "data");
-  url.searchParams.set("limit", String(config.syncLimit));
-
-  const response = await fetch(url, {
-    headers: zoteroHeaders(apiKey),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Zotero 同步失败：${response.status} ${response.statusText}`);
-  }
-
   const [items, collectionNames] = await Promise.all([
-    response.json() as Promise<ZoteroItem[]>,
+    fetchZoteroItems(config, apiKey),
     fetchZoteroCollectionNames(config, apiKey),
   ]);
   const syncedAt = new Date();
@@ -115,6 +103,46 @@ export async function fetchZoteroPapers(): Promise<ZoteroPaper[]> {
   return items
     .map((item) => mapZoteroItemToPaper(item, syncedAt, collectionNames))
     .filter((paper): paper is ZoteroPaper => Boolean(paper));
+}
+
+async function fetchZoteroItems(
+  config: {
+    collectionKey: string;
+    libraryId: string;
+    libraryType: "user" | "group";
+    syncLimit: number;
+  },
+  apiKey: string,
+) {
+  const pageSize = 100;
+  const target = Math.min(Math.max(config.syncLimit, 1), 500);
+  const items: ZoteroItem[] = [];
+
+  for (let start = 0; start < target; start += pageSize) {
+    const url = zoteroItemsUrl(config);
+    url.searchParams.set("format", "json");
+    url.searchParams.set("include", "data");
+    url.searchParams.set("limit", String(Math.min(pageSize, target - start)));
+    url.searchParams.set("start", String(start));
+
+    const response = await fetch(url, {
+      headers: zoteroHeaders(apiKey),
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(zoteroHttpErrorMessage(response.status, response.statusText));
+    }
+
+    const page = (await response.json()) as ZoteroItem[];
+    items.push(...page);
+
+    if (page.length < Math.min(pageSize, target - start)) {
+      break;
+    }
+  }
+
+  return items;
 }
 
 export async function checkZoteroConnection(input: {
@@ -149,7 +177,7 @@ export async function checkZoteroConnection(input: {
     if (!response.ok) {
       return {
         ok: false,
-        message: `Zotero 连接失败：${response.status} ${response.statusText}。请检查 Key、Library ID 和 Collection Key。`,
+        message: zoteroHttpErrorMessage(response.status, response.statusText),
       };
     }
 
@@ -174,6 +202,26 @@ export async function checkZoteroConnection(input: {
           : "Zotero 连接失败：网络不可达或请求超时。",
     };
   }
+}
+
+function zoteroHttpErrorMessage(status: number, statusText: string) {
+  if (status === 400) {
+    return "Zotero 请求格式不正确。请检查 Collection Key 是否完整，Library Type 是否选对。";
+  }
+
+  if (status === 401 || status === 403) {
+    return "Zotero 权限不足。请确认 API Key 允许读取当前个人库/群组库。";
+  }
+
+  if (status === 404) {
+    return "Zotero 没有找到这个库或集合。请检查 Library ID、库类型和 Collection Key。";
+  }
+
+  if (status === 429) {
+    return "Zotero 请求过于频繁。请稍等一会儿再同步。";
+  }
+
+  return `Zotero 同步失败：${status} ${statusText}`;
 }
 
 function zoteroItemsUrl(config: {
