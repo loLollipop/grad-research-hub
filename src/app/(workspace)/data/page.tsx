@@ -6,6 +6,7 @@
   ClipboardList,
   Database,
   Edit3,
+  FileCheck2,
   FileChartColumn,
   FileText,
   Layers3,
@@ -1200,24 +1201,40 @@ function ResultForm({
   const metricRows = normalizeMetricRows(metrics);
 
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-4">
       {result ? <input type="hidden" name="id" value={result.id} /> : null}
-      <Field label="结果标题">
+
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary">
+            <FileChartColumn className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {result ? "调整结果证据卡" : "记录一条能讲清楚的结果"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              这里只收关键结论和证据位置，过程、参数和脚本细节继续放实验日志。
+            </p>
+          </div>
+        </div>
         <Input
           name="title"
           required
           defaultValue={result?.title ?? ""}
-          placeholder="例如：消融实验 - 去掉注意力模块"
+          placeholder="例如：去掉注意力模块后 F1 下降 3.2%，说明模块有效"
+          className="mt-3 h-11 border-[#cadbe1] bg-white/92 text-base font-medium"
         />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-3">
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-3">
         <Field label="关联实验">
           <select
             name="experimentId"
             defaultValue={result?.experimentId ?? ""}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 min-w-0 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
-            <option value="">不关联实验</option>
+            <option value="">暂不关联实验</option>
             {experiments.map((experiment) => (
               <option key={experiment.id} value={experiment.id}>
                 {experiment.title}
@@ -1229,9 +1246,9 @@ function ResultForm({
           <select
             name="datasetId"
             defaultValue={result?.datasetId ?? ""}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 min-w-0 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
-            <option value="">不关联数据集</option>
+            <option value="">暂不固定数据集</option>
             {datasets.map((dataset) => (
               <option key={dataset.id} value={dataset.id}>
                 {dataset.name}
@@ -1243,7 +1260,7 @@ function ResultForm({
           <select
             name="reproducibility"
             defaultValue={config.reproducibility ?? "unknown"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
             {reproducibilityOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -1254,8 +1271,21 @@ function ResultForm({
         </Field>
       </div>
 
-      <div className="grid gap-2">
-        <p className="text-xs font-medium text-muted-foreground">核心指标</p>
+      <div className="grid gap-2 rounded-2xl border border-[#d5e4e8] bg-[#fbfcfd]/86 p-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-[var(--workspace-title)]">
+              <BarChart3 className="size-4 text-primary" />
+              核心指标
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              填 1-3 个最关键指标即可，用来判断能否进入组会、周报或论文素材。
+            </p>
+          </div>
+          <span className="rounded-full border border-[#d8e5ee] bg-white px-2 py-0.5 text-[11px] text-muted-foreground">
+            evidence
+          </span>
+        </div>
         <div className="grid gap-2 md:grid-cols-3">
           {metricRows.map((row, index) => (
             <div key={index} className="grid grid-cols-[1fr_1fr] gap-2">
@@ -1263,48 +1293,70 @@ function ResultForm({
                 name="metricName"
                 defaultValue={row.name}
                 placeholder={index === 0 ? "指标名，如 F1" : "指标名"}
+                className="h-9 border-[#d4e0e5] bg-white/90"
               />
               <Input
                 name="metricValue"
                 defaultValue={row.value}
                 placeholder={index === 0 ? "数值，如 0.86" : "数值"}
+                className="h-9 border-[#d4e0e5] bg-white/90"
               />
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">
-          填 1-3 个最关键的指标即可，别把整份日志搬进来。
-        </p>
       </div>
 
-      <Field label="图表或结果文件">
-        <Input
-          name="artifactPath"
-          defaultValue={result?.artifactPath ?? ""}
-          placeholder="例如：figures/ablation_attention.png 或服务器结果路径"
-        />
-      </Field>
-      <label className="flex items-center gap-2 rounded-lg border bg-[#fbfcfd] px-3 py-2 text-sm">
-        <input
-          type="checkbox"
-          name="manuscriptReady"
-          value="true"
-          defaultChecked={Boolean(config.manuscriptReady)}
-          className="size-4"
-        />
-        这条结果已经可以写进周报、组会或论文
-      </label>
-      <Field label="结论与下一步">
+      <div className="grid gap-3 md:grid-cols-[1fr_0.72fr]">
+        <Field
+          label="图表或结果文件"
+          hint="写可追溯路径，不上传文件；例如图表、CSV、实验输出目录。"
+        >
+          <Input
+            name="artifactPath"
+            defaultValue={result?.artifactPath ?? ""}
+            placeholder="例如：figures/ablation_attention.png 或服务器结果路径"
+            className="h-9 border-[#d4e0e5] bg-white/90"
+          />
+        </Field>
+        <label className="flex min-h-[4.75rem] items-start gap-2 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-3 text-sm text-[#315266]">
+          <input
+            type="checkbox"
+            name="manuscriptReady"
+            value="true"
+            defaultChecked={Boolean(config.manuscriptReady)}
+            className="mt-0.5 size-4 shrink-0"
+          />
+          <span>
+            <span className="block font-medium">可写入组会/周报/论文</span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+              勾选前确认路径、指标和复现状态足够支撑结论。
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <Field
+        label="一句话结论与下一步"
+        hint="建议写成：结论是什么、能支撑哪个判断、下一步补什么证据。"
+      >
         <Textarea
           name="notes"
-          rows={4}
+          rows={5}
           defaultValue={result?.notes ?? ""}
-          placeholder="一句话结论 + 下一步，例如：提升主要来自数据清洗；下一步复现 baseline。"
+          placeholder={"结论：\n支撑：\n下一步："}
+          className="min-h-36 border-[#d4e0e5] bg-[#fffef9]/96 leading-6"
         />
       </Field>
       <input type="hidden" name="metrics" value={result?.metrics ?? "{}"} />
       <input type="hidden" name="config" value={result?.config ?? "{}"} />
-      <SubmitButton>{result ? "保存结果" : "记录结果"}</SubmitButton>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+          <FileCheck2 className="size-3.5 shrink-0" />
+          保存后可生成证据任务、写作素材或结果汇总笔记。
+        </p>
+        <SubmitButton>{result ? "保存证据" : "加入证据台"}</SubmitButton>
+      </div>
     </form>
   );
 }
