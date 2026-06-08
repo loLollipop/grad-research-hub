@@ -49,7 +49,7 @@
 }
 
 :root {
-  --background: oklch(0.982 0.006 92);
+  --background: oklch(0.984 0.006 205);
   --foreground: oklch(0.185 0.026 236);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.185 0.026 236);
@@ -59,7 +59,7 @@
   --primary-foreground: oklch(0.992 0.004 216);
   --secondary: oklch(0.944 0.014 226);
   --secondary-foreground: oklch(0.255 0.032 238);
-  --muted: oklch(0.956 0.009 218);
+  --muted: oklch(0.958 0.008 210);
   --muted-foreground: oklch(0.455 0.022 236);
   --accent: oklch(0.65 0.082 172);
   --accent-foreground: oklch(0.18 0.028 232);
@@ -81,17 +81,17 @@
   --sidebar-accent-foreground: oklch(0.225 0.034 238);
   --sidebar-border: oklch(0.866 0.014 224);
   --sidebar-ring: oklch(0.52 0.072 246);
-  --workspace-paper: #fbfaf4;
-  --workspace-paper-soft: #f1f6ef;
+  --workspace-paper: #f8fbfa;
+  --workspace-paper-soft: #eef7f4;
   --workspace-ink: #17324c;
   --workspace-ink-soft: #2c5066;
   --workspace-signal: #337863;
   --workspace-signal-soft: #e5f1ec;
-  --workspace-sand: #eadfc6;
+  --workspace-sand: #f0e8d6;
   --workspace-title: #17283b;
   --workspace-copy: #52677a;
-  --workspace-chip: #eef5f4;
-  --workspace-line: rgba(85, 103, 116, 0.09);
+  --workspace-chip: #eef6f5;
+  --workspace-line: rgba(85, 103, 116, 0.055);
 }
 
 .dark {
@@ -150,24 +150,23 @@
 @layer utilities {
   .workbench-surface {
     background:
-      linear-gradient(90deg, transparent 0 31px, var(--workspace-line) 31px 32px, transparent 32px 100%),
-      linear-gradient(180deg, transparent 0 31px, rgba(85, 103, 116, 0.055) 31px 32px, transparent 32px 100%),
-      radial-gradient(circle at 18% 8%, rgba(230, 239, 246, 0.52), transparent 34rem),
-      radial-gradient(circle at 88% 12%, rgba(229, 241, 236, 0.46), transparent 30rem),
-      linear-gradient(180deg, rgba(252, 251, 246, 0.98) 0%, rgba(248, 250, 246, 0.98) 50%, rgba(241, 248, 246, 0.98) 100%);
+      linear-gradient(90deg, rgba(255, 255, 255, 0.34) 0 1px, transparent 1px 100%),
+      linear-gradient(180deg, rgba(73, 93, 111, 0.028) 0 1px, transparent 1px 100%),
+      linear-gradient(135deg, rgba(241, 247, 249, 0.86) 0%, rgba(248, 252, 250, 0.92) 44%, rgba(241, 248, 244, 0.88) 100%),
+      linear-gradient(180deg, #fbfdfb 0%, #f7fbfa 48%, #f0f8f6 100%);
     background-attachment: fixed;
     background-size:
-      32px 32px,
-      32px 32px,
+      56px 56px,
+      56px 56px,
       auto;
   }
 
   .workbench-card {
-    @apply border-border/70 bg-white/88 shadow-[0_1px_1px_rgba(15,23,42,0.022),0_14px_30px_rgba(34,48,71,0.042)];
+    @apply border-border/65 bg-white/86 shadow-[0_1px_1px_rgba(15,23,42,0.018),0_10px_24px_rgba(34,48,71,0.034)];
   }
 
   .workbench-column {
-    @apply rounded-2xl border border-border/65 bg-white/54 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_12px_28px_rgba(34,48,71,0.035)];
+    @apply rounded-2xl border border-border/60 bg-white/52 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_10px_24px_rgba(34,48,71,0.028)];
   }
 
   .workbench-dual-grid {
@@ -186,12 +185,15 @@
 
   .sidebar-panel {
     background:
-      linear-gradient(180deg, rgba(255, 255, 250, 0.98), rgba(246, 250, 245, 0.92) 58%, rgba(238, 247, 246, 0.96)),
+      linear-gradient(180deg, rgba(252, 255, 253, 0.98), rgba(246, 251, 250, 0.94) 58%, rgba(238, 248, 247, 0.96)),
       var(--sidebar);
   }
 
   .brand-mark {
-    @apply flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.13)] transition;
+    @apply flex size-10 items-center justify-center rounded-xl text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.12)] transition;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 42%),
+      linear-gradient(145deg, #284d76 0%, #2f6b66 100%);
   }
 
   .group:hover .brand-mark {
@@ -215,18 +217,18 @@
 
   .dashboard-hero {
     background:
-      linear-gradient(125deg, rgba(255, 255, 250, 0.94), rgba(247, 250, 246, 0.78)),
-      linear-gradient(135deg, rgba(225, 235, 244, 0.72) 0%, rgba(234, 247, 241, 0.68) 52%, rgba(242, 234, 216, 0.54) 100%);
+      linear-gradient(125deg, rgba(255, 255, 252, 0.94), rgba(246, 251, 250, 0.8)),
+      linear-gradient(135deg, rgba(224, 238, 246, 0.64) 0%, rgba(232, 248, 244, 0.68) 56%, rgba(245, 241, 229, 0.42) 100%);
   }
 
   .cockpit-hero {
     background:
-      linear-gradient(135deg, rgba(255, 255, 250, 0.9), rgba(247, 251, 247, 0.76)),
-      linear-gradient(120deg, rgba(224, 235, 245, 0.74) 0%, rgba(234, 247, 240, 0.68) 48%, rgba(244, 236, 218, 0.52) 100%);
+      linear-gradient(135deg, rgba(255, 255, 252, 0.9), rgba(246, 251, 250, 0.78)),
+      linear-gradient(120deg, rgba(225, 238, 246, 0.68) 0%, rgba(232, 248, 244, 0.7) 52%, rgba(245, 241, 229, 0.38) 100%);
   }
 
   .cockpit-panel {
-    @apply border-white/78 bg-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_14px_30px_rgba(27,42,56,0.046)] backdrop-blur;
+    @apply border-white/76 bg-white/64 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_24px_rgba(27,42,56,0.036)] backdrop-blur;
   }
 
   .research-strip {
@@ -243,10 +245,10 @@
 
   .action-stack {
     background:
-      linear-gradient(145deg, rgba(43, 78, 112, 0.96) 0%, rgba(52, 101, 116, 0.92) 54%, rgba(91, 137, 119, 0.9) 100%);
+      linear-gradient(145deg, rgba(38, 70, 102, 0.96) 0%, rgba(47, 95, 108, 0.92) 54%, rgba(75, 125, 111, 0.9) 100%);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 16px 30px rgba(42, 73, 98, 0.12);
+      0 14px 28px rgba(42, 73, 98, 0.1);
   }
 
   .research-loop-card {
