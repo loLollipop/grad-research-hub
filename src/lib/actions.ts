@@ -7,6 +7,7 @@ import type {
   Dataset,
   Experiment,
   Milestone,
+  Note,
   Paper,
   Project,
   Result,
@@ -19,6 +20,7 @@ import { getDailyPlanPeriod } from "@/lib/daily-plan";
 import { prisma } from "@/lib/db";
 import { parseTags, splitTags, tagsToString } from "@/lib/format";
 import { getMeetingBriefPeriod, type MeetingBriefScope } from "@/lib/meeting-brief";
+import { getWritingPackPeriod } from "@/lib/writing-pack";
 import {
   adminItemSchema,
   aiSettingsSchema,
@@ -1697,6 +1699,87 @@ export async function createWritingNoteFromResult(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createWritingPackNote() {
+  const now = new Date();
+  const period = getWritingPackPeriod(now);
+
+  const existingNote = await prisma.note.findFirst({
+    where: {
+      folder: "写作",
+      content: { contains: period.marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existingNote) {
+    redirect(`/notes?note=${existingNote.id}`);
+  }
+
+  const [results, writingNotes, papers] = await Promise.all([
+    prisma.result.findMany({
+      where: {
+        OR: [
+          { artifactPath: { not: null } },
+          { config: { contains: "\"manuscriptReady\":true" } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 10,
+      include: {
+        dataset: true,
+        experiment: {
+          include: {
+            project: true,
+          },
+        },
+      },
+    }),
+    prisma.note.findMany({
+      where: {
+        OR: [
+          { folder: { contains: "写作", mode: "insensitive" } },
+          { folder: { contains: "阅读", mode: "insensitive" } },
+          { folder: { contains: "文献", mode: "insensitive" } },
+          { folder: { contains: "结果", mode: "insensitive" } },
+          { folder: { contains: "实验", mode: "insensitive" } },
+          { folder: { contains: "组会", mode: "insensitive" } },
+          { tags: { contains: "论文素材", mode: "insensitive" } },
+          { tags: { contains: "写作素材", mode: "insensitive" } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 12,
+    }),
+    prisma.paper.findMany({
+      where: {
+        readStatus: { in: ["reading", "read"] },
+      },
+      orderBy: [{ readStatus: "desc" }, { updatedAt: "desc" }],
+      take: 10,
+    }),
+  ]);
+
+  const note = await prisma.note.create({
+    data: {
+      title: period.title,
+      folder: "写作",
+      content: writingPackMarkdown({
+        generatedAt: now,
+        period,
+        results,
+        writingNotes,
+        papers,
+      }),
+      tags: tagsToString(["写作素材", "论文初稿", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createTaskFromResult(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
@@ -1913,6 +1996,149 @@ function buildResultWritingNote(
     "- [ ] 如果实验记录未收口，到实验页回填结果正文",
     "- [ ] 如果准备组会，把本段并入本周组会草稿",
   ].join("\n");
+}
+
+function writingPackMarkdown({
+  generatedAt,
+  period,
+  results,
+  writingNotes,
+  papers,
+}: {
+  generatedAt: Date;
+  period: ReturnType<typeof getWritingPackPeriod>;
+  results: Array<
+    Result & {
+      dataset: Dataset | null;
+      experiment:
+        | (Experiment & {
+            project: Project | null;
+          })
+        | null;
+    }
+  >;
+  writingNotes: Note[];
+  papers: Paper[];
+}) {
+  const lines = [
+    period.marker,
+    "",
+    `# ${period.title}`,
+    "",
+    `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
+    "",
+    "> 这不是自动写论文。它只把最近能用的证据、文献和笔记收在一起，方便你开始写引言、方法、结果或周报。",
+    "",
+    "## 今天先写哪一段",
+    "",
+    "- [ ] 引言/相关工作：",
+    "- [ ] 方法/实验设置：",
+    "- [ ] 结果/讨论：",
+    "- [ ] 周报/组会材料：",
+    "",
+    "## 可写入的结果证据",
+    "",
+  ];
+
+  if (results.length) {
+    results.forEach((result, index) => {
+      const config = parseJsonObjectText(result.config);
+      const metrics = parseJsonObjectText(result.metrics);
+      const metricText = Object.entries(metrics)
+        .filter(([, value]) => String(value).trim())
+        .slice(0, 5)
+        .map(([key, value]) => `${key}: ${String(value)}`)
+        .join("；") || "未填写核心指标";
+      const manuscriptReady = config.manuscriptReady ? "是" : result.artifactPath ? "有图表或结果文件" : "待判断";
+
+      lines.push(
+        `### ${index + 1}. ${result.title}`,
+        "",
+        `- 项目：${result.experiment?.project?.title ?? "未关联项目"}`,
+        `- 实验：${result.experiment?.title ?? "未关联实验"}`,
+        `- 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+        `- 核心指标：${metricText}`,
+        `- 复现状态：${reproducibilityText(String(config.reproducibility ?? "unknown"))}`,
+        `- 可写入：${manuscriptReady}`,
+        `- 图表/结果文件：${result.artifactPath || "待补"}`,
+        `- 可直接改写的结论：${result.notes?.trim() || "待补一句话结论"}`,
+        "",
+      );
+    });
+  } else {
+    lines.push("- 暂无已标记或带图表路径的结果。可以先到成果页把关键结果标成写作素材。", "");
+  }
+
+  lines.push("## 文献输入", "");
+
+  if (papers.length) {
+    papers.forEach((paper, index) => {
+      const authors = parseTags(paper.authors).slice(0, 4).join(", ") || "作者未知";
+      lines.push(
+        `- ${index + 1}. [${paperStatusText(paper.readStatus)}] ${paper.title}`,
+        `  - 作者：${authors}`,
+        `  - 来源：${paper.journal || paper.category || "未填写"}；年份：${paper.year ?? "未知"}`,
+        paper.notes?.trim() ? `  - 备注：${oneLine(paper.notes, 120)}` : "",
+      );
+    });
+  } else {
+    lines.push("- 暂无读中或已读文献。可以先到文献页同步 Zotero 并生成阅读笔记。");
+  }
+
+  lines.push("", "## 最近可用笔记", "");
+
+  if (writingNotes.length) {
+    writingNotes.forEach((note, index) => {
+      const tags = parseTags(note.tags).slice(0, 4).join(" / ");
+      const snippet = noteSnippetForMarkdown(note.content);
+      lines.push(
+        `- ${index + 1}. [[${note.title}]]`,
+        `  - 分类：${note.folder}；更新：${dateText(note.updatedAt)}`,
+        tags ? `  - 标签：${tags}` : "",
+        snippet ? `  - 摘要：${snippet}` : "",
+      );
+    });
+  } else {
+    lines.push("- 暂无阅读、实验、结果或组会相关笔记。");
+  }
+
+  lines.push(
+    "",
+    "## 初稿骨架",
+    "",
+    "### 研究问题",
+    "",
+    "- 本文/本阶段要解决的问题是：",
+    "",
+    "### 方法与实验",
+    "",
+    "- 我们采用/对比的方法：",
+    "- 数据、设备或实验条件：",
+    "",
+    "### 结果与证据",
+    "",
+    "- 最能支撑结论的结果：",
+    "- 还缺的对照或复现：",
+    "",
+    "### 需要补的材料",
+    "",
+    "- [ ] 找到对应图表或结果文件",
+    "- [ ] 给每个结果补一句话结论",
+    "- [ ] 检查引用是否来自 Zotero/阅读笔记",
+    "- [ ] 把导师反馈或组会意见拆成下一步任务",
+  );
+
+  return lines.join("\n");
+}
+
+function noteSnippetForMarkdown(content: string) {
+  const text = content
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[#*_`>\-[\]()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text ? oneLine(text, 140) : "";
 }
 
 function resultContextTags(

@@ -18,14 +18,21 @@ import type { Note, Prisma } from "@prisma/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { createNote, createTasksFromNoteChecklist, deleteNote, updateNote } from "@/lib/actions";
+import {
+  createNote,
+  createTasksFromNoteChecklist,
+  createWritingPackNote,
+  deleteNote,
+  updateNote,
+} from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { extractWikiLinks, formatDateTime, parseTags } from "@/lib/format";
+import { getWritingPackPeriod } from "@/lib/writing-pack";
 import { cn } from "@/lib/utils";
 import { Field } from "@/components/shared/field";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { TagList } from "@/components/shared/tag-list";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -140,6 +147,7 @@ export default async function NotesPage({ searchParams }: Props) {
   const mode = first(params.mode);
   const noteId = first(params.note);
   const taskSync = first(params.taskSync);
+  const writingPackPeriod = getWritingPackPeriod();
 
   const noteWhere: Prisma.NoteWhereInput = {};
   if (q) {
@@ -152,7 +160,7 @@ export default async function NotesPage({ searchParams }: Props) {
   if (folder) {
     noteWhere.folder = { contains: folder, mode: "insensitive" };
   }
-  const [notes, allNotes, folders] = await Promise.all([
+  const [notes, allNotes, folders, currentWritingPack] = await Promise.all([
     prisma.note.findMany({
       where: noteWhere,
       orderBy: { updatedAt: "desc" },
@@ -164,6 +172,14 @@ export default async function NotesPage({ searchParams }: Props) {
       by: ["folder"],
       _count: true,
       orderBy: { folder: "asc" },
+    }),
+    prisma.note.findFirst({
+      where: {
+        folder: "写作",
+        content: { contains: writingPackPeriod.marker, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, updatedAt: true },
     }),
   ]);
   const totalNotes = allNotes.length;
@@ -215,15 +231,15 @@ export default async function NotesPage({ searchParams }: Props) {
                 笔记工作室
               </span>
               <span className="rounded-full border border-white/60 bg-white/58 px-2.5 py-1 text-xs text-muted-foreground">
-                阅读 · 实验 · 组会 · 写作
+                阅读 · 实验 · 组会 · 论文素材
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
               笔记页只做一件事：把碎片变成可继续推进的材料。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              这里承接 Zotero 阅读、实验复盘、结果证据和组会草稿。左侧快速找材料，
-              右侧专心写作，用 `[[双链]]` 和待办清单把想法接回项目任务。
+              这里承接 Zotero 阅读、实验复盘、结果证据和组会/周报草稿。左侧快速找材料，
+              右侧专心写作，需要写论文或周报时一键把可用素材收成草稿包。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button render={<Link href="/notes?mode=new" />} className="bg-primary">
@@ -234,6 +250,19 @@ export default async function NotesPage({ searchParams }: Props) {
                 <Clock3 className="size-4" />
                 最近更新
               </Button>
+              {currentWritingPack ? (
+                <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentWritingPack.id}`}>
+                  <FileText className="size-4" />
+                  打开素材包
+                </Link>
+              ) : (
+                <form action={createWritingPackNote}>
+                  <SubmitButton variant="outline">
+                    <FileText className="size-4" />
+                    生成写作素材包
+                  </SubmitButton>
+                </form>
+              )}
             </div>
           </div>
 
@@ -282,6 +311,23 @@ export default async function NotesPage({ searchParams }: Props) {
 
       <section className="grid flex-1 gap-4 lg:h-[calc(100vh-222px)] lg:min-h-[720px] lg:grid-cols-[330px_minmax(0,1fr)]">
         <aside className="workbench-card flex min-h-[560px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0">
+          <div className="border-b border-border/75 bg-[linear-gradient(135deg,rgba(240,247,247,0.94),rgba(255,250,238,0.78))] p-3.5">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/82 text-primary shadow-sm">
+                <FileText className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#173042]">
+                  {currentWritingPack ? "今天的写作素材包已生成" : "写论文或周报前先收一次材料"}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {currentWritingPack
+                    ? `更新 ${formatDateTime(currentWritingPack.updatedAt)}，可以继续编辑，不会重复创建。`
+                    : "自动汇总可写入结果、读中文献和最近笔记，生成后仍在右侧编辑。"}
+                </p>
+              </div>
+            </div>
+          </div>
           <div className="border-b border-border/75 bg-white/62 p-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-semibold">
