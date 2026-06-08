@@ -1,4 +1,4 @@
-import { GraduationCap, LockKeyhole } from "lucide-react";
+import { GraduationCap, LockKeyhole, Sparkles } from "lucide-react";
 
 import { login } from "@/app/login/actions";
 import { SubmitButton } from "@/components/shared/submit-button";
@@ -15,16 +15,24 @@ export default async function LoginPage({ searchParams }: Props) {
 
   return (
     <main className="workbench-surface flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border bg-white shadow-[0_22px_66px_rgba(15,23,42,0.12)] md:grid-cols-[0.95fr_1fr]">
-        <section className="hidden border-r bg-[linear-gradient(180deg,#f8faf7_0%,#eef3f2_100%)] p-8 text-foreground md:flex md:flex-col md:justify-between">
+      <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border border-border/72 bg-white shadow-[0_22px_66px_rgba(15,23,42,0.11)] md:grid-cols-[0.95fr_1fr]">
+        <section className="hidden border-r border-border/70 bg-[linear-gradient(180deg,#fbfbf7_0%,#eef6f3_100%)] p-8 text-foreground md:flex md:flex-col md:justify-between">
           <div>
-            <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_12px_24px_rgba(30,90,120,0.14)]">
+            <div className="brand-mark">
               <GraduationCap className="size-5" />
             </div>
             <h1 className="mt-5 text-2xl font-semibold tracking-tight">研途 Hub</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              把文献、实验、项目和笔记收进一个安静的研究生工作台。
+              把文献、实验、课题、成果和笔记收进一个安静的研究生工作台。
             </p>
+            <div className="mt-6 grid gap-2 text-xs text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-white/70 px-3 py-2">
+                先看今天要推进什么
+              </div>
+              <div className="rounded-xl border border-border/70 bg-white/70 px-3 py-2">
+                再把证据和笔记收口
+              </div>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground">自托管 · 单人科研管理 · 中文优先</p>
         </section>
@@ -50,7 +58,10 @@ export default async function LoginPage({ searchParams }: Props) {
               {params.error ? (
                 <p className="text-sm text-rose-700">密码不正确，请再试一次。</p>
               ) : null}
-              <SubmitButton className="h-10">进入工作台</SubmitButton>
+              <SubmitButton className="h-10">
+                <Sparkles className="size-4" />
+                进入工作台
+              </SubmitButton>
             </form>
           </CardContent>
         </Card>
