@@ -454,6 +454,35 @@ export default async function DataPage({ searchParams }: Props) {
         </aside>
 
         <div className="grid gap-4">
+          {filteredResults.length ? (
+            <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/70 p-3 shadow-[0_10px_24px_rgba(34,48,71,0.035)] md:grid-cols-3">
+              <EvidenceGapCard
+                icon={AlertCircle}
+                label="先判定"
+                value={`${unknownCount} 条`}
+                detail="还没判断是否值得复现、汇报或放弃"
+                href={dataHref(currentFilters, { reproducibility: "unknown", manuscript: undefined })}
+                tone="warm"
+              />
+              <EvidenceGapCard
+                icon={RotateCcw}
+                label="补复现"
+                value={`${evidenceTodoBaseCount} 条`}
+                detail="待复现或复现中的结果，需要先收成可信证据"
+                href={dataHref(currentFilters, { reproducibility: "todo", manuscript: undefined })}
+                tone="blue"
+              />
+              <EvidenceGapCard
+                icon={FileChartColumn}
+                label="补素材"
+                value={`${notReadyBaseCount} 条`}
+                detail="缺图表路径或写作标记，组会前会难追溯"
+                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: "not-ready" })}
+                tone="green"
+              />
+            </section>
+          ) : null}
+
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] xl:grid-cols-[1fr_145px_150px_170px_170px_auto]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -704,6 +733,48 @@ function QuickDataLink({
     >
       <span>{label}</span>
       <span className="text-xs text-muted-foreground">{count}</span>
+    </Link>
+  );
+}
+
+function EvidenceGapCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+  tone,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone: "blue" | "warm" | "green";
+}) {
+  const toneClass = {
+    blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+    warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  }[tone];
+
+  return (
+    <Link
+      href={href}
+      className="group grid gap-3 rounded-xl border border-border/70 bg-white/74 p-3 transition hover:border-primary/25 hover:bg-white"
+    >
+      <span className="flex items-center justify-between gap-3">
+        <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
+          <Icon className="size-4" />
+        </span>
+        <span className="rounded-full border bg-white/80 px-2.5 py-1 text-xs font-medium text-primary">
+          {value}
+        </span>
+      </span>
+      <span>
+        <span className="block text-sm font-semibold">{label}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
+      </span>
     </Link>
   );
 }
