@@ -28,6 +28,7 @@ import {
   createPaper,
   createReadingPlanNote,
   createReadingNoteFromPaper,
+  createTaskFromPaper,
   deletePaper,
   syncZoteroPapers,
   updatePaper,
@@ -856,6 +857,13 @@ function PaperCard({ paper }: { paper: Paper }) {
               <Button type="submit" variant="outline" size="sm">
                 <Beaker className="size-4" />
                 转实验
+              </Button>
+            </form>
+            <form action={createTaskFromPaper}>
+              <input type="hidden" name="id" value={paper.id} />
+              <Button type="submit" variant="outline" size="sm">
+                <Lightbulb className="size-4" />
+                待验证
               </Button>
             </form>
             <CreateDialog title="编辑文献" label="编辑" icon={Edit3} wide>

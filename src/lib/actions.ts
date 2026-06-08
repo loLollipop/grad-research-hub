@@ -286,6 +286,49 @@ export async function createExperimentFromPaper(formData: FormData) {
   redirect(`/experiments?q=${encodeURIComponent(paper.title)}`);
 }
 
+export async function createTaskFromPaper(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const paper = await prisma.paper.findUnique({ where: { id } });
+  if (!paper) return;
+
+  const marker = paperTaskMarker(paper.id);
+  const existing = await prisma.task.findFirst({
+    where: { description: { contains: marker, mode: "insensitive" } },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect("/projects?focus=experiment");
+  }
+
+  await prisma.$transaction([
+    prisma.task.create({
+      data: {
+        title: `验证文献想法：${paper.title}`.slice(0, 100),
+        description: buildPaperTaskDescription(paper, marker),
+        priority: "medium",
+        status: "todo",
+        tags: tagsToString(["文献任务", "待验证", ...parseTags(paper.tags).slice(0, 4)]),
+      },
+    }),
+    ...(paper.readStatus === "unread"
+      ? [
+          prisma.paper.update({
+            where: { id: paper.id },
+            data: { readStatus: "reading" },
+          }),
+        ]
+      : []),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath("/papers");
+  revalidatePath("/projects");
+  redirect("/projects?focus=experiment");
+}
+
 export async function createReadingPlanNote(formData: FormData) {
   const ids = formData
     .getAll("ids")
@@ -403,6 +446,10 @@ function paperNoteMarker(id: string) {
 
 function paperExperimentMarker(id: string) {
   return `paper-experiment-draft:${id}`;
+}
+
+function paperTaskMarker(id: string) {
+  return `paper-task:${id}`;
 }
 
 function readingPlanMarker(papers: Paper[]) {
@@ -643,6 +690,32 @@ function buildPaperExperimentDraft(paper: Paper, marker: string) {
     "## 原始摘要 / 阅读备注",
     "",
     paper.abstract?.trim() || paper.notes?.trim() || "暂无摘要或阅读备注。",
+  ].filter((line) => line !== null).join("\n");
+}
+
+function buildPaperTaskDescription(paper: Paper, marker: string) {
+  const source = [
+    paper.journal,
+    paper.year ? String(paper.year) : "",
+    paper.doi ? `DOI: ${paper.doi}` : "",
+    paper.arxivId ? `arXiv: ${paper.arxivId}` : "",
+  ].filter(Boolean).join("；") || "来源未填";
+
+  return [
+    `<!-- ${marker} -->`,
+    `来自文献：《${paper.title}》`,
+    "",
+    `来源：${source}`,
+    `集合：${paper.category || "未分类"}`,
+    paper.externalUrl ? `链接：${paper.externalUrl}` : null,
+    "",
+    "下一步：",
+    "- [ ] 提取一个可验证的方法、对照、数据处理或评价指标",
+    "- [ ] 判断是否需要转成实验日志",
+    "- [ ] 读完后生成阅读笔记或综述矩阵",
+    "",
+    "原始摘要 / 备注：",
+    paper.abstract?.trim() || paper.notes?.trim() || "暂无摘要或备注。",
   ].filter((line) => line !== null).join("\n");
 }
 
