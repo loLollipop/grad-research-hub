@@ -52,12 +52,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mt-4 rounded-2xl border border-sidebar-border/70 bg-white/64 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_24px_rgba(34,48,71,0.026)]">
           <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/65 bg-white/86 px-2.5 py-2 text-xs text-muted-foreground">
             <Command className="size-3.5 text-sidebar-primary" />
-            <span className="truncate">先捕捉，再收口</span>
+            <span className="truncate">随手写，自动分流</span>
           </div>
           <div className="mt-3 grid gap-2">
-            <FlowHint icon={BookOpenText} label="文献" detail="Zotero 同步" />
-            <FlowHint icon={FlaskConical} label="实验" detail="目的与观察" />
-            <FlowHint icon={FileChartColumn} label="成果" detail="能否写进论文" />
+            <FlowHint icon={BookOpenText} label="文献 补读综述" detail="进入待读" />
+            <FlowHint icon={FlaskConical} label="实验 复现第3组" detail="生成日志" />
+            <FlowHint icon={FileChartColumn} label="写作 周报开头" detail="进入写作" />
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
-                  placeholder="快速捕捉：任务：整理结果 / 实验：复现实验 / 文献：补读... "
+                  placeholder="快速捕捉：任务 整理结果 / 实验 复现第3组 / 写作 周报开头"
                   className="h-9 rounded-xl border-transparent bg-white/0 pl-8 text-sm shadow-none focus-visible:bg-white/88 md:h-10"
                 />
               </div>

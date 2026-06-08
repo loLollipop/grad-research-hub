@@ -1281,9 +1281,9 @@ export async function quickCapture(formData: FormData) {
   await prisma.note.create({
     data: {
       title: quickTitle(captured.body),
-      content,
-      folder: "Inbox",
-      tags: tagsToString(["quick-capture"]),
+      content: quickNoteContent(captured),
+      folder: captured.folder ?? "Inbox",
+      tags: tagsToString(["quick-capture", ...(captured.tags ?? [])]),
     },
   });
 
@@ -1291,36 +1291,116 @@ export async function quickCapture(formData: FormData) {
   revalidatePath("/notes");
 }
 
-function parseQuickCapture(content: string) {
-  const match = content.match(/^([^:：]{1,12})[:：]\s*(.+)$/);
-  if (!match?.[1] || !match[2]?.trim()) {
+type QuickCaptureResult =
+  | { body: string; kind: "task" }
+  | { body: string; kind: "experiment" }
+  | { body: string; kind: "paper" }
+  | { body: string; kind: "admin" }
+  | { body: string; folder?: string; kind: "note"; tags?: string[] };
+
+function parseQuickCapture(content: string): QuickCaptureResult {
+  const prefixed = extractQuickPrefix(content);
+  if (!prefixed) {
     return { kind: "note" as const, body: content };
   }
 
-  const prefix = match[1].trim().toLowerCase();
-  const body = match[2].trim();
-  const kindMap = new Map<string, "task" | "experiment" | "paper" | "admin" | "note">([
-    ["任务", "task"],
-    ["待办", "task"],
-    ["todo", "task"],
-    ["task", "task"],
-    ["实验", "experiment"],
-    ["试验", "experiment"],
-    ["experiment", "experiment"],
-    ["exp", "experiment"],
-    ["文献", "paper"],
-    ["论文", "paper"],
-    ["paper", "paper"],
-    ["事务", "admin"],
-    ["提醒", "admin"],
-    ["组会", "admin"],
-    ["admin", "admin"],
-    ["笔记", "note"],
-    ["想法", "note"],
-    ["note", "note"],
-  ]);
+  const captured = quickCaptureAlias(prefixed.prefix);
+  if (!captured) {
+    return { kind: "note" as const, body: content };
+  }
 
-  return { kind: kindMap.get(prefix) ?? "note", body };
+  return { ...captured, body: prefixed.body };
+}
+
+function extractQuickPrefix(content: string) {
+  const colonMatch = content.match(/^([^:：]{1,16})[:：]\s*(.+)$/);
+  if (colonMatch?.[1] && colonMatch[2]?.trim()) {
+    return {
+      body: colonMatch[2].trim(),
+      prefix: colonMatch[1].trim(),
+    };
+  }
+
+  const tokenMatch = content.match(/^([/#]?[A-Za-z][\w-]{0,15}|[/#]?[\p{Script=Han}]{1,8})\s+(.+)$/u);
+  if (tokenMatch?.[1] && tokenMatch[2]?.trim()) {
+    return {
+      body: tokenMatch[2].trim(),
+      prefix: tokenMatch[1].trim(),
+    };
+  }
+
+  return null;
+}
+
+type QuickCaptureAlias =
+  | { kind: "task" }
+  | { kind: "experiment" }
+  | { kind: "paper" }
+  | { kind: "admin" }
+  | { folder?: string; kind: "note"; tags?: string[] };
+
+function quickCaptureAlias(prefix: string): QuickCaptureAlias | null {
+  const key = prefix.trim().replace(/^[/#]/, "").toLowerCase();
+  const entries: Array<[string, QuickCaptureAlias]> = [
+    ["任务", { kind: "task" }],
+    ["待办", { kind: "task" }],
+    ["下一步", { kind: "task" }],
+    ["行动", { kind: "task" }],
+    ["todo", { kind: "task" }],
+    ["task", { kind: "task" }],
+    ["t", { kind: "task" }],
+    ["实验", { kind: "experiment" }],
+    ["试验", { kind: "experiment" }],
+    ["experiment", { kind: "experiment" }],
+    ["exp", { kind: "experiment" }],
+    ["e", { kind: "experiment" }],
+    ["文献", { kind: "paper" }],
+    ["论文", { kind: "paper" }],
+    ["阅读", { kind: "paper" }],
+    ["article", { kind: "paper" }],
+    ["paper", { kind: "paper" }],
+    ["p", { kind: "paper" }],
+    ["事务", { kind: "admin" }],
+    ["提醒", { kind: "admin" }],
+    ["组会", { kind: "admin" }],
+    ["会议", { kind: "admin" }],
+    ["截止", { kind: "admin" }],
+    ["材料", { kind: "admin" }],
+    ["报销", { kind: "admin" }],
+    ["meeting", { kind: "admin" }],
+    ["deadline", { kind: "admin" }],
+    ["admin", { kind: "admin" }],
+    ["笔记", { kind: "note", folder: "Inbox" }],
+    ["想法", { kind: "note", folder: "Inbox", tags: ["想法"] }],
+    ["灵感", { kind: "note", folder: "Inbox", tags: ["想法"] }],
+    ["idea", { kind: "note", folder: "Inbox", tags: ["想法"] }],
+    ["note", { kind: "note", folder: "Inbox" }],
+    ["写作", { kind: "note", folder: "写作", tags: ["写作素材"] }],
+    ["周报", { kind: "note", folder: "写作", tags: ["周报"] }],
+    ["初稿", { kind: "note", folder: "写作", tags: ["论文初稿"] }],
+    ["draft", { kind: "note", folder: "写作", tags: ["论文初稿"] }],
+    ["结果", { kind: "note", folder: "结果", tags: ["结果证据"] }],
+    ["成果", { kind: "note", folder: "结果", tags: ["结果证据"] }],
+    ["证据", { kind: "note", folder: "结果", tags: ["结果证据"] }],
+  ];
+  const kindMap = new Map<string, QuickCaptureAlias>(entries);
+
+  return kindMap.get(key) ?? null;
+}
+
+function quickNoteContent(captured: Extract<QuickCaptureResult, { kind: "note" }>) {
+  if (!captured.folder || captured.folder === "Inbox") {
+    return captured.body;
+  }
+
+  return [
+    "## 快速记录",
+    "",
+    captured.body,
+    "",
+    "---",
+    "来源：快速捕捉",
+  ].join("\n");
 }
 
 function quickTitle(value: string) {
