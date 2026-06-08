@@ -1,7 +1,9 @@
 ﻿import Link from "next/link";
 import {
+  AlertTriangle,
   ClipboardList,
   Beaker,
+  CheckCircle2,
   Edit3,
   FileChartColumn,
   FileText,
@@ -10,6 +12,7 @@ import {
   Microscope,
   Plus,
   Search,
+  TimerReset,
   Trash2,
   X,
 } from "lucide-react";
@@ -206,12 +209,34 @@ export default async function ExperimentsPage({ searchParams }: Props) {
 
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-              <CardTitle>状态分布</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TimerReset className="size-4 text-primary" />
+                今日实验收口
+              </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3">
-              <ProgressLine label="进行中" value={running} total={experiments.length} />
-              <ProgressLine label="完成" value={completed} total={experiments.length} />
-              <ProgressLine label="失败" value={failed} total={experiments.length} />
+            <CardContent className="grid gap-2">
+              <ExperimentCloseout
+                icon={FlaskConical}
+                label="继续观察"
+                value={`${running} 个`}
+                detail="补目的、观察、结论或下一步"
+                href={experimentHref({ q, project: projectId, status: "running", template })}
+              />
+              <ExperimentCloseout
+                icon={AlertTriangle}
+                label="失败复盘"
+                value={`${failed} 个`}
+                detail="先拆原因、对照和下一次修改"
+                href={experimentHref({ q, project: projectId, status: "failed", template })}
+                tone="warm"
+              />
+              <ExperimentCloseout
+                icon={CheckCircle2}
+                label="结果回填"
+                value={`${completed} 个完成`}
+                detail="完成后要补关键结果或复盘笔记"
+                href={experimentHref({ q, project: projectId, status: "completed", template })}
+              />
             </CardContent>
           </Card>
 
@@ -346,19 +371,45 @@ function TemplateHint({ title, detail }: { title: string; detail: string }) {
   );
 }
 
-function ProgressLine({ label, value, total }: { label: string; value: number; total: number }) {
-  const width = total ? Math.round((value / total) * 100) : 0;
-
+function ExperimentCloseout({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+  tone = "blue",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone?: "blue" | "warm";
+}) {
   return (
-    <div className="grid gap-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value}</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary/72" style={{ width: `${width}%` }} />
-      </div>
-    </div>
+    <Link
+      href={href}
+      className="group grid gap-3 rounded-xl border border-border/70 bg-white/72 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center xl:grid-cols-[auto_1fr]"
+    >
+      <span
+        className={
+          tone === "warm"
+            ? "flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]"
+            : "flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f7] text-primary"
+        }
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">{label}</span>
+          <span className="text-xs font-medium text-primary">{value}</span>
+        </span>
+        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {detail}
+        </span>
+      </span>
+    </Link>
   );
 }
 
@@ -437,6 +488,16 @@ function experimentFilterQuery(values: {
   return params.toString();
 }
 
+function experimentHref(values: {
+  q?: string;
+  project?: string;
+  status?: string;
+  template?: string;
+}) {
+  const query = experimentFilterQuery(values);
+  return query ? `/experiments?${query}` : "/experiments";
+}
+
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
     running: "进行中",
@@ -446,6 +507,50 @@ function statusLabel(value: string) {
   };
 
   return labels[value] ?? value;
+}
+
+function experimentNextAction(experiment: ExperimentFull) {
+  if (experiment.status === "failed") {
+    return {
+      label: "复盘失败",
+      title: "先把失败变成下一次实验动作",
+      detail: "补失败现象、可能原因、对照组和下一次修改，不让负结果散掉。",
+      icon: AlertTriangle,
+      className:
+        "grid gap-3 rounded-xl border border-amber-200 bg-[#fff8eb] p-3 text-amber-950 sm:grid-cols-[auto_1fr] sm:items-center",
+    };
+  }
+
+  if (experiment.results.length > 0) {
+    return {
+      label: "回填结果",
+      title: "已有结果，建议回填到实验正文",
+      detail: "把关键指标和一句话结论写回实验记录，后续组会和论文素材会更顺。",
+      icon: FileChartColumn,
+      className:
+        "grid gap-3 rounded-xl border border-[#cfe3e5] bg-[#eef7f6] p-3 text-[#285d56] sm:grid-cols-[auto_1fr] sm:items-center",
+    };
+  }
+
+  if (experiment.status === "completed") {
+    return {
+      label: "补结果",
+      title: "实验已完成，下一步是登记关键结果",
+      detail: "至少留下 1-3 个指标、复现状态和图表路径，避免结论只停在正文里。",
+      icon: CheckCircle2,
+      className:
+        "grid gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f7] p-3 text-[#315266] sm:grid-cols-[auto_1fr] sm:items-center",
+    };
+  }
+
+  return {
+    label: "继续观察",
+    title: "继续补观察、结论和下一步",
+    detail: "实验还在进行中，今天先把最新现象写清楚，再决定是否收口。",
+    icon: FlaskConical,
+    className:
+      "grid gap-3 rounded-xl border border-[#d5e4e8] bg-white/74 p-3 text-[#315266] sm:grid-cols-[auto_1fr] sm:items-center",
+  };
 }
 
 function ExperimentCard({
@@ -458,14 +563,8 @@ function ExperimentCard({
   papers: Paper[];
 }) {
   const linkedPapers = experiment.papers.map((paper) => paper.title).join("；");
-  const nextAction =
-    experiment.status === "failed"
-      ? "复盘失败"
-      : experiment.results.length
-        ? "补结果"
-        : experiment.status === "completed"
-          ? "沉淀结论"
-          : "继续观察";
+  const nextAction = experimentNextAction(experiment);
+  const NextActionIcon = nextAction.icon;
 
   return (
     <Card className="workbench-card">
@@ -478,7 +577,7 @@ function ExperimentCard({
                 {templateLabel(experiment.template)}
               </span>
               <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] text-[#365a7d]">
-                {nextAction}
+                {nextAction.label}
               </span>
             </div>
             <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
@@ -504,6 +603,16 @@ function ExperimentCard({
               更新
             </Button>
           </form>
+        </div>
+
+        <div className={nextAction.className}>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/70 text-current shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]">
+            <NextActionIcon className="size-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">{nextAction.title}</span>
+            <span className="mt-1 block text-xs leading-5 opacity-78">{nextAction.detail}</span>
+          </span>
         </div>
 
         {experiment.status === "failed" ? (
