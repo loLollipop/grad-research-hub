@@ -2,6 +2,7 @@
 import {
   AlertCircle,
   BookOpenCheck,
+  BookOpenText,
   Clock3,
   Edit3,
   ExternalLink,
@@ -868,60 +869,126 @@ function PaperForm({
   paper?: Paper;
 }) {
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-4">
       {paper ? <input type="hidden" name="id" value={paper.id} /> : null}
-      <Field label="标题">
-        <Input name="title" required defaultValue={paper?.title ?? ""} />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-2">
+
+      <section className="rounded-2xl border border-[#d8e7ea] bg-[linear-gradient(135deg,rgba(239,247,247,0.92),rgba(255,250,238,0.72))] p-3">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-white/82 text-primary shadow-sm">
+            <BookOpenText className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <Field label="文献标题">
+              <Input
+                name="title"
+                required
+                defaultValue={paper?.title ?? ""}
+                placeholder="粘贴标题即可，后续同步 Zotero 后可再完善"
+                className="h-10 bg-white/84 text-base font-medium"
+              />
+            </Field>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Zotero 是主文献库。这里适合先收住网页、预印本、导师临时发来的材料。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-[1fr_8rem_10rem]">
         <Field label="作者">
           <Input
             name="authors"
-            placeholder="逗号分隔"
+            placeholder="逗号分隔，可留空"
             defaultValue={parseTags(paper?.authors).join(", ")}
+            className="h-9 bg-white/84"
           />
         </Field>
         <Field label="年份">
-          <Input name="year" type="number" defaultValue={paper?.year ?? ""} />
-        </Field>
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        <Field label="来源">
-          <Input name="journal" defaultValue={paper?.journal ?? ""} />
-        </Field>
-        <Field label="分类">
-          <Input name="category" defaultValue={paper?.category ?? "inbox"} />
+          <Input name="year" type="number" defaultValue={paper?.year ?? ""} className="h-9 bg-white/84" />
         </Field>
         <Field label="阅读状态">
           <select
             name="readStatus"
             defaultValue={paper?.readStatus ?? "unread"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border bg-white/84 px-2 text-sm"
           >
             <option value="unread">待读</option>
             <option value="reading">读中</option>
             <option value="read">已读</option>
           </select>
         </Field>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        <Field label="DOI">
-          <Input name="doi" defaultValue={paper?.doi ?? ""} />
-        </Field>
+      </section>
+
+      <section className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-2">
         <Field label="外部链接">
-          <Input name="externalUrl" defaultValue={paper?.externalUrl ?? ""} />
+          <Input
+            name="externalUrl"
+            defaultValue={paper?.externalUrl ?? ""}
+            placeholder="论文页、arXiv、期刊页或资料链接"
+            className="h-9 bg-white/84"
+          />
         </Field>
+        <Field label="集合 / 分类">
+          <Input
+            name="category"
+            defaultValue={paper?.category ?? "inbox"}
+            placeholder="例如：inbox / 综述 / 方法"
+            className="h-9 bg-white/84"
+          />
+        </Field>
+        <Field label="来源">
+          <Input
+            name="journal"
+            defaultValue={paper?.journal ?? ""}
+            placeholder="期刊、会议或来源，可留空"
+            className="h-9 bg-white/84"
+          />
+        </Field>
+        <Field label="DOI">
+          <Input
+            name="doi"
+            defaultValue={paper?.doi ?? ""}
+            placeholder="有 DOI 再填"
+            className="h-9 bg-white/84"
+          />
+        </Field>
+      </section>
+
+      <section className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3">
+        <Field label="标签">
+          <Input
+            name="tags"
+            defaultValue={parseTags(paper?.tags).join(", ")}
+            placeholder="例如：综述, baseline, 待读"
+            className="h-9 bg-white/84"
+          />
+        </Field>
+        <Field label="为什么要读">
+          <Textarea
+            name="notes"
+            rows={4}
+            defaultValue={paper?.notes ?? ""}
+            placeholder="写一句问题、方法抓手或和当前课题的关系。"
+            className="bg-white/84"
+          />
+        </Field>
+        <Field label="摘要 / 关键摘录">
+          <Textarea
+            name="abstract"
+            rows={4}
+            defaultValue={paper?.abstract ?? ""}
+            placeholder="可粘贴摘要，也可以先留空，读完后再补。"
+            className="bg-white/84"
+          />
+        </Field>
+      </section>
+
+      <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-white/72 p-3 md:flex-row md:items-center md:justify-between">
+        <p className="text-xs leading-5 text-muted-foreground">
+          少量临时材料才需要手动补录；正式文献建议回到 Zotero 管理。
+        </p>
+        <SubmitButton>{paper ? "保存文献" : "添加文献"}</SubmitButton>
       </div>
-      <Field label="标签">
-        <Input name="tags" defaultValue={parseTags(paper?.tags).join(", ")} />
-      </Field>
-      <Field label="摘要">
-        <Textarea name="abstract" rows={3} defaultValue={paper?.abstract ?? ""} />
-      </Field>
-      <Field label="阅读笔记">
-        <Textarea name="notes" rows={5} defaultValue={paper?.notes ?? ""} />
-      </Field>
-      <SubmitButton>{paper ? "保存文献" : "添加文献"}</SubmitButton>
     </form>
   );
 }
