@@ -1288,21 +1288,42 @@ function ProjectForm({
   project?: Project;
 }) {
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-4">
       {project ? <input type="hidden" name="id" value={project.id} /> : null}
-      <Field label="项目名">
-        <Input name="title" required defaultValue={project?.title ?? ""} />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-2">
+
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary">
+            <FolderKanban className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {project ? "调整课题目标卡" : "建立一个真实课题"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              只写当前研究主线，不需要把所有背景、经费和成员信息都搬进来。
+            </p>
+          </div>
+        </div>
+        <Input
+          name="title"
+          required
+          defaultValue={project?.title ?? ""}
+          placeholder="例如：激光水射流破岩实验与机理分析"
+          className="mt-3 h-11 border-[#cadbe1] bg-white/92 text-base font-medium"
+        />
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-[0.8fr_1.2fr]">
         <Field label="状态">
           <select
             name="status"
             defaultValue={project?.status ?? "active"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
-            <option value="active">进行中</option>
-            <option value="paused">暂停</option>
-            <option value="archived">归档</option>
+            <option value="active">进行中：现在要推进</option>
+            <option value="paused">暂停：暂时不占注意力</option>
+            <option value="archived">归档：已经收口</option>
           </select>
         </Field>
         <Field label="标签">
@@ -1310,18 +1331,31 @@ function ProjectForm({
             name="tags"
             placeholder="例如：论文, 实验, 毕设"
             defaultValue={parseTags(project?.tags).join(", ")}
+            className="h-9 border-[#d4e0e5] bg-white/90"
           />
         </Field>
       </div>
-      <Field label="一句话目标">
+
+      <Field
+        label="一句话目标"
+        hint="建议写成：我要验证什么，以及最近能交付什么。"
+      >
         <Textarea
           name="description"
-          rows={3}
-          placeholder="这个课题近期要验证什么？交付物是什么？"
+          rows={5}
+          placeholder={"研究问题：\n近期交付物：\n最小下一步："}
           defaultValue={project?.description ?? ""}
+          className="min-h-36 border-[#d4e0e5] bg-[#fffef9]/96 leading-6"
         />
       </Field>
-      <SubmitButton>{project ? "保存项目" : "创建项目"}</SubmitButton>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+          <Route className="size-3.5 shrink-0" />
+          保存后先拆 1 个里程碑，再写 1 条下一步行动就够了。
+        </p>
+        <SubmitButton>{project ? "保存课题" : "创建课题"}</SubmitButton>
+      </div>
     </form>
   );
 }
@@ -1336,16 +1370,40 @@ function MilestoneForm({
   milestone?: Milestone;
 }) {
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-4">
       {milestone ? <input type="hidden" name="id" value={milestone.id} /> : null}
-      <Field label="项目">
+
+      <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#cfe0e4] bg-white text-primary">
+            <Flag className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--workspace-title)]">
+              {milestone ? "调整阶段验收卡" : "把课题拆成一个可验收阶段"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              里程碑不是待办清单，最好写成一个能判断完成与否的阶段交付物。
+            </p>
+          </div>
+        </div>
+        <Input
+          name="title"
+          required
+          defaultValue={milestone?.title ?? ""}
+          placeholder="例如：完成第一轮对照实验并形成组会图表"
+          className="mt-3 h-11 border-[#cadbe1] bg-white/92 text-base font-medium"
+        />
+      </div>
+
+      <Field label="归属课题">
         <select
           name="projectId"
           required
           defaultValue={milestone?.projectId ?? ""}
-          className="h-8 rounded-lg border bg-background px-2 text-sm"
+          className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
         >
-          <option value="">选择项目</option>
+          <option value="">选择课题</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.title}
@@ -1353,30 +1411,36 @@ function MilestoneForm({
           ))}
         </select>
       </Field>
-      <Field label="里程碑">
-        <Input name="title" required defaultValue={milestone?.title ?? ""} />
-      </Field>
-      <div className="grid gap-3 md:grid-cols-2">
+
+      <div className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-2">
         <Field label="截止日期">
           <Input
             name="dueDate"
             type="date"
             defaultValue={milestone?.dueDate ? milestone.dueDate.toISOString().slice(0, 10) : ""}
+            className="h-9 border-[#d4e0e5] bg-white/90"
           />
         </Field>
         <Field label="状态">
           <select
             name="status"
             defaultValue={milestone?.status ?? "planned"}
-            className="h-8 rounded-lg border bg-background px-2 text-sm"
+            className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
-            <option value="planned">计划中</option>
-            <option value="running">进行中</option>
-            <option value="completed">完成</option>
+            <option value="planned">计划中：还没开始</option>
+            <option value="running">进行中：正在推进</option>
+            <option value="completed">完成：已经验收</option>
           </select>
         </Field>
       </div>
-      <SubmitButton>{milestone ? "保存里程碑" : "创建里程碑"}</SubmitButton>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+          <CheckCircle2 className="size-3.5 shrink-0" />
+          保存后给这个阶段加 1-3 条下一步行动，避免路线图变成空壳。
+        </p>
+        <SubmitButton>{milestone ? "保存阶段" : "创建阶段"}</SubmitButton>
+      </div>
     </form>
   );
 }
