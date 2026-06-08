@@ -235,6 +235,43 @@
     @apply border-border/65 bg-white/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)];
   }
 
+  .rhythm-band {
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(248, 252, 250, 0.68)),
+      linear-gradient(135deg, rgba(226, 239, 246, 0.42), rgba(232, 248, 242, 0.46) 58%, rgba(245, 239, 224, 0.34));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 10px 24px rgba(27, 42, 56, 0.03);
+  }
+
+  .rhythm-rail {
+    position: relative;
+  }
+
+  .rhythm-step {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  }
+
+  .rhythm-node {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+
+  @media (width >= 80rem) {
+    .rhythm-rail::before {
+      position: absolute;
+      top: 1.72rem;
+      left: 2.75rem;
+      right: 2.75rem;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, transparent, rgba(54, 90, 125, 0.18), rgba(51, 120, 99, 0.16), transparent);
+    }
+
+    .rhythm-step {
+      z-index: 1;
+    }
+  }
+
   .signal-card {
     @apply border-border/68 bg-white/90 shadow-[0_1px_1px_rgba(15,23,42,0.022),0_12px_28px_rgba(34,48,71,0.04)];
   }

@@ -1049,42 +1049,61 @@ function ResearchRhythm({
   const items = [
     {
       icon: TimerReset,
-      label: "先定下一步",
+      label: "开工前",
       value: next,
-      detail: "减少每天开工前的选择成本",
+      detail: "只确认今天最值得推进的一件事",
+      href: "/projects?scope=today",
     },
     {
       icon: BookOpenText,
-      label: "文献输入",
+      label: "深度工作",
       value: paper,
-      detail: "Zotero 负责库，这里负责阅读状态",
+      detail: "读关键文献，或把任务转成实验记录",
+      href: "/papers",
     },
     {
       icon: FlaskConical,
-      label: "实验推进",
+      label: "收口前",
       value: experiment,
-      detail: "记录目的、观察、结论和下一步",
+      detail: "补观察、结论、失败复盘和下一步",
+      href: "/experiments",
     },
     {
       icon: FileChartColumn,
-      label: "结果证据",
+      label: "组会前",
       value: evidence,
-      detail: "把能支撑论文的指标留下来",
+      detail: "把结果证据沉淀成周报或论文素材",
+      href: "/data",
     },
   ];
 
   return (
-    <section className="research-strip overflow-hidden rounded-2xl border px-3 py-3">
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+    <section className="rhythm-band overflow-hidden rounded-2xl border px-3 py-3">
+      <div className="flex flex-col gap-2 px-1 pb-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+            <TimerReset className="size-4 text-primary" />
+            今日研究流
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            按一天真实节奏组织，不让文献、实验、结果和周报散在不同页面里。
+          </p>
+        </div>
+        <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+          轻量顺序 · 可随时跳转
+        </span>
+      </div>
+      <div className="rhythm-rail grid gap-2 md:grid-cols-2 xl:grid-cols-4">
         {items.map((item, index) => {
           const Icon = item.icon;
 
           return (
-            <div
+            <Link
               key={item.label}
-              className="grid gap-3 rounded-xl border border-border/55 bg-white/70 p-3 sm:grid-cols-[auto_1fr] sm:items-start"
+              href={item.href}
+              className="rhythm-step group relative grid gap-3 rounded-xl border border-border/55 bg-white/72 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr] sm:items-start"
             >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef4fb] text-[#365a7d]">
+              <span className="rhythm-node flex size-9 items-center justify-center rounded-xl bg-[#eef4fb] text-[#365a7d] transition group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="size-4" />
               </span>
               <div className="min-w-0">
@@ -1097,7 +1116,7 @@ function ResearchRhythm({
                 <p className="mt-1 line-clamp-1 font-semibold tracking-tight">{item.value}</p>
                 <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{item.detail}</p>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

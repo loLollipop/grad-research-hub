@@ -1,6 +1,6 @@
 Design system: 研途 Hub
 
-- Query: research graduate workbench calm dense modern dashboard low fatigue
+- Query: STEM graduate research workbench calm dense dashboard zotero experiment notes
 - Matched profile: dashboard
 - Style direction: data-dense
 - Palette: slate-cobalt
