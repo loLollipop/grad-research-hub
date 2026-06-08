@@ -1,15 +1,19 @@
 ﻿import {
+  AlertCircle,
   CalendarClock,
   ClipboardList,
   Clock3,
   Edit3,
+  FileCheck2,
   FileText,
   MapPin,
   Plus,
   ReceiptText,
   Search,
+  Sparkles,
   Trash2,
   UsersRound,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import type { AdminItem, Prisma } from "@prisma/client";
@@ -106,9 +110,12 @@ export default async function AdminPage({ searchParams }: Props) {
     }
   }
 
-  const [items, typeCounts, statusCounts, currentMeetingBrief] = await Promise.all([
+  const [items, allAdminItems, typeCounts, statusCounts, currentMeetingBrief] = await Promise.all([
     prisma.adminItem.findMany({
       where,
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+    }),
+    prisma.adminItem.findMany({
       orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
     }),
     prisma.adminItem.groupBy({ by: ["type"], _count: true }),
@@ -139,11 +146,22 @@ export default async function AdminPage({ searchParams }: Props) {
     .slice(0, 3);
   const allItemsCount = statusCounts.reduce((sum, item) => sum + item._count, 0);
   const doneBaseCount = statusCounts.find((item) => item.status === "done")?._count ?? 0;
-  const openBaseCount = allItemsCount - doneBaseCount;
-  const todayBaseCount = items.filter((item) => {
+  const openBaseItems = allAdminItems.filter((item) => item.status !== "done");
+  const openBaseCount = openBaseItems.length;
+  const todayBaseCount = openBaseItems.filter((item) => {
     const distance = daysUntil(item.dueDate);
-    return item.status !== "done" && distance !== null && distance <= 0;
+    return distance !== null && distance <= 0;
   }).length;
+  const dueTodayBaseCount = openBaseItems.filter((item) => daysUntil(item.dueDate) === 0).length;
+  const overdueBaseCount = openBaseItems.filter((item) => {
+    const distance = daysUntil(item.dueDate);
+    return distance !== null && distance < 0;
+  }).length;
+  const meetingOpenCount = openBaseItems.filter((item) => item.type === "meeting").length;
+  const reimbursementOpenCount = openBaseItems.filter((item) => item.type === "reimbursement").length;
+  const materialDeadlineOpenCount = openBaseItems.filter((item) =>
+    ["material", "deadline"].includes(item.type),
+  ).length;
   const typeCount = (value: string) => typeCounts.find((item) => item.type === value)?._count ?? 0;
 
   return (
@@ -261,10 +279,61 @@ export default async function AdminPage({ searchParams }: Props) {
                       {focusItem.location}
                     </p>
                   ) : null}
+                  <p className="mt-3 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-3 py-2 text-xs leading-5 text-muted-foreground">
+                    {adminActionReason(focusItem)}
+                  </p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">暂时没有待处理事务。</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="size-4 text-primary" />
+                减负雷达
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <AdminReliefRadarItem
+                icon={AlertCircle}
+                label="今天/逾期"
+                value={`${dueTodayBaseCount + overdueBaseCount} 件`}
+                detail="先收口硬截止，别让小事继续打断科研。"
+                href={adminHref(currentFilters, { q: undefined, type: undefined, status: undefined, scope: "today" })}
+                tone={dueTodayBaseCount + overdueBaseCount ? "warm" : "quiet"}
+              />
+              <AdminReliefRadarItem
+                icon={UsersRound}
+                label="组会准备"
+                value={`${meetingOpenCount} 件`}
+                detail="组会会牵动任务、实验和结果，优先准备可汇报材料。"
+                href={adminHref(currentFilters, { q: undefined, type: "meeting", status: undefined, scope: undefined })}
+                tone={meetingOpenCount ? "blue" : "quiet"}
+              />
+              <AdminReliefRadarItem
+                icon={ReceiptText}
+                label="报销材料"
+                value={`${reimbursementOpenCount} 件`}
+                detail="票据、单号和缺项先收住，之后不用反复翻聊天记录。"
+                href={adminHref(currentFilters, {
+                  q: undefined,
+                  type: "reimbursement",
+                  status: undefined,
+                  scope: undefined,
+                })}
+                tone={reimbursementOpenCount ? "green" : "quiet"}
+              />
+              <AdminReliefRadarItem
+                icon={FileCheck2}
+                label="材料/截止"
+                value={`${materialDeadlineOpenCount} 件`}
+                detail="材料入口、格式和提交对象先写清楚，减少临时返工。"
+                href={adminHref(currentFilters, { q: undefined, type: undefined, status: "todo", scope: undefined })}
+                tone={materialDeadlineOpenCount ? "blue" : "quiet"}
+              />
             </CardContent>
           </Card>
 
@@ -453,6 +522,51 @@ function QuickAdminLink({
   );
 }
 
+function AdminReliefRadarItem({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+  tone = "blue",
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone?: "blue" | "warm" | "green" | "quiet";
+}) {
+  const toneClass = {
+    blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+    warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    quiet: "border-border/70 bg-white/72 text-muted-foreground",
+  }[tone];
+
+  return (
+    <Link
+      href={href}
+      className="group grid gap-2 rounded-xl border border-border/70 bg-white/74 p-2.5 transition hover:border-primary/25 hover:bg-white"
+    >
+      <span className="flex items-start gap-2">
+        <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg border ${toneClass}`}>
+          <Icon className="size-3.5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">{label}</span>
+            <span className="text-xs font-medium text-primary">{value}</span>
+          </span>
+          <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+            {detail}
+          </span>
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 function AdminTimelineCard({ item }: { item: AdminItem }) {
   const typeMeta = itemTypes.find((type) => type.value === item.type);
   const Icon = typeMeta?.icon ?? ClipboardList;
@@ -509,6 +623,14 @@ function AdminTimelineCard({ item }: { item: AdminItem }) {
         {item.notes ? (
           <p className="text-sm leading-6 text-muted-foreground">{item.notes}</p>
         ) : null}
+
+        <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3">
+          <p className="flex items-center gap-2 text-xs font-medium text-[#315266]">
+            <Sparkles className="size-3.5" />
+            行动理由
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{adminActionReason(item)}</p>
+        </div>
 
         <div className="flex flex-col gap-3 border-t border-border/65 pt-3 md:flex-row md:items-center md:justify-between">
           <TagList value={item.tags} />
@@ -648,6 +770,40 @@ function adminActionLabel(item: AdminItem) {
   }
 
   return "安排处理";
+}
+
+function adminActionReason(item: AdminItem) {
+  if (item.status === "done") {
+    return "这件事已经收口，可以暂时从注意力里移开。";
+  }
+
+  const distance = daysUntil(item.dueDate);
+
+  if (distance !== null && distance < 0) {
+    return "已经逾期，先补状态或改期，避免继续占用脑内缓存。";
+  }
+
+  if (distance === 0) {
+    return "今天到期，先处理或明确下一步，避免打断后面的科研时间。";
+  }
+
+  if (item.status === "doing") {
+    return "已经开始推进，优先补齐材料、地点或下一步，别让它悬空。";
+  }
+
+  if (item.type === "meeting") {
+    return "组会会牵动任务、实验和结果，先准备可汇报材料。";
+  }
+
+  if (item.type === "reimbursement") {
+    return "报销最容易丢票据和流程，先把材料入口、单号或缺项写清楚。";
+  }
+
+  if (item.type === "material") {
+    return "材料类事项通常有隐性截止，先确认入口、格式和提交对象。";
+  }
+
+  return "先登记最小下一步，处理完就回到文献、实验和结果。";
 }
 
 function adminItemRank(item: AdminItem) {
