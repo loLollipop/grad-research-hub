@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Beaker,
   CheckCircle2,
+  Clock3,
   Edit3,
   Flag,
   FolderKanban,
@@ -12,6 +13,7 @@ import {
   Plus,
   Route,
   Search,
+  TimerReset,
   Trash2,
   X,
 } from "lucide-react";
@@ -330,6 +332,40 @@ export default async function ProjectsPage({ searchParams }: Props) {
                   description="添加一条任务后，这里会自动按截止和优先级排序。"
                 />
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <TimerReset className="size-4 text-primary" />
+                推进雷达
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <ProjectRadarItem
+                icon={Clock3}
+                label="今天/逾期"
+                value={`${todayOpenTasks.length} 个`}
+                detail="先处理会拖累组会或实验节奏的任务"
+                href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: "today" })}
+                tone={todayOpenTasks.length ? "warm" : "quiet"}
+              />
+              <ProjectRadarItem
+                icon={AlertCircle}
+                label="高优先级"
+                value={`${highOpenTasks.length} 个`}
+                detail="导师沟通、论文主线或关键实验优先"
+                href={projectsHref(currentFilters, { status: undefined, priority: "high", scope: undefined })}
+                tone={highOpenTasks.length ? "blue" : "quiet"}
+              />
+              <ProjectRadarItem
+                icon={Beaker}
+                label="可转实验"
+                value={`${quickOpenTasks.filter((task) => task.status !== "done").length} 个`}
+                detail="任务能落到实验时，一键生成实验日志"
+                href={projectsHref(currentFilters, { status: undefined, priority: undefined, scope: undefined })}
+              />
             </CardContent>
           </Card>
 
@@ -694,6 +730,48 @@ function QuickProjectLink({
   );
 }
 
+function ProjectRadarItem({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+  tone = "blue",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone?: "blue" | "warm" | "quiet";
+}) {
+  const toneClass = {
+    blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+    warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
+    quiet: "border-border/70 bg-white/72 text-muted-foreground",
+  }[tone];
+
+  return (
+    <Link
+      href={href}
+      className="group grid gap-3 rounded-xl border border-border/70 bg-white/72 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center xl:grid-cols-[auto_1fr]"
+    >
+      <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">{label}</span>
+          <span className="text-xs font-medium text-primary">{value}</span>
+        </span>
+        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {detail}
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 function NextTaskRow({
   task,
   milestones,
@@ -704,6 +782,7 @@ function NextTaskRow({
   returnTo: string;
 }) {
   const nextAction = taskActionLabel(task);
+  const actionReason = taskActionReason(task);
 
   return (
     <div className="soft-tile rounded-xl p-3">
@@ -722,6 +801,9 @@ function NextTaskRow({
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="inline-flex min-h-7 items-center rounded-lg border border-[#d5e4e8] bg-[#eef6f7] px-2 text-xs leading-5 text-[#315266]">
+          {actionReason}
+        </span>
         <TaskMoveForm task={task} compact />
         <TaskMilestoneAttachForm task={task} milestones={milestones} returnTo={returnTo} compact />
         <CreateExperimentFromTaskButton task={task} compact />
@@ -743,6 +825,7 @@ function TaskCard({
   returnTo: string;
 }) {
   const nextAction = taskActionLabel(task);
+  const actionReason = taskActionReason(task);
 
   return (
     <div className="soft-tile rounded-xl p-3 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)]">
@@ -775,6 +858,9 @@ function TaskCard({
           {task.description}
         </p>
       ) : null}
+      <p className="mt-2 rounded-lg border border-[#d5e4e8] bg-[#eef6f7] px-2.5 py-1.5 text-xs leading-5 text-[#315266]">
+        {actionReason}
+      </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <TaskMoveForm task={task} />
         <TaskMilestoneAttachForm task={task} milestones={milestones} returnTo={returnTo} />
@@ -975,6 +1061,39 @@ function taskActionLabel(task: Task) {
   }
 
   return "开始推进";
+}
+
+function taskActionReason(task: Task) {
+  if (task.status === "done") {
+    return "这条任务已收口，可以在推进笔记里作为本周进展使用。";
+  }
+
+  if (!task.milestoneId) {
+    return "还没挂到里程碑，先放回课题路线图，后续复盘不会散。";
+  }
+
+  const distance = daysUntil(task.dueDate);
+  if (distance !== null && distance < 0) {
+    return `已逾期 ${Math.abs(distance)} 天，今天先处理或改期。`;
+  }
+
+  if (distance === 0) {
+    return "今天截止，先完成最小可交付版本。";
+  }
+
+  if (task.status === "doing") {
+    return "已经在进行中，先补最新进展或明确下一步实验。";
+  }
+
+  if (task.priority === "high") {
+    return "高优先级任务，通常关系到导师沟通、关键实验或论文主线。";
+  }
+
+  if (distance !== null && distance <= 7) {
+    return `${distance} 天内要收口，适合放进本周推进清单。`;
+  }
+
+  return "把它推进到进行中，或转成实验日志开始记录证据。";
 }
 
 function MilestoneRow({
