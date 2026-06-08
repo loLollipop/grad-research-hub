@@ -131,6 +131,7 @@ export default async function PapersPage({ searchParams }: Props) {
     (paper) => paper.readStatus === "read" && !paper.notes?.trim(),
   ).length;
   const visibleNotedCount = papers.filter((paper) => paper.notes?.trim()).length;
+  const readingRadarStatus = visibleReadingCount ? "reading" : visibleUnreadCount ? "unread" : undefined;
 
   return (
     <div className="grid gap-5">
@@ -321,7 +322,7 @@ export default async function PapersPage({ searchParams }: Props) {
                 label="今天先读"
                 value={`${visibleReadingCount + visibleUnreadCount} 篇`}
                 detail="优先处理读中和待读，不让 Zotero 队列越积越厚"
-                href={`/papers?${filterQuery({ q, status: "reading", category })}`}
+                href={`/papers?${filterQuery({ q, status: readingRadarStatus, category })}`}
                 tone={visibleReadingCount ? "blue" : visibleUnreadCount ? "warm" : "quiet"}
               />
               <ReadingRadarItem
