@@ -53,7 +53,12 @@ type Props = {
     category?: string;
     sync?: string;
     count?: string;
+    fetched?: string;
+    limit?: string;
     message?: string;
+    more?: string;
+    scope?: string;
+    total?: string;
     bulk?: string;
     bulkStatus?: string;
     plan?: string;
@@ -71,7 +76,12 @@ export default async function PapersPage({ searchParams }: Props) {
   const category = valueOf(params.category)?.trim();
   const sync = valueOf(params.sync);
   const syncedCount = Number(valueOf(params.count) ?? 0);
+  const fetchedCount = Number(valueOf(params.fetched) ?? syncedCount);
+  const requestedLimit = Number(valueOf(params.limit) ?? 0);
   const syncMessage = valueOf(params.message);
+  const syncMore = valueOf(params.more) === "true";
+  const syncScope = valueOf(params.scope);
+  const syncTotal = valueOf(params.total);
   const bulk = valueOf(params.bulk);
   const bulkCount = Number(valueOf(params.count) ?? 0);
   const bulkStatus = valueOf(params.bulkStatus);
@@ -240,11 +250,14 @@ export default async function PapersPage({ searchParams }: Props) {
         <SyncNotice
           tone="success"
           title="Zotero 同步完成"
-          description={
-            syncedCount > 0
-              ? `已同步 ${syncedCount} 条文献。重复条目会自动更新，不会重复创建。`
-              : "Zotero 返回了 0 条可同步文献。可以检查 Collection Key、同步数量或 Zotero 集合内容。"
-          }
+          description={zoteroSyncSuccessDescription({
+            count: syncedCount,
+            fetched: fetchedCount,
+            hasMore: syncMore,
+            limit: requestedLimit || zotero.syncLimit,
+            scope: syncScope,
+            total: syncTotal,
+          })}
         />
       ) : null}
 
@@ -305,6 +318,9 @@ export default async function PapersPage({ searchParams }: Props) {
                   {zotero.collectionKey ? `仅同步集合 ${zotero.collectionKey}` : "同步库内顶层文献"}
                 </p>
                 <p>单次最多 {zotero.syncLimit} 条，系统会自动分页读取。</p>
+                <p className="mt-1">
+                  同步完成后会提示 Zotero 当前范围总数，方便判断是否需要临时调高同步数量。
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -550,6 +566,44 @@ function statusText(value: string | undefined) {
   if (value === "reading") return "读中";
   if (value === "read") return "已读";
   return "待读";
+}
+
+function zoteroSyncSuccessDescription({
+  count,
+  fetched,
+  hasMore,
+  limit,
+  scope,
+  total,
+}: {
+  count: number;
+  fetched: number;
+  hasMore: boolean;
+  limit: number;
+  scope?: string;
+  total?: string;
+}) {
+  if (count <= 0) {
+    return "Zotero 返回了 0 条可同步文献。可以检查 Collection Key、同步数量或 Zotero 集合内容。";
+  }
+
+  const pieces = [
+    `已同步 ${count} 条文献`,
+    fetched !== count ? `读取到 ${fetched} 条 Zotero 条目` : null,
+    scope ? `范围：${scope}` : null,
+    total ? `Zotero 当前范围共 ${total} 条` : null,
+    hasMore ? zoteroMoreHint(limit) : null,
+  ].filter((item): item is string => Boolean(item));
+
+  return `${pieces.join("；")}。重复条目会自动更新，不会重复创建。`;
+}
+
+function zoteroMoreHint(limit: number) {
+  if (limit >= 500) {
+    return "还有更多条目未拉取，可先填写 Collection Key 分批同步";
+  }
+
+  return `还有更多条目未拉取，可在设置中心把同步数量调高到 ${limit} 以上`;
 }
 
 function filterQuery(values: { q?: string; status?: string; category?: string }) {

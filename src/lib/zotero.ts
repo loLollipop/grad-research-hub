@@ -73,6 +73,20 @@ export type ZoteroConnectionResult = {
   message: string;
 };
 
+export type ZoteroSyncSummary = {
+  fetchedItems: number;
+  importedPapers: number;
+  requestedLimit: number;
+  scopeLabel: string;
+  totalResults: number | null;
+  hasMore: boolean;
+};
+
+export type ZoteroSyncResult = {
+  papers: ZoteroPaper[];
+  summary: ZoteroSyncSummary;
+};
+
 export async function getZoteroConfigStatus(): Promise<ZoteroConfigStatus> {
   const settings = await getZoteroSettings();
 
@@ -86,7 +100,7 @@ export async function getZoteroConfigStatus(): Promise<ZoteroConfigStatus> {
   };
 }
 
-export async function fetchZoteroPapers(): Promise<ZoteroPaper[]> {
+export async function fetchZoteroPapers(): Promise<ZoteroSyncResult> {
   const config = await getZoteroRuntimeConfig();
   const apiKey = config.apiKey;
 
@@ -94,15 +108,32 @@ export async function fetchZoteroPapers(): Promise<ZoteroPaper[]> {
     throw new Error("Zotero 尚未配置：需要 ZOTERO_API_KEY 和 ZOTERO_LIBRARY_ID。");
   }
 
-  const [items, collectionNames] = await Promise.all([
+  const [itemResult, collectionNames] = await Promise.all([
     fetchZoteroItems(config, apiKey),
     fetchZoteroCollectionNames(config, apiKey),
   ]);
   const syncedAt = new Date();
-
-  return items
+  const papers = itemResult.items
     .map((item) => mapZoteroItemToPaper(item, syncedAt, collectionNames))
     .filter((paper): paper is ZoteroPaper => Boolean(paper));
+  const scopeLabel = config.collectionKey
+    ? collectionNames.get(config.collectionKey) ?? config.collectionKey
+    : "库内顶层文献";
+
+  return {
+    papers,
+    summary: {
+      fetchedItems: itemResult.items.length,
+      importedPapers: papers.length,
+      requestedLimit: itemResult.requestedLimit,
+      scopeLabel,
+      totalResults: itemResult.totalResults,
+      hasMore:
+        itemResult.totalResults !== null
+          ? itemResult.totalResults > itemResult.items.length
+          : itemResult.items.length >= itemResult.requestedLimit,
+    },
+  };
 }
 
 async function fetchZoteroItems(
@@ -117,6 +148,7 @@ async function fetchZoteroItems(
   const pageSize = 100;
   const target = Math.min(Math.max(config.syncLimit, 1), 500);
   const items: ZoteroItem[] = [];
+  let totalResults: number | null = null;
 
   for (let start = 0; start < target; start += pageSize) {
     const url = zoteroItemsUrl(config);
@@ -134,6 +166,12 @@ async function fetchZoteroItems(
       throw new Error(zoteroHttpErrorMessage(response.status, response.statusText));
     }
 
+    const totalHeader = response.headers.get("Total-Results");
+    if (totalHeader && totalResults === null) {
+      const parsed = Number(totalHeader);
+      totalResults = Number.isFinite(parsed) ? parsed : null;
+    }
+
     const page = (await response.json()) as ZoteroItem[];
     items.push(...page);
 
@@ -142,7 +180,11 @@ async function fetchZoteroItems(
     }
   }
 
-  return items;
+  return {
+    items,
+    requestedLimit: target,
+    totalResults,
+  };
 }
 
 export async function checkZoteroConnection(input: {
@@ -181,6 +223,8 @@ export async function checkZoteroConnection(input: {
       };
     }
 
+    const totalHeader = response.headers.get("Total-Results");
+    const totalResults = totalHeader && Number.isFinite(Number(totalHeader)) ? Number(totalHeader) : null;
     const items = (await response.json()) as ZoteroItem[];
     const readableItems = items
       .map((item) => mapZoteroItemToPaper(item, new Date(), new Map()))
@@ -190,7 +234,7 @@ export async function checkZoteroConnection(input: {
       ok: true,
       message:
         readableItems > 0
-          ? `Zotero 连接正常，测试读取到 ${readableItems} 条文献。`
+          ? `Zotero 连接正常，测试读取到 ${readableItems} 条文献${totalResults !== null ? `，当前范围共 ${totalResults} 条` : ""}。`
           : "Zotero 连接正常，但这个范围暂时没有可同步文献。可以检查 Collection Key 或同步数量。",
     };
   } catch (error) {

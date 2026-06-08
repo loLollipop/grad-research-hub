@@ -450,14 +450,16 @@ export async function updatePaperStatuses(formData: FormData) {
 }
 
 export async function syncZoteroPapers() {
-  let papers;
+  let result: Awaited<ReturnType<typeof fetchZoteroPapers>>;
 
   try {
-    papers = await fetchZoteroPapers();
+    result = await fetchZoteroPapers();
   } catch (error) {
     const message = error instanceof Error ? error.message : "Zotero 同步失败。";
     redirect(`/papers?sync=error&message=${encodeURIComponent(message)}`);
   }
+
+  const { papers, summary } = result;
 
   await Promise.all(
     papers.map((paper) =>
@@ -487,7 +489,20 @@ export async function syncZoteroPapers() {
   revalidatePath("/");
   revalidatePath("/papers");
   revalidatePath("/settings");
-  redirect(`/papers?sync=success&count=${papers.length}`);
+
+  const params = new URLSearchParams({
+    sync: "success",
+    count: String(papers.length),
+    fetched: String(summary.fetchedItems),
+    limit: String(summary.requestedLimit),
+    scope: summary.scopeLabel,
+    more: summary.hasMore ? "true" : "false",
+  });
+  if (summary.totalResults !== null) {
+    params.set("total", String(summary.totalResults));
+  }
+
+  redirect(`/papers?${params.toString()}`);
 }
 
 function safePapersReturnTo(value: string) {
