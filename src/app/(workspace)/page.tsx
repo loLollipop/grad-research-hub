@@ -1245,6 +1245,13 @@ function LoopRow({
 }
 
 function ResearchTimeline({ items }: { items: TimelineItem[] }) {
+  const counts = [
+    { kind: "文献", label: "文献", value: items.filter((item) => item.kind === "文献").length },
+    { kind: "实验", label: "实验", value: items.filter((item) => item.kind === "实验").length },
+    { kind: "结果", label: "结果", value: items.filter((item) => item.kind === "结果").length },
+    { kind: "笔记", label: "笔记", value: items.filter((item) => item.kind === "笔记").length },
+  ];
+
   return (
     <Card className="workbench-card overflow-hidden">
       <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
@@ -1253,45 +1260,76 @@ function ResearchTimeline({ items }: { items: TimelineItem[] }) {
             <History className="size-4 text-primary" />
             研究时间线
           </CardTitle>
-          <Link href="/notes?folder=组会" className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-            用于组会回顾
+          <Link href="/notes?folder=组会" className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
+            整理成周报
             <ArrowRight className="size-3.5" />
           </Link>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-3">
         {items.length ? (
-          <div className="grid gap-2">
-            {items.map((item) => {
-              const Icon = timelineIcon(item.tone);
-
-              return (
-                <Link
-                  key={`${item.tone}-${item.id}`}
-                  href={item.href}
-                  className="group grid gap-3 rounded-xl border border-border/70 bg-[#fbfcfd]/88 p-3.5 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_26px_rgba(27,42,56,0.055)] sm:grid-cols-[auto_1fr_auto] sm:items-center"
+          <>
+            <div className="grid gap-2 sm:grid-cols-4">
+              {counts.map((count) => (
+                <div
+                  key={count.kind}
+                  className="rounded-xl border border-border/60 bg-white/66 px-3 py-2"
                 >
-                  <span className={timelineIconClass(item.tone)}>
-                    <Icon className="size-4" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="line-clamp-1 font-medium">{item.title}</span>
-                      <span className="rounded-md border bg-white/82 px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                        {item.kind}
+                  <p className="text-[11px] font-medium text-muted-foreground">{count.label}</p>
+                  <p className="mt-1 text-lg font-semibold tracking-tight hero-title">{count.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-border/62 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,251,252,0.76))] px-3 py-2">
+              {items.map((item, index) => {
+                const Icon = timelineIcon(item.tone);
+
+                return (
+                  <Link
+                    key={`${item.tone}-${item.id}`}
+                    href={item.href}
+                    className="group grid gap-3 border-b border-border/54 py-3 transition last:border-b-0 hover:bg-white/58 sm:grid-cols-[2.75rem_1fr_auto] sm:items-start"
+                  >
+                    <span className="relative hidden justify-center sm:flex">
+                      {index < items.length - 1 ? (
+                        <span className="absolute left-1/2 top-10 h-[calc(100%+0.75rem)] w-px -translate-x-1/2 bg-border/68" />
+                      ) : null}
+                      <span className={timelineIconClass(item.tone)}>
+                        <Icon className="size-4" />
                       </span>
                     </span>
-                    <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">
-                      {item.meta}
+                    <span className="min-w-0 space-y-1.5">
+                      <span className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className={timelineKindClass(item.tone)}>{item.kind}</span>
+                        <span className="line-clamp-1 font-medium">{item.title}</span>
+                      </span>
+                      <span className="block line-clamp-1 text-xs text-muted-foreground">
+                        {item.meta}
+                      </span>
+                      <span className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground sm:hidden">
+                        <span>{formatDateTime(item.updatedAt)}</span>
+                        <span className="h-1 w-1 rounded-full bg-muted-foreground/35" />
+                        <span>{timelineAction(item.tone)}</span>
+                      </span>
                     </span>
-                  </span>
-                  <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">
-                    {formatDateTime(item.updatedAt)}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+                    <span className="hidden min-w-28 flex-col items-end gap-1.5 sm:flex">
+                      <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">
+                        {formatDateTime(item.updatedAt)}
+                      </span>
+                      <span className="rounded-full border border-white/80 bg-white/78 px-2.5 py-1 text-[11px] font-medium text-[#365a7d]">
+                        {timelineAction(item.tone)}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
+              这不是新的日志系统，只把最近的文献、实验、结果和笔记串起来。组会或周报前，先从这里回看本周研究脉络。
+            </div>
+          </>
         ) : (
           <EmptyState
             icon={History}
@@ -1302,6 +1340,28 @@ function ResearchTimeline({ items }: { items: TimelineItem[] }) {
       </CardContent>
     </Card>
   );
+}
+
+function timelineKindClass(tone: TimelineItem["tone"]) {
+  const classes = {
+    paper: "rounded-md border border-[#d8e5ee] bg-[#eef3fb] px-1.5 py-0.5 text-[11px] font-medium text-[#365a7d]",
+    experiment: "rounded-md border border-[#cfe0df] bg-[#eef7f3] px-1.5 py-0.5 text-[11px] font-medium text-[#2f6655]",
+    result: "rounded-md border border-[#eadfbf] bg-[#f7f1df] px-1.5 py-0.5 text-[11px] font-medium text-[#7a5a2f]",
+    note: "rounded-md border border-[#ded5e8] bg-[#f3eef9] px-1.5 py-0.5 text-[11px] font-medium text-[#5d4d80]",
+  };
+
+  return classes[tone];
+}
+
+function timelineAction(tone: TimelineItem["tone"]) {
+  const actions = {
+    paper: "沉淀阅读",
+    experiment: "收口观察",
+    result: "进入周报",
+    note: "继续写作",
+  };
+
+  return actions[tone];
 }
 
 function timelineIcon(tone: TimelineItem["tone"]) {
@@ -1317,10 +1377,10 @@ function timelineIcon(tone: TimelineItem["tone"]) {
 
 function timelineIconClass(tone: TimelineItem["tone"]) {
   const classes = {
-    paper: "flex size-9 items-center justify-center rounded-xl bg-[#eef3fb] text-primary",
-    experiment: "flex size-9 items-center justify-center rounded-xl bg-[#eef7f3] text-[#2f6655]",
-    result: "flex size-9 items-center justify-center rounded-xl bg-[#f7f1df] text-[#7a5a2f]",
-    note: "flex size-9 items-center justify-center rounded-xl bg-[#f3eef9] text-[#5d4d80]",
+    paper: "relative z-10 flex size-9 items-center justify-center rounded-xl bg-[#eef3fb] text-primary ring-4 ring-white/80",
+    experiment: "relative z-10 flex size-9 items-center justify-center rounded-xl bg-[#eef7f3] text-[#2f6655] ring-4 ring-white/80",
+    result: "relative z-10 flex size-9 items-center justify-center rounded-xl bg-[#f7f1df] text-[#7a5a2f] ring-4 ring-white/80",
+    note: "relative z-10 flex size-9 items-center justify-center rounded-xl bg-[#f3eef9] text-[#5d4d80] ring-4 ring-white/80",
   };
 
   return classes[tone];
