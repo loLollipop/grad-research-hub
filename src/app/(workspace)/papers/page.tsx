@@ -1,18 +1,22 @@
 ﻿import Link from "next/link";
 import {
+  AlertCircle,
   BookOpenCheck,
+  Clock3,
   Edit3,
   ExternalLink,
   FileText,
   LibraryBig,
+  Lightbulb,
+  NotebookPen,
   Plus,
   RefreshCw,
   Search,
   Settings,
   Trash2,
   CheckCircle2,
-  AlertCircle,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import type { Paper, Prisma } from "@prisma/client";
 
@@ -121,6 +125,12 @@ export default async function PapersPage({ searchParams }: Props) {
     ...papers.filter((paper) => paper.readStatus === "reading"),
     ...papers.filter((paper) => paper.readStatus === "unread"),
   ].slice(0, 3);
+  const visibleUnreadCount = papers.filter((paper) => paper.readStatus === "unread").length;
+  const visibleReadingCount = papers.filter((paper) => paper.readStatus === "reading").length;
+  const visibleNeedNoteCount = papers.filter(
+    (paper) => paper.readStatus === "read" && !paper.notes?.trim(),
+  ).length;
+  const visibleNotedCount = papers.filter((paper) => paper.notes?.trim()).length;
 
   return (
     <div className="grid gap-5">
@@ -295,6 +305,41 @@ export default async function PapersPage({ searchParams }: Props) {
                 </p>
                 <p>单次最多 {zotero.syncLimit} 条，系统会自动分页读取。</p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="size-4 text-primary" />
+                阅读雷达
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <ReadingRadarItem
+                icon={Clock3}
+                label="今天先读"
+                value={`${visibleReadingCount + visibleUnreadCount} 篇`}
+                detail="优先处理读中和待读，不让 Zotero 队列越积越厚"
+                href={`/papers?${filterQuery({ q, status: "reading", category })}`}
+                tone={visibleReadingCount ? "blue" : visibleUnreadCount ? "warm" : "quiet"}
+              />
+              <ReadingRadarItem
+                icon={NotebookPen}
+                label="读后补笔记"
+                value={`${visibleNeedNoteCount} 篇`}
+                detail="已读但没有沉淀笔记，组会和写作时很难再找回"
+                href={`/papers?${filterQuery({ q, status: "read", category })}`}
+                tone={visibleNeedNoteCount ? "warm" : "quiet"}
+              />
+              <ReadingRadarItem
+                icon={FileText}
+                label="可沉淀素材"
+                value={`${visibleNotedCount} 篇`}
+                detail="已有笔记的文献，可以进入综述、组会或论文草稿"
+                href="/notes?folder=文献"
+                tone={visibleNotedCount ? "green" : "quiet"}
+              />
             </CardContent>
           </Card>
 
@@ -584,9 +629,53 @@ function ProgressLine({ label, value, total }: { label: string; value: number; t
   );
 }
 
+function ReadingRadarItem({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  href,
+  tone = "blue",
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone?: "blue" | "warm" | "green" | "quiet";
+}) {
+  const toneClass = {
+    blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+    warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    quiet: "border-border/70 bg-white/72 text-muted-foreground",
+  }[tone];
+
+  return (
+    <Link
+      href={href === "/papers?" ? "/papers" : href}
+      className="group grid gap-3 rounded-xl border border-border/70 bg-white/72 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center xl:grid-cols-[auto_1fr]"
+    >
+      <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">{label}</span>
+          <span className="text-xs font-medium text-primary">{value}</span>
+        </span>
+        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {detail}
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 function PaperCard({ paper }: { paper: Paper }) {
   const authors = parseTags(paper.authors);
   const nextAction = paper.readStatus === "read" ? "回顾笔记" : paper.readStatus === "reading" ? "继续阅读" : "开始阅读";
+  const actionReason = paperActionReason(paper);
 
   return (
     <Card className="workbench-card">
@@ -641,6 +730,18 @@ function PaperCard({ paper }: { paper: Paper }) {
           {paper.abstract ?? paper.notes ?? "暂无摘要或阅读笔记。"}
         </p>
 
+        <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3">
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg border border-[#d5e4e8] bg-white/72 text-primary">
+              <BookOpenCheck className="size-3.5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{nextAction}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{actionReason}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           {paper.doi ? <span>DOI {paper.doi}</span> : null}
           {paper.arxivId ? <span>arXiv {paper.arxivId}</span> : null}
@@ -681,6 +782,22 @@ function PaperCard({ paper }: { paper: Paper }) {
       </CardContent>
     </Card>
   );
+}
+
+function paperActionReason(paper: Paper) {
+  if (paper.readStatus === "unread") {
+    return "先读摘要、方法和关键图表，判断它是否值得进入课题、实验或综述素材。";
+  }
+
+  if (paper.readStatus === "reading") {
+    return "这篇已经开始读了，优先收尾并生成阅读笔记，避免读到一半又被新文献打断。";
+  }
+
+  if (!paper.notes?.trim()) {
+    return "已经标为已读，但还没有留下可回顾笔记；先补一句问题、方法抓手和可复用点。";
+  }
+
+  return "已有阅读沉淀，可以在组会、综述或论文草稿里回收使用。";
 }
 
 function PaperForm({
