@@ -113,7 +113,16 @@ export default async function AdminPage({ searchParams }: Props) {
     }
   }
 
-  const [items, allAdminItems, typeCounts, statusCounts, currentMeetingBrief] = await Promise.all([
+  const [
+    items,
+    allAdminItems,
+    typeCounts,
+    statusCounts,
+    currentMeetingBrief,
+    briefTaskCount,
+    briefResultCount,
+    briefPaperCount,
+  ] = await Promise.all([
     prisma.adminItem.findMany({
       where,
       orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
@@ -130,6 +139,20 @@ export default async function AdminPage({ searchParams }: Props) {
       },
       orderBy: { updatedAt: "desc" },
       select: { id: true, updatedAt: true },
+    }),
+    prisma.task.count({
+      where: {
+        status: { not: "done" },
+        OR: [{ priority: "high" }, { dueDate: { lt: meetingBriefPeriod.endExclusive } }],
+      },
+    }),
+    prisma.result.count({
+      where: {
+        OR: [{ artifactPath: { not: null } }, { config: { contains: "\"manuscriptReady\":true" } }],
+      },
+    }),
+    prisma.paper.count({
+      where: { readStatus: { in: ["unread", "reading"] } },
     }),
   ]);
 
@@ -289,6 +312,64 @@ export default async function AdminPage({ searchParams }: Props) {
               ) : (
                 <p className="text-sm text-muted-foreground">暂时没有待处理事务。</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card overflow-hidden">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <UsersRound className="size-4 text-primary" />
+                导师沟通准备度
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <AdvisorPrepItem
+                index="01"
+                label="先有草稿"
+                value={currentMeetingBrief ? "已生成" : "待生成"}
+                detail={
+                  currentMeetingBrief
+                    ? `覆盖 ${meetingBriefPeriod.shortLabel}，可继续压缩成 5 分钟版本。`
+                    : "先自动整理任务、实验、结果、文献和阻塞，别从空白文档开始。"
+                }
+                done={Boolean(currentMeetingBrief)}
+              />
+              <AdvisorPrepItem
+                index="02"
+                label="再看证据"
+                value={`${briefResultCount} 条结果`}
+                detail={`${briefTaskCount} 个高优先级/临近任务，可和结果证据一起决定下周动作。`}
+                done={briefResultCount > 0}
+              />
+              <AdvisorPrepItem
+                index="03"
+                label="最后列问题"
+                value={`${meetingOpenCount} 件组会事`}
+                detail={`${briefPaperCount} 篇待读/读中文献可补到“需要导师确认”的讨论里。`}
+                done={meetingOpenCount > 0 || briefPaperCount > 0}
+              />
+              <div className="mt-1 flex flex-wrap gap-2 border-t border-border/65 pt-3">
+                {currentMeetingBrief ? (
+                  <Link
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                    href={`/notes?note=${currentMeetingBrief.id}`}
+                  >
+                    <FileText className="size-3.5" />
+                    打开草稿
+                  </Link>
+                ) : (
+                  <form action={createMeetingBriefNote}>
+                    <input type="hidden" name="scope" value="week" />
+                    <SubmitButton variant="outline" size="sm">
+                      <FileText className="size-3.5" />
+                      生成草稿
+                    </SubmitButton>
+                  </form>
+                )}
+                <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href="/notes?folder=组会">
+                  看组会笔记
+                </Link>
+              </div>
             </CardContent>
           </Card>
 
@@ -524,6 +605,41 @@ function QuickAdminLink({
       <span>{label}</span>
       <span className="text-xs text-muted-foreground">{count}</span>
     </Link>
+  );
+}
+
+function AdvisorPrepItem({
+  index,
+  label,
+  value,
+  detail,
+  done,
+}: {
+  index: string;
+  label: string;
+  value: string;
+  detail: string;
+  done: boolean;
+}) {
+  return (
+    <div
+      className={
+        done
+          ? "rounded-xl border border-[#cfe0e4] bg-[#eef7f4] p-3"
+          : "rounded-xl border border-border/70 bg-white/76 p-3"
+      }
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2">
+          <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+          <span className="text-sm font-medium">{label}</span>
+        </span>
+        <span className={done ? "text-xs font-medium text-[#2f6655]" : "text-xs font-medium text-primary"}>
+          {value}
+        </span>
+      </div>
+      <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
   );
 }
 
