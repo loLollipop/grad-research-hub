@@ -1538,6 +1538,49 @@ export async function quickCapture(formData: FormData) {
     redirect("/admin?captured=admin&status=todo");
   }
 
+  if (captured.kind === "result") {
+    await prisma.result.create({
+      data: {
+        title: quickTitle(captured.body),
+        metrics: "{}",
+        config: JSON.stringify({
+          manuscriptReady: false,
+          quickCapture: true,
+          reproducibility: "unknown",
+        }),
+        notes: [
+          "结论：待补充。",
+          `来源：快速捕捉：${captured.body}`,
+          "下一步：补 1-3 个核心指标、关联实验/数据集、复现状态和图表路径。",
+        ].join("\n"),
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/data");
+    redirect("/data?captured=result");
+  }
+
+  if (captured.kind === "dataset") {
+    await prisma.dataset.create({
+      data: {
+        name: quickTitle(captured.body),
+        source: "快速捕捉",
+        description: [
+          "用途：待补充。",
+          `来源：快速捕捉：${captured.body}`,
+          "处理状态：",
+          "依赖结果：",
+        ].join("\n"),
+        tags: tagsToString(["quick-capture", "数据来源"]),
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/data");
+    redirect("/data?captured=dataset");
+  }
+
   const note = await prisma.note.create({
     data: {
       title: quickTitle(captured.body),
@@ -1557,6 +1600,8 @@ type QuickCaptureResult =
   | { body: string; kind: "experiment" }
   | { body: string; kind: "paper" }
   | { body: string; kind: "admin" }
+  | { body: string; kind: "result" }
+  | { body: string; kind: "dataset" }
   | { body: string; folder?: string; kind: "note"; tags?: string[] };
 
 function parseQuickCapture(content: string): QuickCaptureResult {
@@ -1598,6 +1643,8 @@ type QuickCaptureAlias =
   | { kind: "experiment" }
   | { kind: "paper" }
   | { kind: "admin" }
+  | { kind: "result" }
+  | { kind: "dataset" }
   | { folder?: string; kind: "note"; tags?: string[] };
 
 function quickCaptureAlias(prefix: string): QuickCaptureAlias | null {
@@ -1631,6 +1678,15 @@ function quickCaptureAlias(prefix: string): QuickCaptureAlias | null {
     ["meeting", { kind: "admin" }],
     ["deadline", { kind: "admin" }],
     ["admin", { kind: "admin" }],
+    ["结果", { kind: "result" }],
+    ["成果", { kind: "result" }],
+    ["证据", { kind: "result" }],
+    ["result", { kind: "result" }],
+    ["evidence", { kind: "result" }],
+    ["数据", { kind: "dataset" }],
+    ["数据集", { kind: "dataset" }],
+    ["dataset", { kind: "dataset" }],
+    ["data", { kind: "dataset" }],
     ["笔记", { kind: "note", folder: "Inbox" }],
     ["想法", { kind: "note", folder: "Inbox", tags: ["想法"] }],
     ["灵感", { kind: "note", folder: "Inbox", tags: ["想法"] }],
@@ -1640,9 +1696,6 @@ function quickCaptureAlias(prefix: string): QuickCaptureAlias | null {
     ["周报", { kind: "note", folder: "写作", tags: ["周报"] }],
     ["初稿", { kind: "note", folder: "写作", tags: ["论文初稿"] }],
     ["draft", { kind: "note", folder: "写作", tags: ["论文初稿"] }],
-    ["结果", { kind: "note", folder: "结果", tags: ["结果证据"] }],
-    ["成果", { kind: "note", folder: "结果", tags: ["结果证据"] }],
-    ["证据", { kind: "note", folder: "结果", tags: ["结果证据"] }],
   ];
   const kindMap = new Map<string, QuickCaptureAlias>(entries);
 

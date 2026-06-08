@@ -117,7 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="content"
-                  placeholder="随手写：任务 整理结果 / 实验 复现第 2 组 / 文献 补读综述 / 写作 周报开头"
+                  placeholder="随手写：任务 整理结果 / 结果 消融提升 2% / 数据 第三批样本 / 文献 补读综述"
                   className="h-9 rounded-xl border-transparent bg-white/0 pl-8 text-sm shadow-none focus-visible:bg-white/88 md:h-10"
                 />
               </div>

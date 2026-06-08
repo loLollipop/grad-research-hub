@@ -2,9 +2,11 @@ import { CheckCircle2 } from "lucide-react";
 
 const labels: Record<string, string> = {
   admin: "事务",
+  dataset: "数据来源",
   experiment: "实验",
   note: "笔记",
   paper: "文献",
+  result: "结果证据",
   task: "任务",
 };
 

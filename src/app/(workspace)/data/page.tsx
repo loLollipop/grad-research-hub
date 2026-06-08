@@ -23,6 +23,7 @@ import Link from "next/link";
 import type { Dataset, Experiment, Prisma, Result } from "@prisma/client";
 
 import { ResultMetricsChart } from "@/components/charts/result-metrics-chart";
+import { CaptureNotice } from "@/components/shared/capture-notice";
 import {
   createDataset,
   createResultBriefNote,
@@ -68,6 +69,7 @@ type Props = {
     experiment?: string;
     dataset?: string;
     brief?: string;
+    captured?: string;
   }>;
 };
 
@@ -118,6 +120,7 @@ export default async function DataPage({ searchParams }: Props) {
   const experimentId = valueOf(params.experiment);
   const datasetId = valueOf(params.dataset);
   const brief = valueOf(params.brief);
+  const captured = valueOf(params.captured);
   const activeFilterCount = [q, reproducibility, manuscript, experimentId, datasetId].filter(Boolean).length;
   const currentFilters: DataFilters = {
     q,
@@ -312,6 +315,8 @@ export default async function DataPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      <CaptureNotice kind={captured} />
 
       <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
         <aside className="grid content-start gap-4">
