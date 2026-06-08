@@ -76,7 +76,7 @@ export default async function AiPage() {
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               不做万能聊天框，也不替你下结论。先围绕组会提纲、实验复盘、阅读卡片和写作润色，
-              把已有笔记整理成可人工核对的结构化草稿。
+              把已有笔记整理成可人工核对的结构化草稿，再保存回笔记工作室继续编辑。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link className={buttonVariants({ variant: "default" })} href="/settings">

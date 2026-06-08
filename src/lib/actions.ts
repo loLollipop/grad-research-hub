@@ -1211,6 +1211,31 @@ export async function createTasksFromNoteChecklist(formData: FormData) {
   redirect(`/projects?status=todo&taskSync=success&taskSyncCount=${checklistItems.length}`);
 }
 
+export async function createNoteFromAiDraft(formData: FormData) {
+  const prompt = String(formData.get("prompt") ?? "").trim().slice(0, 4_000);
+  const draft = String(formData.get("draft") ?? "").trim().slice(0, 20_000);
+  const provider = String(formData.get("provider") ?? "AI").trim().slice(0, 80);
+  const mode = String(formData.get("mode") ?? "live").trim().slice(0, 40);
+
+  if (!draft) {
+    redirect("/ai");
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `AI 草稿：${new Date().toLocaleDateString("zh-CN")}`,
+      folder: "写作",
+      content: aiDraftNoteMarkdown({ draft, mode, prompt, provider }),
+      tags: tagsToString(["AI 草稿", "写作素材", "待核对"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/ai");
+  revalidatePath("/notes");
+  redirect(`/notes?captured=note&note=${note.id}`);
+}
+
 export async function quickCapture(formData: FormData) {
   const content = String(formData.get("content") ?? "").trim();
   if (!content) return;
@@ -1467,6 +1492,40 @@ function stableHash(value: string) {
 
 function noteTaskMarker(noteId: string, key: string) {
   return `<!-- note-task:${noteId}:${key} -->`;
+}
+
+function aiDraftNoteMarkdown({
+  draft,
+  mode,
+  prompt,
+  provider,
+}: {
+  draft: string;
+  mode: string;
+  prompt: string;
+  provider: string;
+}) {
+  return [
+    `<!-- ai-draft:${stableHash(`${provider}:${prompt}:${draft}`).slice(0, 12)} -->`,
+    "",
+    "## AI 草稿",
+    "",
+    draft,
+    "",
+    "## 原始提示",
+    "",
+    prompt || "未记录提示。",
+    "",
+    "## 核对清单",
+    "",
+    "- [ ] 核对事实、数据和实验条件",
+    "- [ ] 核对引用来源和文献表述",
+    "- [ ] 标注哪些内容可以进入组会、周报或论文",
+    "- [ ] 把下一步动作拆回任务或实验",
+    "",
+    "---",
+    `来源：AI 草稿助手 · ${provider} · ${mode}`,
+  ].join("\n");
 }
 
 export async function createMeetingBriefNote(formData: FormData) {

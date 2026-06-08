@@ -5,6 +5,7 @@ import { Bot, Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { createNoteFromAiDraft } from "@/lib/actions";
 
 type AiResponse = {
   mode: "live" | "placeholder";
@@ -107,6 +108,17 @@ export function AiWorkbench({
               </div>
             ))}
           </div>
+          {result.mode === "live" ? (
+            <form action={createNoteFromAiDraft} className="mt-3 flex justify-end">
+              <input type="hidden" name="prompt" value={prompt} />
+              <input type="hidden" name="draft" value={result.summary} />
+              <input type="hidden" name="provider" value={result.provider ?? "AI"} />
+              <input type="hidden" name="mode" value={result.mode} />
+              <Button type="submit" variant="outline" size="sm">
+                保存到笔记
+              </Button>
+            </form>
+          ) : null}
         </div>
       ) : null}
     </div>
