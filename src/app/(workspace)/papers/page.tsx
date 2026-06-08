@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import {
   AlertCircle,
+  Beaker,
   BookOpenCheck,
   BookOpenText,
   Clock3,
@@ -22,6 +23,7 @@ import {
 import type { Paper, Prisma } from "@prisma/client";
 
 import {
+  createExperimentFromPaper,
   createPaper,
   createReadingPlanNote,
   createReadingNoteFromPaper,
@@ -359,7 +361,7 @@ export default async function PapersPage({ searchParams }: Props) {
                 icon={FileText}
                 label="可沉淀素材"
                 value={`${visibleNotedCount} 篇`}
-                detail="已有笔记的文献，可以进入综述、组会或论文草稿"
+                detail="已有笔记的文献，可以进入实验草稿、组会或论文写作"
                 href="/notes?folder=文献"
                 tone={visibleNotedCount ? "green" : "quiet"}
               />
@@ -828,6 +830,13 @@ function PaperCard({ paper }: { paper: Paper }) {
                 阅读笔记
               </Button>
             </form>
+            <form action={createExperimentFromPaper}>
+              <input type="hidden" name="id" value={paper.id} />
+              <Button type="submit" variant="outline" size="sm">
+                <Beaker className="size-4" />
+                转实验
+              </Button>
+            </form>
             <CreateDialog title="编辑文献" label="编辑" icon={Edit3} wide>
               <PaperForm action={updatePaper} paper={paper} />
             </CreateDialog>
@@ -847,18 +856,18 @@ function PaperCard({ paper }: { paper: Paper }) {
 
 function paperActionReason(paper: Paper) {
   if (paper.readStatus === "unread") {
-    return "先读摘要、方法和关键图表，判断它是否值得进入课题、实验或综述素材。";
+    return "先读摘要、方法和关键图表；如果发现可复现方法，直接转成实验草稿。";
   }
 
   if (paper.readStatus === "reading") {
-    return "这篇已经开始读了，优先收尾并生成阅读笔记，避免读到一半又被新文献打断。";
+    return "这篇已经开始读了，优先收尾；读出方法、对照或指标后可生成阅读笔记或实验草稿。";
   }
 
   if (!paper.notes?.trim()) {
-    return "已经标为已读，但还没有留下可回顾笔记；先补一句问题、方法抓手和可复用点。";
+    return "已经标为已读，但还没有留下可回顾笔记；先补问题、方法抓手和可复现实验线索。";
   }
 
-  return "已有阅读沉淀，可以在组会、综述或论文草稿里回收使用。";
+  return "已有阅读沉淀，可以回流到实验设计、组会讨论、综述或论文草稿。";
 }
 
 function PaperForm({

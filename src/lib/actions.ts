@@ -242,6 +242,50 @@ export async function createReadingNoteFromPaper(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createExperimentFromPaper(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const paper = await prisma.paper.findUnique({ where: { id } });
+  if (!paper) return;
+
+  const marker = paperExperimentMarker(paper.id);
+  const existing = await prisma.experiment.findFirst({
+    where: { content: { contains: marker, mode: "insensitive" } },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/experiments?q=${encodeURIComponent(paper.title)}`);
+  }
+
+  await prisma.$transaction([
+    prisma.experiment.create({
+      data: {
+        title: `复现实验：${paper.title}`.slice(0, 90),
+        status: "running",
+        template: "reproduction",
+        content: buildPaperExperimentDraft(paper, marker),
+        tags: tagsToString(["文献转实验", "复现", ...parseTags(paper.tags).slice(0, 4)]),
+        papers: { connect: [{ id: paper.id }] },
+      },
+    }),
+    ...(paper.readStatus === "unread"
+      ? [
+          prisma.paper.update({
+            where: { id: paper.id },
+            data: { readStatus: "reading" },
+          }),
+        ]
+      : []),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath("/papers");
+  revalidatePath("/experiments");
+  redirect(`/experiments?q=${encodeURIComponent(paper.title)}`);
+}
+
 export async function createReadingPlanNote(formData: FormData) {
   const ids = formData
     .getAll("ids")
@@ -305,6 +349,10 @@ export async function createReadingPlanNote(formData: FormData) {
 
 function paperNoteMarker(id: string) {
   return `paper-reading-note:${id}`;
+}
+
+function paperExperimentMarker(id: string) {
+  return `paper-experiment-draft:${id}`;
 }
 
 function readingPlanMarker(papers: Paper[]) {
@@ -423,6 +471,57 @@ function buildPaperReadingNote(paper: Paper) {
     "## 原始摘要 / 备注",
     "",
     paper.abstract?.trim() || paper.notes?.trim() || "暂无摘要或备注。",
+  ].filter((line) => line !== null).join("\n");
+}
+
+function buildPaperExperimentDraft(paper: Paper, marker: string) {
+  const authors = parseTags(paper.authors).slice(0, 5).join(", ") || "作者未知";
+  const source = [
+    paper.journal,
+    paper.year ? String(paper.year) : "",
+    paper.doi ? `DOI: ${paper.doi}` : "",
+    paper.arxivId ? `arXiv: ${paper.arxivId}` : "",
+  ].filter(Boolean).join("；") || "来源未填";
+
+  return [
+    `<!-- ${marker} -->`,
+    "## 目的",
+    "",
+    `从文献《${paper.title}》提取一个可验证的实验想法。`,
+    "",
+    "要回答的问题：",
+    "- 这篇论文的哪个方法、对照、数据处理或评价指标值得复现？",
+    "- 它和当前课题的哪一步有关？",
+    "- 成功或失败后能产生什么证据？",
+    "",
+    "## 文献线索",
+    "",
+    `- 作者：${authors}`,
+    `- 来源：${source}`,
+    `- Zotero/集合：${paper.category || "未分类"}`,
+    paper.externalUrl ? `- 链接：${paper.externalUrl}` : null,
+    "",
+    "## 方法 / 参数",
+    "",
+    "- 复现目标：",
+    "- 数据/样品/设备条件：",
+    "- 关键变量：",
+    "- 对照组：",
+    "- 评价指标：",
+    "",
+    "## 观察",
+    "",
+    "- 先记录最小可运行结果，不追求一步到位。",
+    "",
+    "## 结论 / 下一步",
+    "",
+    "- 这篇文献的方法是否能迁移到当前课题：",
+    "- 需要补的实验或数据：",
+    "- 可以登记到成果页的指标/图表：",
+    "",
+    "## 原始摘要 / 阅读备注",
+    "",
+    paper.abstract?.trim() || paper.notes?.trim() || "暂无摘要或阅读备注。",
   ].filter((line) => line !== null).join("\n");
 }
 
