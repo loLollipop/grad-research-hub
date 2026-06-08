@@ -30,6 +30,7 @@ import { prisma } from "@/lib/db";
 import { extractWikiLinks, formatDateTime, parseTags } from "@/lib/format";
 import { getWritingPackPeriod } from "@/lib/writing-pack";
 import { cn } from "@/lib/utils";
+import { CaptureNotice } from "@/components/shared/capture-notice";
 import { Field } from "@/components/shared/field";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { TagList } from "@/components/shared/tag-list";
@@ -47,6 +48,7 @@ type Props = {
     note?: string;
     q?: string;
     taskSync?: string;
+    captured?: string;
   }>;
 };
 
@@ -173,6 +175,7 @@ export default async function NotesPage({ searchParams }: Props) {
   const mode = first(params.mode);
   const noteId = first(params.note);
   const taskSync = first(params.taskSync);
+  const captured = first(params.captured);
   const writingPackPeriod = getWritingPackPeriod();
 
   const noteWhere: Prisma.NoteWhereInput = {};
@@ -532,6 +535,8 @@ export default async function NotesPage({ searchParams }: Props) {
           id={activeNote ? `note-${activeNote.id}` : "new-note"}
           className="workbench-card flex min-h-[690px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0"
         >
+          <CaptureNotice kind={captured} />
+
           <div className="grid gap-3 border-b border-border/75 bg-white/66 px-4 py-3.5 md:grid-cols-[1fr_auto] md:items-start">
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">

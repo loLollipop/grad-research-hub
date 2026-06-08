@@ -34,6 +34,7 @@ import { formatDateTime } from "@/lib/format";
 import { ExperimentForm } from "@/components/experiments/experiment-form";
 import { EXPERIMENT_TEMPLATES, experimentTemplateLabel } from "@/lib/experiment-templates";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CaptureNotice } from "@/components/shared/capture-notice";
 import { CreateDialog } from "@/components/shared/create-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { SubmitButton } from "@/components/shared/submit-button";
@@ -50,6 +51,7 @@ type Props = {
     project?: string;
     status?: string;
     template?: string;
+    captured?: string;
   }>;
 };
 
@@ -69,6 +71,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
   const projectId = valueOf(params.project);
   const status = valueOf(params.status);
   const template = valueOf(params.template);
+  const captured = valueOf(params.captured);
   const activeFilterCount = [q, projectId, status, template].filter(Boolean).length;
 
   const where: Prisma.ExperimentWhereInput = {};
@@ -257,6 +260,8 @@ export default async function ExperimentsPage({ searchParams }: Props) {
         </aside>
 
         <div className="grid gap-3">
+          <CaptureNotice kind={captured} />
+
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_170px_130px_170px_auto]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

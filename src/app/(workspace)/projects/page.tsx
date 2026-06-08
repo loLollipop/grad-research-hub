@@ -42,6 +42,7 @@ import {
   parseTags,
 } from "@/lib/format";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CaptureNotice } from "@/components/shared/capture-notice";
 import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -68,6 +69,7 @@ type Props = {
     taskSyncCount?: string;
     taskAttach?: string;
     taskPlan?: string;
+    captured?: string;
   }>;
 };
 
@@ -110,6 +112,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const taskSyncCount = Number(valueOf(params.taskSyncCount) ?? 0);
   const taskAttach = valueOf(params.taskAttach);
   const taskPlan = valueOf(params.taskPlan);
+  const captured = valueOf(params.captured);
   const activeFilterCount = [q, projectId, status, priority, scope].filter(Boolean).length;
   const currentFilters = { q, project: projectId, status, priority, scope };
   const currentQuery = new URLSearchParams();
@@ -409,6 +412,8 @@ export default async function ProjectsPage({ searchParams }: Props) {
         </aside>
 
         <div className="grid gap-4">
+          <CaptureNotice kind={captured} />
+
           {taskBulk === "success" ? (
             <TaskBulkNotice
               href={returnTo}

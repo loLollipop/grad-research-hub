@@ -28,6 +28,7 @@ import {
 import { prisma } from "@/lib/db";
 import { daysUntil, formatDate, formatDateTime, parseTags } from "@/lib/format";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CaptureNotice } from "@/components/shared/capture-notice";
 import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -42,7 +43,7 @@ import { getMeetingBriefPeriod } from "@/lib/meeting-brief";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ q?: string; type?: string; status?: string; scope?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; status?: string; scope?: string; captured?: string }>;
 };
 
 const itemTypes = [
@@ -82,6 +83,7 @@ export default async function AdminPage({ searchParams }: Props) {
   const status = first(params.status);
   const meetingBriefPeriod = getMeetingBriefPeriod();
   const scope = first(params.scope);
+  const captured = first(params.captured);
   const currentFilters = { q, type, status, scope };
 
   const where: Prisma.AdminItemWhereInput = {};
@@ -392,6 +394,8 @@ export default async function AdminPage({ searchParams }: Props) {
         </aside>
 
         <div className="stretch-panel gap-3">
+          <CaptureNotice kind={captured} />
+
           <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#173042]">

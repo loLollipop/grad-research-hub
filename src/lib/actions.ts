@@ -1230,7 +1230,7 @@ export async function quickCapture(formData: FormData) {
 
     revalidatePath("/");
     revalidatePath("/projects");
-    return;
+    redirect("/projects?captured=task&status=todo");
   }
 
   if (captured.kind === "experiment") {
@@ -1258,7 +1258,7 @@ export async function quickCapture(formData: FormData) {
 
     revalidatePath("/");
     revalidatePath("/experiments");
-    return;
+    redirect("/experiments?captured=experiment&status=running");
   }
 
   if (captured.kind === "paper") {
@@ -1274,7 +1274,7 @@ export async function quickCapture(formData: FormData) {
 
     revalidatePath("/");
     revalidatePath("/papers");
-    return;
+    redirect("/papers?captured=paper&status=unread");
   }
 
   if (captured.kind === "admin") {
@@ -1290,10 +1290,10 @@ export async function quickCapture(formData: FormData) {
 
     revalidatePath("/");
     revalidatePath("/admin");
-    return;
+    redirect("/admin?captured=admin&status=todo");
   }
 
-  await prisma.note.create({
+  const note = await prisma.note.create({
     data: {
       title: quickTitle(captured.body),
       content: quickNoteContent(captured),
@@ -1304,6 +1304,7 @@ export async function quickCapture(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/notes");
+  redirect(`/notes?captured=note&note=${note.id}`);
 }
 
 type QuickCaptureResult =

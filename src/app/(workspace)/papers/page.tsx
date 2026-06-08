@@ -34,6 +34,7 @@ import { prisma } from "@/lib/db";
 import { formatDate, parseTags } from "@/lib/format";
 import { getZoteroConfigStatus } from "@/lib/zotero";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CaptureNotice } from "@/components/shared/capture-notice";
 import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -59,6 +60,7 @@ type Props = {
     more?: string;
     scope?: string;
     total?: string;
+    captured?: string;
     bulk?: string;
     bulkStatus?: string;
     plan?: string;
@@ -82,6 +84,7 @@ export default async function PapersPage({ searchParams }: Props) {
   const syncMore = valueOf(params.more) === "true";
   const syncScope = valueOf(params.scope);
   const syncTotal = valueOf(params.total);
+  const captured = valueOf(params.captured);
   const bulk = valueOf(params.bulk);
   const bulkCount = Number(valueOf(params.count) ?? 0);
   const bulkStatus = valueOf(params.bulkStatus);
@@ -245,6 +248,8 @@ export default async function PapersPage({ searchParams }: Props) {
           </CardContent>
         </Card>
       ) : null}
+
+      <CaptureNotice kind={captured} />
 
       {sync === "success" ? (
         <SyncNotice
