@@ -68,6 +68,16 @@ type ClosingItem = {
   tone: "urgent" | "watch" | "quiet";
 };
 
+type OpeningAction = {
+  id: string;
+  title: string;
+  href: string;
+  kind: "任务" | "事务" | "实验" | "结果" | "文献";
+  detail: string;
+  action: string;
+  rank: number;
+};
+
 type WorkspaceCounts = {
   papers: number;
   projects: number;
@@ -398,6 +408,90 @@ export default async function DashboardPage() {
       tone: "quiet",
     })),
   ].slice(0, 4);
+  const openingActions = uniqueOpeningActions([
+    ...upcomingTasks.map<OpeningAction>((task) => {
+      const distance = daysUntil(task.dueDate);
+
+      return {
+        id: `task-${task.id}`,
+        title: task.title,
+        href: "/projects?scope=today",
+        kind: "任务",
+        detail: `${task.milestone?.project.title ?? task.milestone?.title ?? "独立任务"} · ${dueText(task.dueDate)}`,
+        action: distance !== null && distance < 0 ? "先处理逾期" : "推进下一步",
+        rank: openingDueRank(task.dueDate) + priorityBias(task.priority),
+      };
+    }),
+    ...adminItems.map<OpeningAction>((item) => {
+      const distance = daysUntil(item.dueDate);
+
+      return {
+        id: `admin-${item.id}`,
+        title: item.title,
+        href: "/admin",
+        kind: "事务",
+        detail: `${statusLabel(item.type)} · ${item.location ?? "事务提醒"} · ${dueText(item.dueDate)}`,
+        action: distance !== null && distance <= 0 ? "今天收口" : "提前处理",
+        rank: openingDueRank(item.dueDate) + (item.type === "meeting" ? -0.6 : 0),
+      };
+    }),
+    ...staleDoingTasks.map<OpeningAction>((task) => ({
+      id: `task-${task.id}`,
+      title: task.title,
+      href: "/projects?status=doing",
+      kind: "任务",
+      detail: `${ageText(task.updatedAt)}未更新 · ${task.milestone?.project.title ?? "独立任务"}`,
+      action: "确认下一步",
+      rank: 6 + priorityBias(task.priority),
+    })),
+    ...staleExperiments.map<OpeningAction>((experiment) => ({
+      id: `experiment-${experiment.id}`,
+      title: experiment.title,
+      href: "/experiments?status=running",
+      kind: "实验",
+      detail: `${ageText(experiment.updatedAt)}未更新 · 结果 ${experiment.results.length} 条`,
+      action: "补观察或收口",
+      rank: 7,
+    })),
+    ...results
+      .filter((result) => {
+        const config = parseJson<{ reproducibility?: string; manuscriptReady?: boolean }>(
+          result.config,
+          {},
+        );
+        return config.reproducibility !== "verified" || (!config.manuscriptReady && !result.artifactPath);
+      })
+      .map<OpeningAction>((result) => ({
+        id: `result-${result.id}`,
+        title: result.title,
+        href: "/data?manuscript=not-ready",
+        kind: "结果",
+        detail: result.experiment?.title ?? result.dataset?.name ?? "未关联来源",
+        action: "补证据缺口",
+        rank: 8,
+      })),
+    ...stalePapers.map<OpeningAction>((paper) => ({
+      id: `paper-${paper.id}`,
+      title: paper.title,
+      href: `/papers?status=${paper.readStatus}`,
+      kind: "文献",
+      detail: `${ageText(paper.updatedAt)}未处理 · ${statusLabel(paper.readStatus)}`,
+      action: "收口阅读",
+      rank: 9,
+    })),
+    ...recentPapers
+      .filter((paper) => ["unread", "reading"].includes(paper.readStatus))
+      .map<OpeningAction>((paper) => ({
+        id: `paper-${paper.id}`,
+        title: paper.title,
+        href: `/papers?status=${paper.readStatus}`,
+        kind: "文献",
+        detail: `${paper.year ?? "年份未知"} · ${statusLabel(paper.readStatus)}`,
+        action: paper.readStatus === "reading" ? "继续阅读" : "启动阅读",
+        rank: 12,
+      })),
+  ]).slice(0, 3);
+  const focusAction = openingActions[0];
 
   return (
     <div className="grid gap-5">
@@ -415,12 +509,12 @@ export default async function DashboardPage() {
             </div>
             <p className="mt-5 text-xs font-medium text-muted-foreground">今天最值得处理</p>
             <h1 className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              {focusItem?.title ?? "先建立第一条任务或实验记录"}
+              {focusAction?.title ?? focusItem?.title ?? "先建立第一条任务或实验记录"}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              {focusItem
-                ? `${focusItem.kind} · ${focusItem.meta} · ${dueText(focusItem.dueDate)}。先推进这一项，再补实验、文献或结果证据。`
-                : "当前还没有可排序的任务或事务。先用快速捕捉写下一件真实要做的事，首页就会开始帮你收口。"}
+              {focusAction
+                ? `${focusAction.kind} · ${focusAction.detail}。建议动作：${focusAction.action}。先完成这一件，再去对应模块细看。`
+                : "当前还没有可排序的任务、事务、实验、结果或文献。先用快速捕捉写下一件真实要做的事，首页就会开始帮你收口。"}
             </p>
             <div className="mt-5 flex flex-wrap gap-2.5">
               {currentDailyPlan ? (
@@ -454,21 +548,23 @@ export default async function DashboardPage() {
             </div>
 
             <div className="mt-5 grid gap-2 rounded-2xl action-stack p-3 text-white shadow-[0_18px_36px_rgba(22,34,53,0.15)] md:grid-cols-3">
-              <FocusStackItem
-                index="01"
-                title={focusItem?.title ?? "写下第一件要做的事"}
-                detail={focusItem ? dueText(focusItem.dueDate) : "快速捕捉即可开始"}
-              />
-              <FocusStackItem
-                index="02"
-                title={closingItems[0]?.title ?? "没有明显收口风险"}
-                detail={closingItems[0]?.action ?? "直接推进下一步"}
-              />
-              <FocusStackItem
-                index="03"
-                title={recentPapers[0]?.title ?? "同步 Zotero 文献"}
-                detail={`${readingPapers + unreadPapers} 篇待读/读中`}
-              />
+              {openingActions.length ? (
+                openingActions.map((item, index) => (
+                  <FocusStackItem
+                    key={item.id}
+                    index={`0${index + 1}`}
+                    title={item.title}
+                    detail={`${item.kind} · ${item.action}`}
+                    href={item.href}
+                  />
+                ))
+              ) : (
+                <FocusStackItem
+                  index="01"
+                  title="写下第一件要做的事"
+                  detail="快速捕捉即可开始"
+                />
+              )}
             </div>
 
             <div className="mt-5 grid gap-3 rounded-xl border border-white/72 bg-white/58 p-3 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -533,7 +629,7 @@ export default async function DashboardPage() {
       </section>
 
       <ResearchRhythm
-        next={focusItem?.title ?? "先建立第一条任务"}
+        next={focusAction?.title ?? focusItem?.title ?? "先建立第一条任务"}
         paper={`${readingPapers + unreadPapers} 篇待处理`}
         experiment={`${runningExperiments} 个进行中`}
         evidence={`${manuscriptReady} 条可写入`}
@@ -1225,19 +1321,38 @@ function FocusStackItem({
   index,
   title,
   detail,
+  href,
 }: {
   index: string;
   title: string;
   detail: string;
+  href?: string;
 }) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+  const content = (
+    <>
       <div className="flex items-center gap-2">
         <span className="font-mono text-[11px] font-semibold text-white/45">{index}</span>
         <span className="h-px flex-1 bg-white/12" />
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
       <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="rounded-xl border border-white/10 bg-white/[0.07] p-3 transition hover:border-white/24 hover:bg-white/[0.12]"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
+      {content}
     </div>
   );
 }
@@ -1672,4 +1787,39 @@ function dueText(value: Date | null) {
 function dueRank(value: Date | null) {
   const distance = daysUntil(value);
   return distance ?? 9999;
+}
+
+function uniqueOpeningActions(items: OpeningAction[]) {
+  const seen = new Set<string>();
+
+  return [...items]
+    .sort((left, right) => {
+      const rank = left.rank - right.rank;
+      if (rank !== 0) return rank;
+
+      return left.title.localeCompare(right.title, "zh-CN");
+    })
+    .filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+}
+
+function openingDueRank(value: Date | null) {
+  const distance = daysUntil(value);
+  if (distance === null) return 20;
+  if (distance < 0) return -10 + distance;
+  if (distance === 0) return -5;
+  return Math.min(distance, 14);
+}
+
+function priorityBias(priority: string) {
+  const bias: Record<string, number> = {
+    high: -1.2,
+    medium: 0,
+    low: 1,
+  };
+
+  return bias[priority] ?? 0;
 }
