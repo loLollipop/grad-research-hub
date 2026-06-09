@@ -131,7 +131,7 @@ export default async function PapersPage({ searchParams }: Props) {
     where.category = { contains: category, mode: "insensitive" };
   }
 
-  const [papers, allCounts, categories, lastSyncedPaper] = await Promise.all([
+  const [papers, allCounts, categories, lastSyncedPaper, dailyReadingCandidates] = await Promise.all([
     prisma.paper.findMany({
       where,
       orderBy: [{ readStatus: "asc" }, { updatedAt: "desc" }],
@@ -143,6 +143,11 @@ export default async function PapersPage({ searchParams }: Props) {
       orderBy: { lastSyncedAt: "desc" },
       select: { lastSyncedAt: true },
     }),
+    prisma.paper.findMany({
+      where: { readStatus: { in: ["reading", "unread"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 18,
+    }),
   ]);
 
   const lastSyncedAt = lastSyncedPaper?.lastSyncedAt;
@@ -150,10 +155,8 @@ export default async function PapersPage({ searchParams }: Props) {
   const readingCount = countStatus(allCounts, "reading");
   const readCount = countStatus(allCounts, "read");
   const totalCount = unreadCount + readingCount + readCount;
-  const readingStack = [
-    ...papers.filter((paper) => paper.readStatus === "reading"),
-    ...papers.filter((paper) => paper.readStatus === "unread"),
-  ].slice(0, 3);
+  const readingStack = prioritizeReadingQueue(dailyReadingCandidates).slice(0, 3);
+  const totalOpenReadingCount = readingCount + unreadCount;
   const visibleUnreadCount = papers.filter((paper) => paper.readStatus === "unread").length;
   const visibleReadingCount = papers.filter((paper) => paper.readStatus === "reading").length;
   const visibleNeedNoteCount = papers.filter(
@@ -230,9 +233,8 @@ export default async function PapersPage({ searchParams }: Props) {
                   readingStack.map((paper, index) => (
                     <ReadingStackItem
                       key={paper.id}
+                      paper={paper}
                       index={`0${index + 1}`}
-                      title={paper.title}
-                      detail={`${statusText(paper.readStatus)} · ${paper.year ?? "年份未知"}`}
                     />
                   ))
                 ) : (
@@ -245,11 +247,35 @@ export default async function PapersPage({ searchParams }: Props) {
               </div>
             </div>
             <p className="mt-4 text-xs leading-5 text-white/62">
-              每天只挑少量文献推进，读完再沉淀成阅读笔记或组会素材。
+              从全库待读/读中自动挑 3 篇，不受当前筛选影响；读完再沉淀成阅读笔记或组会素材。
             </p>
           </div>
         </div>
       </section>
+
+      {readingStack.length ? (
+        <section className="grid gap-3 rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(240,247,247,0.78))] p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)]">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+                <BookOpenCheck className="size-4 text-primary" />
+                三篇启动队列
+              </p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                先从 3 篇开始，避免 Zotero 同步后变成大列表压力。读出方法、对照或指标后再转实验/任务。
+              </p>
+            </div>
+            <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+              全库待处理 {totalOpenReadingCount} 篇
+            </span>
+          </div>
+          <div className="grid gap-2 lg:grid-cols-3">
+            {readingStack.map((paper, index) => (
+              <DailyReadingCard key={paper.id} paper={paper} index={index + 1} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {!zotero.ready ? (
         <Card className="border-amber-200 bg-[#fff8eb] shadow-sm">
@@ -634,6 +660,19 @@ function statusText(value: string | undefined) {
   return "待读";
 }
 
+function prioritizeReadingQueue(papers: Paper[]) {
+  return [...papers].sort((left, right) => {
+    const statusRank =
+      (left.readStatus === "reading" ? 0 : 1) - (right.readStatus === "reading" ? 0 : 1);
+    if (statusRank !== 0) return statusRank;
+
+    const noteRank = (left.notes?.trim() ? 1 : 0) - (right.notes?.trim() ? 1 : 0);
+    if (noteRank !== 0) return noteRank;
+
+    return right.updatedAt.getTime() - left.updatedAt.getTime();
+  });
+}
+
 function zoteroSyncSuccessDescription({
   count,
   fetched,
@@ -691,13 +730,15 @@ function filterQuery(values: { q?: string; status?: string; category?: string })
 }
 
 function ReadingStackItem({
-  index,
-  title,
   detail,
+  index,
+  paper,
+  title,
 }: {
+  detail?: string;
   index: string;
-  title: string;
-  detail: string;
+  paper?: Paper;
+  title?: string;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
@@ -705,9 +746,67 @@ function ReadingStackItem({
         <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
         <span className="h-px flex-1 bg-white/12" />
       </div>
-      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">
+        {paper?.title ?? title}
+      </p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">
+        {paper
+          ? `${statusText(paper.readStatus)} · ${paper.year ?? "年份未知"} · ${paper.category || "未分类"}`
+          : detail}
+      </p>
     </div>
+  );
+}
+
+function DailyReadingCard({ paper, index }: { paper: Paper; index: number }) {
+  const authors = parseTags(paper.authors).slice(0, 2).join(", ") || "作者未知";
+  const isReading = paper.readStatus === "reading";
+
+  return (
+    <Card className="border-border/72 bg-white/86 shadow-[0_8px_22px_rgba(27,42,56,0.038)]">
+      <CardContent className="grid h-full gap-3 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-mono text-xs font-semibold text-primary">0{index}</span>
+          <span
+            className={
+              isReading
+                ? "rounded-full border border-[#c9e0ea] bg-[#eef6f7] px-2 py-0.5 text-[11px] font-medium text-primary"
+                : "rounded-full border border-[#edd8a5] bg-[#fff7df] px-2 py-0.5 text-[11px] font-medium text-[#7a5a2f]"
+            }
+          >
+            {statusText(paper.readStatus)}
+          </span>
+        </div>
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-6">{paper.title}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+            {authors} · {paper.year ?? "年份未知"} · {paper.category || "未分类"}
+          </p>
+        </div>
+        <p className="line-clamp-2 rounded-xl border border-[#d5e4e8] bg-[#f5fafb] px-3 py-2 text-xs leading-5 text-muted-foreground">
+          {paperActionReason(paper)}
+        </p>
+        <div className="mt-auto flex flex-wrap gap-2">
+          {!isReading ? (
+            <form action={updatePaperStatus}>
+              <input type="hidden" name="id" value={paper.id} />
+              <input type="hidden" name="readStatus" value="reading" />
+              <Button type="submit" variant="outline" size="sm">
+                <BookOpenCheck className="size-3.5" />
+                标为读中
+              </Button>
+            </form>
+          ) : null}
+          <form action={createReadingNoteFromPaper}>
+            <input type="hidden" name="id" value={paper.id} />
+            <Button type="submit" variant={isReading ? "default" : "outline"} size="sm">
+              <FileText className="size-3.5" />
+              阅读笔记
+            </Button>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
