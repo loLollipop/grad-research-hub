@@ -2,17 +2,24 @@
 import {
   BookOpenText,
   Bot,
+  CalendarClock,
   CheckCircle2,
   ClipboardList,
+  FileChartColumn,
+  FileText,
   FlaskConical,
   KeyRound,
   PenLine,
   Settings,
   Sparkles,
   WandSparkles,
+  type LucideIcon,
 } from "lucide-react";
+import type { AdminItem, Note, Paper, Prisma } from "@prisma/client";
 
 import { AiWorkbench } from "@/components/ai/ai-workbench";
+import { prisma } from "@/lib/db";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { getAiSettings } from "@/lib/settings";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,8 +61,62 @@ const presets = [
   },
 ];
 
+type RecentTask = Prisma.TaskGetPayload<{
+  include: { milestone: { include: { project: true } } };
+}>;
+
+type RecentExperiment = Prisma.ExperimentGetPayload<{
+  include: { project: true };
+}>;
+
+type RecentResult = Prisma.ResultGetPayload<{
+  include: { experiment: true; dataset: true };
+}>;
+
 export default async function AiPage() {
   const settings = await getAiSettings();
+  const [tasks, experiments, results, papers, notes, adminItems] = await Promise.all([
+    prisma.task.findMany({
+      where: { status: { not: "done" } },
+      orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { updatedAt: "desc" }],
+      include: { milestone: { include: { project: true } } },
+      take: 5,
+    }),
+    prisma.experiment.findMany({
+      orderBy: [{ updatedAt: "desc" }],
+      include: { project: true },
+      take: 5,
+    }),
+    prisma.result.findMany({
+      orderBy: [{ updatedAt: "desc" }],
+      include: { experiment: true, dataset: true },
+      take: 5,
+    }),
+    prisma.paper.findMany({
+      where: { readStatus: { in: ["unread", "reading", "read"] } },
+      orderBy: [{ updatedAt: "desc" }],
+      take: 5,
+    }),
+    prisma.note.findMany({
+      orderBy: [{ updatedAt: "desc" }],
+      take: 5,
+    }),
+    prisma.adminItem.findMany({
+      where: { status: { not: "done" } },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 5,
+    }),
+  ]);
+  const recentPreset = {
+    label: "最近材料包",
+    action: "整理今天",
+    detail: "用近期任务、实验、结果、文献和事务生成可核对草稿",
+    prompt: buildRecentResearchPrompt({ tasks, experiments, results, papers, notes, adminItems }),
+    icon: WandSparkles,
+  };
+  const scenePresets = [recentPreset, ...presets];
+  const materialCount =
+    tasks.length + experiments.length + results.length + papers.length + notes.length + adminItems.length;
 
   return (
     <div className="grid gap-5">
@@ -97,7 +158,7 @@ export default async function AiPage() {
                 今日助手栈
               </p>
               <div className="mt-4 grid gap-2.5">
-                {presets.slice(0, 3).map((preset, index) => (
+                {scenePresets.slice(0, 3).map((preset, index) => (
                   <AiStackItem
                     key={preset.label}
                     index={`0${index + 1}`}
@@ -113,8 +174,8 @@ export default async function AiPage() {
                 <p className="mt-0.5 text-[11px] text-white/54">模型</p>
               </div>
               <div>
-                <p className="text-lg font-semibold tracking-tight">{presets.length}</p>
-                <p className="mt-0.5 text-[11px] text-white/54">入口</p>
+                <p className="text-lg font-semibold tracking-tight">{materialCount}</p>
+                <p className="mt-0.5 text-[11px] text-white/54">材料</p>
               </div>
               <div>
                 <p className="text-lg font-semibold tracking-tight">人工</p>
@@ -135,7 +196,7 @@ export default async function AiPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
-              {presets.map(({ label, prompt, action, icon: Icon }) => (
+              {scenePresets.map(({ label, prompt, action, icon: Icon }) => (
                 <div key={label} className="soft-tile rounded-xl p-3">
                   <div className="flex items-start gap-2">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#eef7f7] text-primary">
@@ -151,6 +212,26 @@ export default async function AiPage() {
                   </p>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="size-4 text-primary" />
+                最近材料包
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2 text-sm">
+              <MaterialRow icon={ClipboardList} label="任务" value={`${tasks.length} 条`} />
+              <MaterialRow icon={FlaskConical} label="实验" value={`${experiments.length} 条`} />
+              <MaterialRow icon={FileChartColumn} label="结果" value={`${results.length} 条`} />
+              <MaterialRow icon={BookOpenText} label="文献" value={`${papers.length} 篇`} />
+              <MaterialRow icon={FileText} label="笔记" value={`${notes.length} 篇`} />
+              <MaterialRow icon={CalendarClock} label="事务" value={`${adminItems.length} 件`} />
+              <p className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3 text-xs leading-5 text-muted-foreground">
+                材料包只会预填到输入框；点击“生成草稿”前，你仍可删掉敏感内容或改写上下文。
+              </p>
             </CardContent>
           </Card>
 
@@ -203,8 +284,8 @@ export default async function AiPage() {
               </div>
             ) : null}
             <AiWorkbench
-              initialPrompt={presets[0].prompt}
-              presets={presets.map(({ label, prompt, detail }) => ({ label, prompt, detail }))}
+              initialPrompt={recentPreset.prompt}
+              presets={scenePresets.map(({ label, prompt, detail }) => ({ label, prompt, detail }))}
             />
           </CardContent>
         </Card>
@@ -243,6 +324,26 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function MaterialRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white/76 px-3 py-2">
+      <span className="inline-flex items-center gap-2 text-sm font-medium">
+        <Icon className="size-3.5 text-primary" />
+        {label}
+      </span>
+      <span className="text-xs text-muted-foreground">{value}</span>
+    </div>
+  );
+}
+
 function providerLabel(value: string) {
   const labels: Record<string, string> = {
     openai: "OpenAI 兼容",
@@ -251,4 +352,108 @@ function providerLabel(value: string) {
   };
 
   return labels[value] ?? value;
+}
+
+function buildRecentResearchPrompt({
+  tasks,
+  experiments,
+  results,
+  papers,
+  notes,
+  adminItems,
+}: {
+  tasks: RecentTask[];
+  experiments: RecentExperiment[];
+  results: RecentResult[];
+  papers: Paper[];
+  notes: Note[];
+  adminItems: AdminItem[];
+}) {
+  const lines = [
+    "请只基于下面这些来自研途 Hub 的近期材料，整理一份今天可执行的科研草稿。",
+    "不要补充我没有提供的事实、数据、引用或实验结论；材料不足时请明确列出需要我补充的问题。",
+    "",
+    "【输出结构】",
+    "1. 今天最值得推进的 3 件事",
+    "2. 可用于组会/周报的关键证据",
+    "3. 需要收口的实验、结果或文献",
+    "4. 需要导师确认的问题",
+    "5. 下一步最小行动清单",
+    "",
+    "【近期任务】",
+    ...listOrEmpty(
+      tasks.map((task) => {
+        const owner = task.milestone
+          ? `${task.milestone.project.title} / ${task.milestone.title}`
+          : "独立任务";
+        return `- ${task.title}（${owner}；${task.priority}；${task.status}；截止 ${formatDate(task.dueDate)}）`;
+      }),
+    ),
+    "",
+    "【近期实验】",
+    ...listOrEmpty(
+      experiments.map(
+        (experiment) =>
+          `- ${experiment.title}（${experiment.project?.title ?? "未关联课题"}；${experiment.status}；更新 ${formatDateTime(
+            experiment.updatedAt,
+          )}）${experiment.content ? `：${oneLine(experiment.content, 120)}` : ""}`,
+      ),
+    ),
+    "",
+    "【近期结果】",
+    ...listOrEmpty(
+      results.map(
+        (result) =>
+          `- ${result.title}（实验：${result.experiment?.title ?? "未关联"}；数据：${
+            result.dataset?.name ?? "未关联"
+          }；更新 ${formatDateTime(result.updatedAt)}）${result.notes ? `：${oneLine(result.notes, 120)}` : ""}`,
+      ),
+    ),
+    "",
+    "【近期文献】",
+    ...listOrEmpty(
+      papers.map(
+        (paper) =>
+          `- ${paper.title}（${paper.year ?? "年份未知"}；${paper.readStatus}；${paper.journal ?? "来源未知"}）${
+            paper.notes ? `：${oneLine(paper.notes, 100)}` : ""
+          }`,
+      ),
+    ),
+    "",
+    "【近期笔记】",
+    ...listOrEmpty(
+      notes.map(
+        (note) =>
+          `- ${note.title}（${note.folder}；更新 ${formatDateTime(note.updatedAt)}）：${oneLine(
+            note.content,
+            110,
+          )}`,
+      ),
+    ),
+    "",
+    "【近期事务】",
+    ...listOrEmpty(
+      adminItems.map(
+        (item) =>
+          `- ${item.title}（${item.type}；${item.status}；截止 ${formatDate(item.dueDate)}）${
+            item.notes ? `：${oneLine(item.notes, 90)}` : ""
+          }`,
+      ),
+    ),
+  ];
+
+  return lines.join("\n");
+}
+
+function listOrEmpty(items: string[]) {
+  return items.length ? items : ["- 暂无"];
+}
+
+function oneLine(value: string | null | undefined, maxLength: number) {
+  const normalized = (value ?? "").replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) {
+    return normalized || "无正文";
+  }
+
+  return `${normalized.slice(0, maxLength)}...`;
 }
