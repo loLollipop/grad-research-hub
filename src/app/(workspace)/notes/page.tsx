@@ -1,12 +1,15 @@
 ﻿import Link from "next/link";
 import {
   ArrowRight,
+  BarChart3,
+  Beaker,
   BookOpenText,
   Clock3,
   FileText,
   FolderOpen,
   Link2,
   ListTodo,
+  MessageSquareText,
   NotebookPen,
   PenLine,
   Plus,
@@ -48,12 +51,14 @@ type Props = {
     mode?: string;
     note?: string;
     q?: string;
+    source?: string;
     taskSync?: string;
     captured?: string;
   }>;
 };
 
 type NoteFocus = "inbox" | "links" | "tasks" | "writing";
+type NoteSource = "reading" | "experiment" | "meeting" | "result" | "writing";
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -61,6 +66,20 @@ function first(value: string | string[] | undefined) {
 
 function parseNoteFocus(value: string | undefined): NoteFocus | undefined {
   if (value === "inbox" || value === "links" || value === "tasks" || value === "writing") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function parseNoteSource(value: string | undefined): NoteSource | undefined {
+  if (
+    value === "reading" ||
+    value === "experiment" ||
+    value === "meeting" ||
+    value === "result" ||
+    value === "writing"
+  ) {
     return value;
   }
 
@@ -195,19 +214,70 @@ function noteMatchesFocus(note: Note, focus: NoteFocus, titleMap: Map<string, No
   return !note.folder || note.folder === "Inbox";
 }
 
+const sourceKeywordMap: Record<NoteSource, { metadata: string[]; content: string[] }> = {
+  reading: {
+    metadata: ["阅读", "文献", "论文摘录", "zotero", "paper", "literature"],
+    content: ["阅读问题", "文献", "zotero", "paper"],
+  },
+  experiment: {
+    metadata: ["实验", "复盘", "对照", "消融", "experiment"],
+    content: ["实验目的", "实验观察", "实验结论", "对照", "消融", "复现步骤"],
+  },
+  meeting: {
+    metadata: ["组会", "周报", "导师", "反馈", "meeting"],
+    content: ["导师反馈", "本周进展", "下周计划", "组会", "周报"],
+  },
+  result: {
+    metadata: ["结果", "成果", "证据", "数据", "复现", "指标", "result", "dataset"],
+    content: ["核心指标", "复现状态", "图表路径", "结果证据", "数据来源"],
+  },
+  writing: {
+    metadata: ["写作", "论文草稿", "素材包", "manuscript", "draft", "related work"],
+    content: ["写作素材", "论文段落", "related work", "introduction", "manuscript"],
+  },
+};
+
+const noteSourceFilters: Array<{
+  key: NoteSource;
+  label: string;
+  detail: string;
+  icon: LucideIcon;
+}> = [
+  { key: "reading", label: "阅读", detail: "论文摘录 / 阅读计划", icon: BookOpenText },
+  { key: "experiment", label: "实验", detail: "实验复盘 / 观察", icon: Beaker },
+  { key: "meeting", label: "组会", detail: "周报 / 导师反馈", icon: MessageSquareText },
+  { key: "result", label: "结果", detail: "证据 / 复现清单", icon: BarChart3 },
+  { key: "writing", label: "写作", detail: "论文素材 / 草稿", icon: PenLine },
+];
+
+function includesAny(text: string, keywords: string[]) {
+  return keywords.some((keyword) => text.includes(keyword.toLowerCase()));
+}
+
+function noteMatchesSource(note: Note, source: NoteSource) {
+  const keywords = sourceKeywordMap[source];
+  const metadata = `${note.folder} ${note.title} ${note.tags}`.toLowerCase();
+  const content = note.content.toLowerCase();
+
+  return includesAny(metadata, keywords.metadata) || includesAny(content, keywords.content);
+}
+
 function notesHref({
   focus,
   folder,
   note,
   q,
+  source,
 }: {
   focus?: NoteFocus;
   folder?: string;
   note?: string;
   q?: string;
+  source?: NoteSource;
 }) {
   const query = new URLSearchParams();
   if (focus) query.set("focus", focus);
+  if (source) query.set("source", source);
   if (folder) query.set("folder", folder);
   if (q) query.set("q", q);
   if (note) query.set("note", note);
@@ -226,9 +296,22 @@ function noteFocusLabel(focus?: NoteFocus) {
   return focus ? labels[focus] : "最近笔记";
 }
 
+function noteSourceLabel(source?: NoteSource) {
+  const labels: Record<NoteSource, string> = {
+    reading: "阅读材料",
+    experiment: "实验复盘",
+    meeting: "组会周报",
+    result: "结果证据",
+    writing: "写作素材",
+  };
+
+  return source ? labels[source] : undefined;
+}
+
 export default async function NotesPage({ searchParams }: Props) {
   const params = await searchParams;
   const focus = parseNoteFocus(first(params.focus));
+  const source = parseNoteSource(first(params.source));
   const q = first(params.q)?.trim();
   const folder = first(params.folder)?.trim();
   const mode = first(params.mode);
@@ -280,10 +363,13 @@ export default async function NotesPage({ searchParams }: Props) {
   const focusFilteredNotes = focus
     ? notes.filter((note) => noteMatchesFocus(note, focus, noteTitleMap))
     : notes;
+  const visibleNotes = source
+    ? focusFilteredNotes.filter((note) => noteMatchesSource(note, source))
+    : focusFilteredNotes;
   const totalNotes = allNotes.length;
   const selectedNote = noteId
     ? allNotes.find((note) => note.id === noteId)
-    : focusFilteredNotes[0];
+    : visibleNotes[0];
   const activeNote = mode === "new" ? undefined : selectedNote;
   const activeLinks = activeNote ? uniqueWikiLinks(activeNote.content) : [];
   const defaultFolder = folder || "Inbox";
@@ -316,6 +402,16 @@ export default async function NotesPage({ searchParams }: Props) {
     uniqueWikiLinks(note.content).some((link) => !noteTitleMap.has(normalizeTitle(link))),
   ).length;
   const inboxNoteCount = allNotes.filter((note) => !note.folder || note.folder === "Inbox").length;
+  const sourceCounts: Record<NoteSource, number> = {
+    reading: allNotes.filter((note) => noteMatchesSource(note, "reading")).length,
+    experiment: allNotes.filter((note) => noteMatchesSource(note, "experiment")).length,
+    meeting: allNotes.filter((note) => noteMatchesSource(note, "meeting")).length,
+    result: allNotes.filter((note) => noteMatchesSource(note, "result")).length,
+    writing: allNotes.filter((note) => noteMatchesSource(note, "writing")).length,
+  };
+  const listLabel = source
+    ? `${noteFocusLabel(focus)} · ${noteSourceLabel(source)}`
+    : noteFocusLabel(focus);
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-5">
@@ -436,7 +532,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="可拆任务"
                 value={`${notesWithTasks} 篇`}
                 detail="把笔记里的待办清单拆回课题任务"
-                href="/notes?focus=tasks"
+                href={notesHref({ focus: "tasks", folder, q, source })}
                 active={focus === "tasks"}
                 tone={notesWithTasks ? "blue" : "quiet"}
               />
@@ -445,7 +541,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="待补双链"
                 value={`${missingLinkNoteCount} 篇`}
                 detail="未创建主题会让阅读、实验和写作上下文断开"
-                href="/notes?focus=links"
+                href={notesHref({ focus: "links", folder, q, source })}
                 active={focus === "links"}
                 tone={missingLinkNoteCount ? "warm" : "quiet"}
               />
@@ -454,7 +550,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="写作素材"
                 value={`${writingNoteCount} 篇`}
                 detail="可进入组会、周报或论文草稿"
-                href="/notes?focus=writing"
+                href={notesHref({ focus: "writing", folder, q, source })}
                 active={focus === "writing"}
                 tone={writingNoteCount ? "green" : "quiet"}
               />
@@ -463,10 +559,39 @@ export default async function NotesPage({ searchParams }: Props) {
                 label="收件箱"
                 value={`${inboxNoteCount} 篇`}
                 detail="临时想法先收住，之后再归档"
-                href="/notes?focus=inbox"
+                href={notesHref({ focus: "inbox", folder, q, source })}
                 active={focus === "inbox"}
                 tone={inboxNoteCount ? "warm" : "quiet"}
               />
+            </div>
+          </div>
+          <div className="border-b border-border/75 bg-white/62 p-3.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <BookOpenText className="size-4 text-primary" />
+                来源快捷筛选
+              </div>
+              {source ? (
+                <Link
+                  href={notesHref({ focus, folder, q })}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  清除来源
+                </Link>
+              ) : null}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {noteSourceFilters.map((item) => (
+                <NoteSourceChip
+                  key={item.key}
+                  active={source === item.key}
+                  count={sourceCounts[item.key]}
+                  detail={item.detail}
+                  href={notesHref({ focus, folder, q, source: item.key })}
+                  icon={item.icon}
+                  label={item.label}
+                />
+              ))}
             </div>
           </div>
           <div className="border-b border-border/75 bg-white/62 p-3.5">
@@ -476,10 +601,12 @@ export default async function NotesPage({ searchParams }: Props) {
                 检索笔记
               </div>
               <span className="rounded-full border bg-white px-2 py-0.5 text-xs text-muted-foreground">
-                {focusFilteredNotes.length} / {totalNotes}
+                {visibleNotes.length} / {totalNotes}
               </span>
             </div>
             <form className="mt-3 grid gap-2">
+              {focus ? <input type="hidden" name="focus" value={focus} /> : null}
+              {source ? <input type="hidden" name="source" value={source} /> : null}
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -503,10 +630,10 @@ export default async function NotesPage({ searchParams }: Props) {
             </div>
             <div className="grid max-h-40 gap-1 overflow-y-auto pr-1 text-sm">
               <Link
-                href="/notes"
+                href={notesHref({ focus, q, source })}
                 className={cn(
                   "flex items-center justify-between rounded-lg px-2.5 py-2 transition hover:bg-muted/60",
-                  !folder && !focus && "bg-primary/9 text-primary ring-1 ring-primary/18",
+                  !folder && "bg-primary/9 text-primary ring-1 ring-primary/18",
                 )}
               >
                 <span>全部笔记</span>
@@ -518,7 +645,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 return (
                   <Link
                     key={item.folder}
-                    href={`/notes?folder=${encodeURIComponent(item.folder)}`}
+                    href={notesHref({ focus, folder: item.folder, q, source })}
                     className={cn(
                       "flex items-center justify-between rounded-lg px-2.5 py-2 transition hover:bg-muted/60",
                       selected && "bg-primary/9 text-primary ring-1 ring-primary/18",
@@ -536,18 +663,18 @@ export default async function NotesPage({ searchParams }: Props) {
             <div className="flex items-center justify-between px-3.5 py-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Clock3 className="size-4 text-primary" />
-                {noteFocusLabel(focus)}
+                {listLabel}
               </div>
-              {q || folder || focus ? (
+              {q || folder || focus || source ? (
                 <Button render={<Link href="/notes" />} variant="ghost" size="sm">
                   清除
                 </Button>
               ) : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3.5">
-              {focusFilteredNotes.length ? (
+              {visibleNotes.length ? (
                 <div className="grid gap-2">
-                  {focusFilteredNotes.map((note) => {
+                  {visibleNotes.map((note) => {
                     const selected = activeNote?.id === note.id;
                     const snippet = noteSnippet(note.content);
                     const action = noteActionLabel(note, allNotes);
@@ -556,7 +683,7 @@ export default async function NotesPage({ searchParams }: Props) {
                     return (
                       <Link
                         key={note.id}
-                        href={notesHref({ focus, folder, note: note.id, q })}
+                        href={notesHref({ focus, folder, note: note.id, q, source })}
                         className={cn(
                           "rounded-xl border border-border/75 bg-white/72 px-3 py-2.5 text-sm transition hover:border-primary/25 hover:bg-white",
                           selected && "border-primary/35 bg-primary/9 shadow-[0_8px_20px_rgba(37,99,235,0.08)]",
@@ -893,6 +1020,47 @@ function NoteRadarItem({
             {detail}
           </span>
         </span>
+      </span>
+    </Link>
+  );
+}
+
+function NoteSourceChip({
+  active,
+  count,
+  detail,
+  href,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  count: number;
+  detail: string;
+  href: string;
+  icon: LucideIcon;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group rounded-xl border border-border/70 bg-white/74 p-2.5 transition hover:border-primary/25 hover:bg-white",
+        active && "border-primary/35 bg-primary/9 shadow-[0_8px_20px_rgba(37,99,235,0.07)]",
+      )}
+    >
+      <span className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-sm font-medium">
+          <span className="flex size-7 items-center justify-center rounded-lg border border-[#d5e4e8] bg-[#eef6f7] text-primary">
+            <Icon className="size-3.5" />
+          </span>
+          {label}
+        </span>
+        <span className="rounded-full border bg-white px-1.5 py-0.5 text-[11px] text-muted-foreground">
+          {count}
+        </span>
+      </span>
+      <span className="mt-1.5 block line-clamp-1 text-[11px] leading-4 text-muted-foreground">
+        {detail}
       </span>
     </Link>
   );
