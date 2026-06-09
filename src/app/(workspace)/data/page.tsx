@@ -152,13 +152,18 @@ export default async function DataPage({ searchParams }: Props) {
   }
   const resultWhere: Prisma.ResultWhereInput = resultFilters.length ? { AND: resultFilters } : {};
 
-  const [datasets, experiments, results] = await Promise.all([
+  const [datasets, experiments, results, evidenceCandidates] = await Promise.all([
     prisma.dataset.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.experiment.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.result.findMany({
       where: resultWhere,
       orderBy: { updatedAt: "desc" },
       include: { experiment: true, dataset: true },
+    }),
+    prisma.result.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { experiment: true, dataset: true },
+      take: 24,
     }),
   ]);
 
@@ -183,13 +188,10 @@ export default async function DataPage({ searchParams }: Props) {
   const manuscriptResults = filteredResults.filter(
     (result) => result.artifactPath || parseResultConfig(result.config).manuscriptReady,
   );
-  const evidenceQueue = filteredResults
-    .filter(needsEvidenceTask)
-    .sort((left, right) => resultEvidenceRank(left) - resultEvidenceRank(right))
-    .slice(0, 5);
-  const evidenceStack = [...filteredResults]
-    .sort((left, right) => resultEvidenceRank(left) - resultEvidenceRank(right))
-    .slice(0, 3);
+  const prioritizedEvidence = prioritizeEvidenceQueue(evidenceCandidates);
+  const evidenceQueue = prioritizedEvidence.filter(needsEvidenceTask).slice(0, 3);
+  const evidenceStack = prioritizedEvidence.slice(0, 3);
+  const totalEvidenceGapCount = evidenceCandidates.filter(needsEvidenceTask).length;
   const quickBaseResults = results;
   const unknownCount = quickBaseResults.filter(
     (result) => (parseResultConfig(result.config).reproducibility ?? "unknown") === "unknown",
@@ -287,7 +289,9 @@ export default async function DataPage({ searchParams }: Props) {
                       key={result.id}
                       index={`0${index + 1}`}
                       title={result.title}
-                      detail={`${resultActionLabel(result)} · ${result.experiment?.title ?? "未关联实验"}`}
+                      detail={`${resultActionLabel(result)} · ${
+                        result.experiment?.title ?? result.dataset?.name ?? "未关联来源"
+                      }`}
                     />
                   ))
                 ) : (
@@ -336,7 +340,8 @@ export default async function DataPage({ searchParams }: Props) {
                       <div className="min-w-0">
                         <p className="line-clamp-1 font-medium">{result.title}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {resultActionLabel(result)} · {result.experiment?.title ?? "未关联实验"}
+                          {resultActionLabel(result)} ·{" "}
+                          {result.experiment?.title ?? result.dataset?.name ?? "未关联来源"}
                         </p>
                         <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
                           {resultActionReason(result)}
@@ -461,6 +466,40 @@ export default async function DataPage({ searchParams }: Props) {
         </aside>
 
         <div className="grid gap-4">
+          <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/74 p-3 shadow-[0_12px_30px_rgba(27,42,56,0.045)]">
+            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+                  <Target className="size-4 text-primary" />
+                  三条结果证据缺口
+                </p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  从全库结果里优先挑 3 条最该收口的证据，不受当前筛选影响。先把复现、图表路径和写作素材补齐。
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-[#d5e4e8] bg-[#eef6f4] px-2.5 py-1 text-xs font-medium text-[#315266]">
+                全库待补 {totalEvidenceGapCount} 条
+              </span>
+            </div>
+            {evidenceQueue.length ? (
+              <div className="grid gap-3 lg:grid-cols-3">
+                {evidenceQueue.map((result, index) => (
+                  <EvidenceCloseoutCard
+                    key={result.id}
+                    result={result}
+                    index={index + 1}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={CheckCircle2}
+                title="暂时没有明显证据缺口"
+                description="当前结果已经比较完整。可以继续记录新结果，或把已复现结果整理成写作素材。"
+              />
+            )}
+          </section>
+
           {filteredResults.length ? (
             <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/70 p-3 shadow-[0_10px_24px_rgba(34,48,71,0.035)] md:grid-cols-3">
               <EvidenceGapCard
@@ -829,6 +868,51 @@ function ResultEvidenceRadarItem({
   );
 }
 
+function EvidenceCloseoutCard({
+  result,
+  index,
+}: {
+  result: ResultFull;
+  index: number;
+}) {
+  const actionLabel = resultActionLabel(result);
+  const actionReason = resultActionReason(result);
+
+  return (
+    <Card className="workbench-card border-[#d7e3e8]/90 bg-white/84">
+      <CardContent className="grid h-full gap-3 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f4] font-mono text-xs font-semibold text-[#315266]">
+            0{index}
+          </span>
+          <ReproducibilityBadge result={result} />
+        </div>
+
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-5">{result.title}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+            {result.experiment?.title ?? result.dataset?.name ?? "未关联来源"}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3">
+          <p className="text-sm font-medium text-[var(--workspace-title)]">{actionLabel}</p>
+          <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">
+            {actionReason}
+          </p>
+        </div>
+
+        <div className="mt-auto flex flex-wrap justify-end gap-2 border-t border-border/65 pt-3">
+          <CreateWritingNoteFromResultButton result={result} />
+          {needsEvidenceTask(result) ? (
+            <CreateTaskFromResultButton result={result} compact />
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ResultCard({
   result,
   datasets,
@@ -1048,6 +1132,15 @@ function resultActionReason(result: ResultFull) {
   }
 
   return "证据基本闭环，可以进入组会、周报或论文写作素材池。";
+}
+
+function prioritizeEvidenceQueue(results: ResultFull[]) {
+  return [...results].sort((left, right) => {
+    const rank = resultEvidenceRank(left) - resultEvidenceRank(right);
+    if (rank !== 0) return rank;
+
+    return right.updatedAt.getTime() - left.updatedAt.getTime();
+  });
 }
 
 function resultEvidenceRank(result: ResultFull) {
