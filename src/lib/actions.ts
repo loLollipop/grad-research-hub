@@ -2645,6 +2645,59 @@ export async function createResultBriefNote(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createResultCloseoutNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 8);
+
+  if (!ids.length) {
+    redirect("/data?brief=empty");
+  }
+
+  const results = await prisma.result.findMany({
+    where: { id: { in: ids } },
+    include: { experiment: true, dataset: true },
+  });
+
+  if (!results.length) {
+    redirect("/data?brief=empty");
+  }
+
+  const rank = new Map(ids.map((id, index) => [id, index]));
+  const orderedResults = results.sort(
+    (left, right) => (rank.get(left.id) ?? 99) - (rank.get(right.id) ?? 99),
+  );
+  const marker = resultCloseoutMarker(orderedResults);
+  const existing = await prisma.note.findFirst({
+    where: {
+      folder: "结果",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `结果证据收口 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "结果",
+      content: resultCloseoutMarkdown(orderedResults, marker),
+      tags: tagsToString(["结果证据", "收口清单", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/data");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createWritingNoteFromResult(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
@@ -2912,6 +2965,98 @@ function resultBriefMarkdown(
   );
 
   return lines.join("\n");
+}
+
+function resultCloseoutMarker(results: Result[]) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = results
+    .map((result) => result.id)
+    .sort()
+    .join("|");
+  return `result-closeout:${day}:${stableHash(key)}`;
+}
+
+function resultCloseoutMarkdown(
+  results: Array<
+    Result & {
+      experiment: Experiment | null;
+      dataset: Dataset | null;
+    }
+  >,
+  marker: string,
+) {
+  const lines = [
+    `<!-- ${marker} -->`,
+    `# 结果证据收口 ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "> 参考 MLflow/DVC 的指标与 artifact 可追溯思路，但这里只做个人低负担收口：把最缺证据的 1-3 条结果补成能复现、能汇报、能写作的状态。",
+    "",
+    "## 今天只补四件事",
+    "",
+    "- [ ] 核心指标是否足够支撑结论",
+    "- [ ] 复现状态是否明确",
+    "- [ ] 图表或结果文件路径是否能找回",
+    "- [ ] 一句话结论能否直接放进组会/周报/论文草稿",
+    "",
+  ];
+
+  results.forEach((result, index) => {
+    const config = parseJsonObjectText(result.config);
+    const metrics = parseJsonObjectText(result.metrics);
+    const missing = resultEvidenceMissingItems(result);
+    const metricText = Object.entries(metrics)
+      .filter(([, value]) => String(value).trim())
+      .slice(0, 6)
+      .map(([key, value]) => `${key}: ${String(value)}`)
+      .join("；") || "未填写核心指标";
+
+    lines.push(
+      `## ${index + 1}. ${result.title}`,
+      "",
+      `- 关联实验：${result.experiment?.title ?? "未关联实验"}`,
+      `- 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+      `- 核心指标：${metricText}`,
+      `- 复现状态：${reproducibilityText(String(config.reproducibility ?? "unknown"))}`,
+      `- 图表或结果文件：${result.artifactPath || "待补"}`,
+      `- 可写入论文/组会：${config.manuscriptReady ? "是" : result.artifactPath ? "有图表路径，待确认" : "否"}`,
+      `- 最近更新：${dateText(result.updatedAt)}`,
+      "",
+      "### 缺口",
+      "",
+      ...missing.map((item) => `- [ ] ${item}`),
+      "",
+      "### 收口记录",
+      "",
+      "- 一句话结论：",
+      result.notes?.trim() ? `  - 当前：${oneLine(result.notes, 160)}` : "  - 待补充",
+      "- 可信度判断：",
+      "- 下一步最小动作：",
+      "",
+    );
+  });
+
+  lines.push(
+    "## 收口后动作",
+    "",
+    "- [ ] 回成果页更新复现状态、图表路径和写作素材标记",
+    "- [ ] 对仍缺证据的结果生成待补任务",
+    "- [ ] 对能汇报的结果生成写作素材笔记或组会/论文图表清单",
+  );
+
+  return lines.join("\n");
+}
+
+function resultEvidenceMissingItems(result: Result) {
+  const config = parseJsonObjectText(result.config);
+  const items = [
+    Object.keys(parseJsonObjectText(result.metrics)).length ? "" : "补 1-3 个核心指标",
+    config.reproducibility === "verified" ? "" : "确认复现状态或补复现实验",
+    result.artifactPath ? "" : "补图表或结果文件路径",
+    config.manuscriptReady ? "" : "判断是否可写入组会/周报/论文",
+    result.notes?.trim() ? "" : "补一句话结论与下一步",
+  ].filter(Boolean);
+
+  return items.length ? items : ["复核这条证据是否仍值得保留"];
 }
 
 function resultWritingNoteMarker(id: string) {

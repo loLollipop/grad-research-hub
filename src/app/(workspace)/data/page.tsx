@@ -28,6 +28,7 @@ import {
   createDataset,
   createDatasetAuditNote,
   createResultBriefNote,
+  createResultCloseoutNote,
   createTaskFromResult,
   createWritingNoteFromResult,
   createResult,
@@ -479,9 +480,22 @@ export default async function DataPage({ searchParams }: Props) {
                   从全库结果里优先挑 3 条最该收口的证据，不受当前筛选影响。先把复现、图表路径和写作素材补齐。
                 </p>
               </div>
-              <span className="w-fit rounded-full border border-[#d5e4e8] bg-[#eef6f4] px-2.5 py-1 text-xs font-medium text-[#315266]">
-                全库待补 {totalEvidenceGapCount} 条
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="w-fit rounded-full border border-[#d5e4e8] bg-[#eef6f4] px-2.5 py-1 text-xs font-medium text-[#315266]">
+                  全库待补 {totalEvidenceGapCount} 条
+                </span>
+                {evidenceQueue.length ? (
+                  <form action={createResultCloseoutNote}>
+                    {evidenceQueue.map((result) => (
+                      <input key={result.id} type="hidden" name="ids" value={result.id} />
+                    ))}
+                    <Button type="submit" variant="outline" size="sm" className="bg-white/82">
+                      <FileCheck2 className="size-3.5" />
+                      生成证据清单
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
             </div>
             {evidenceQueue.length ? (
               <div className="grid gap-3 lg:grid-cols-3">
