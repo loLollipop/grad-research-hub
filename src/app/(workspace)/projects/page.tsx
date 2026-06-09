@@ -358,9 +358,21 @@ export default async function ProjectsPage({ searchParams }: Props) {
                 先推进逾期、今天截止、高优先级或可转实验的 3 个动作。任务队列再长，也先从这里开始。
               </p>
             </div>
-            <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
-              全库待推进 {totalPushCount} 个
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                全库待推进 {totalPushCount} 个
+              </span>
+              <form action={createProjectProgressNote}>
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {projectStack.map((task) => (
+                  <input key={task.id} type="hidden" name="ids" value={task.id} />
+                ))}
+                <Button type="submit" variant="outline" size="sm" className="bg-white/82">
+                  <ListChecks className="size-3.5" />
+                  生成三项清单
+                </Button>
+              </form>
+            </div>
           </div>
           <div className="grid gap-2 lg:grid-cols-3">
             {projectStack.map((task, index) => (
