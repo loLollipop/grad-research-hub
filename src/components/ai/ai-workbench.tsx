@@ -1,15 +1,17 @@
 ﻿"use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Bot,
   CheckCircle2,
   ClipboardCheck,
   FilePlus2,
   Loader2,
+  RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,9 @@ type AiResponse = {
   suggestedActions: string[];
 };
 
+const MAX_PROMPT_LENGTH = 4_000;
+const PROMPT_STORAGE_KEY = "grad-research-hub.ai.prompt";
+
 export function AiWorkbench({
   initialPrompt = "请根据最近的实验记录，帮我整理一份本周组会汇报提纲。",
   presets = [],
@@ -31,10 +36,24 @@ export function AiWorkbench({
   initialPrompt?: string;
   presets?: Array<{ label: string; prompt: string; detail?: string }>;
 }) {
-  const [prompt, setPrompt] = useState(initialPrompt);
+  const [prompt, setPrompt] = useState(() => {
+    if (typeof window === "undefined") {
+      return initialPrompt;
+    }
+
+    const savedPrompt = window.localStorage.getItem(PROMPT_STORAGE_KEY);
+    return savedPrompt?.trim() ? savedPrompt : initialPrompt;
+  });
   const [result, setResult] = useState<AiResponse | null>(null);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+  const normalizedPrompt = prompt.trim();
+  const submittedPrompt = normalizedPrompt.slice(0, MAX_PROMPT_LENGTH);
+  const promptTooLong = normalizedPrompt.length > MAX_PROMPT_LENGTH;
+
+  useEffect(() => {
+    window.localStorage.setItem(PROMPT_STORAGE_KEY, prompt);
+  }, [prompt]);
 
   function submit() {
     setError("");
@@ -43,7 +62,7 @@ export function AiWorkbench({
         const response = await fetch("/api/ai", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt: submittedPrompt }),
         });
 
         const payload = (await response.json()) as AiResponse | { error?: string };
@@ -64,27 +83,62 @@ export function AiWorkbench({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       {presets.length ? (
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {presets.map((preset) => (
-            <Button
-              key={preset.label}
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-auto min-h-20 items-start justify-start whitespace-normal rounded-xl bg-white/78 px-3 py-3 text-left"
-              onClick={() => setPrompt(preset.prompt)}
-            >
-              <ClipboardCheck className="mt-0.5 size-3.5" />
-              <span className="grid min-w-0 gap-1">
-                <span className="line-clamp-1 font-medium">{preset.label}</span>
-                {preset.detail ? (
-                  <span className="line-clamp-2 text-xs font-normal leading-5 text-muted-foreground">
-                    {preset.detail}
-                  </span>
-                ) : null}
-              </span>
-            </Button>
-          ))}
+        <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/78 p-3">
+          <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#173042]">先选一个草稿场景</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                默认已放入最近材料包；需要时再切到组会、复盘、阅读或写作模板。
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="bg-white/78"
+                onClick={() => setPrompt(initialPrompt)}
+              >
+                <RotateCcw className="size-3.5" />
+                恢复材料包
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="bg-white/78 text-muted-foreground"
+                onClick={() => {
+                  setPrompt("");
+                  setResult(null);
+                }}
+              >
+                <Trash2 className="size-3.5" />
+                清空
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            {presets.map((preset) => (
+              <Button
+                key={preset.label}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-auto min-h-[4.75rem] items-start justify-start whitespace-normal rounded-xl bg-white/78 px-3 py-3 text-left"
+                onClick={() => setPrompt(preset.prompt)}
+              >
+                <ClipboardCheck className="mt-0.5 size-3.5" />
+                <span className="grid min-w-0 gap-1">
+                  <span className="line-clamp-1 font-medium">{preset.label}</span>
+                  {preset.detail ? (
+                    <span className="line-clamp-2 text-xs font-normal leading-5 text-muted-foreground">
+                      {preset.detail}
+                    </span>
+                  ) : null}
+                </span>
+              </Button>
+            ))}
+          </div>
         </div>
       ) : null}
 
@@ -107,7 +161,7 @@ export function AiWorkbench({
               </p>
             </div>
             <span className="rounded-full border border-white/80 bg-white/72 px-2 py-0.5 text-[11px] text-muted-foreground">
-              {prompt.trim().length} 字
+              {normalizedPrompt.length} / {MAX_PROMPT_LENGTH} 字
             </span>
           </div>
 
@@ -125,6 +179,11 @@ export function AiWorkbench({
                 <ClipboardCheck className="size-3" />
                 输出后人工核对
               </span>
+              {promptTooLong ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
+                  超出部分生成时会自动截断
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -137,9 +196,9 @@ export function AiWorkbench({
           <div className="flex flex-col gap-3 border-t border-border/70 bg-white/72 px-4 py-3 md:flex-row md:items-center md:justify-between">
             <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />
-              生成内容只当草稿；事实、引用、结论和涉密信息都要人工核对。
+              输入会自动保存在当前浏览器，切换页面后回来也能继续写；生成时最多提交 {MAX_PROMPT_LENGTH} 字。
             </p>
-            <Button type="button" onClick={submit} disabled={isPending || !prompt.trim()}>
+            <Button type="button" onClick={submit} disabled={isPending || !normalizedPrompt}>
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               生成草稿
             </Button>

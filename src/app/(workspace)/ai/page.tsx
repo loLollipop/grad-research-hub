@@ -117,6 +117,23 @@ export default async function AiPage() {
   const scenePresets = [recentPreset, ...presets];
   const materialCount =
     tasks.length + experiments.length + results.length + papers.length + notes.length + adminItems.length;
+  const draftFlow = [
+    {
+      icon: ClipboardList,
+      title: "先用最近材料包",
+      detail: `已整理 ${materialCount} 条近期材料，先删掉敏感内容和无关片段。`,
+    },
+    {
+      icon: WandSparkles,
+      title: "再生成一版草稿",
+      detail: "只让 AI 做结构整理，不让它替你补事实、数据或引用。",
+    },
+    {
+      icon: FileText,
+      title: "最后保存到笔记",
+      detail: "草稿通过人工核对后，沉淀到笔记工作室继续改写。",
+    },
+  ];
 
   return (
     <div className="grid gap-5">
@@ -192,26 +209,22 @@ export default async function AiPage() {
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="size-4 text-primary" />
-                场景入口
+                三步草稿流
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-2">
-              {scenePresets.map(({ label, prompt, action, icon: Icon }) => (
-                <div key={label} className="soft-tile rounded-xl p-3">
-                  <div className="flex items-start gap-2">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#eef7f7] text-primary">
-                      <Icon className="size-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-medium">{label}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{action}</p>
-                    </div>
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                    {prompt}
-                  </p>
-                </div>
+            <CardContent className="grid gap-3">
+              {draftFlow.map((step, index) => (
+                <FlowStep
+                  key={step.title}
+                  icon={step.icon}
+                  index={`0${index + 1}`}
+                  title={step.title}
+                  detail={step.detail}
+                />
               ))}
+              <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3 text-xs leading-5 text-muted-foreground">
+                场景按钮已经放到右侧工作台顶部，避免左侧和右侧重复选择。
+              </div>
             </CardContent>
           </Card>
 
@@ -261,11 +274,15 @@ export default async function AiPage() {
                   Key 不会在浏览器显示明文；模型和 Base URL 可在设置中心随时改。
                 </p>
               </div>
-              <InfoRow label="服务商" value={providerLabel(settings.provider)} />
-              <InfoRow label="模型" value={settings.model} />
-              <p className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs leading-5 text-sky-900">
-                建议先粘贴经过脱敏的笔记片段。AI 输出只当草稿，事实、引用和结论必须人工核对。
-              </p>
+              <details className="rounded-xl border border-border/70 bg-white/74 px-3 py-2">
+                <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                  查看当前模型
+                </summary>
+                <div className="mt-2 grid gap-2">
+                  <InfoRow label="服务商" value={providerLabel(settings.provider)} />
+                  <InfoRow label="模型" value={settings.model} />
+                </div>
+              </details>
             </CardContent>
           </Card>
         </aside>
@@ -340,6 +357,35 @@ function MaterialRow({
         {label}
       </span>
       <span className="text-xs text-muted-foreground">{value}</span>
+    </div>
+  );
+}
+
+function FlowStep({
+  icon: Icon,
+  index,
+  title,
+  detail,
+}: {
+  icon: LucideIcon;
+  index: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="soft-tile rounded-xl p-3">
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-white/80 text-primary">
+          <Icon className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+            <p className="text-sm font-semibold text-[#173042]">{title}</p>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+        </div>
+      </div>
     </div>
   );
 }
