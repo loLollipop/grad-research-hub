@@ -521,6 +521,7 @@ export default async function NotesPage({ searchParams }: Props) {
               </div>
             </div>
           </div>
+          <QuickNoteCapture />
           <div className="border-b border-border/75 bg-white/72 p-3.5">
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="size-4 text-primary" />
@@ -964,6 +965,40 @@ function NoteStackItem({
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
       <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+    </div>
+  );
+}
+
+function QuickNoteCapture() {
+  return (
+    <div className="border-b border-border/75 bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(239,247,247,0.72))] p-3.5">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+        <PenLine className="size-4 text-primary" />
+        快速摘记
+      </div>
+      <form action={createNote} className="grid gap-2.5">
+        <Input
+          name="title"
+          required
+          placeholder="一句标题，例如：导师提醒的对照组"
+          className="h-9 border-[#d4e0e5] bg-white/90"
+        />
+        <input type="hidden" name="folder" value="Inbox" />
+        <input type="hidden" name="tags" value="quick-note, 收件箱" />
+        <Textarea
+          name="content"
+          required
+          rows={4}
+          placeholder={"先把原话、观察或想法收住。\n- 背景：\n- 下一步："}
+          className="min-h-28 resize-none border-[#d4e0e5] bg-white/90 text-sm leading-6"
+        />
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2">
+          <p className="text-xs leading-5 text-muted-foreground">
+            默认进收件箱，之后再归档。
+          </p>
+          <SubmitButton className="w-fit">收进笔记</SubmitButton>
+        </div>
+      </form>
     </div>
   );
 }
