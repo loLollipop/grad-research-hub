@@ -265,9 +265,21 @@ export default async function PapersPage({ searchParams }: Props) {
                 先从 3 篇开始，避免 Zotero 同步后变成大列表压力。读出方法、对照或指标后再转实验/任务。
               </p>
             </div>
-            <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
-              全库待处理 {totalOpenReadingCount} 篇
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                全库待处理 {totalOpenReadingCount} 篇
+              </span>
+              <form action={createReadingPlanNote}>
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {readingStack.map((paper) => (
+                  <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                ))}
+                <SubmitButton variant="outline" className="w-fit bg-white/74">
+                  <FileText className="size-3.5" />
+                  生成三篇计划
+                </SubmitButton>
+              </form>
+            </div>
           </div>
           <div className="grid gap-2 lg:grid-cols-3">
             {readingStack.map((paper, index) => (
