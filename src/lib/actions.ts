@@ -1951,6 +1951,73 @@ export async function createMeetingBriefNote(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createMeetingFeedbackNote(formData: FormData) {
+  const rawScope = String(formData.get("scope") ?? "week");
+  const scope: MeetingBriefScope = rawScope === "today" ? "today" : "week";
+  const now = new Date();
+  const period = getMeetingBriefPeriod(now, scope);
+  const marker = meetingFeedbackMarker(scope, period.start);
+
+  const existingNote = await prisma.note.findFirst({
+    where: {
+      folder: "组会",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existingNote) {
+    redirect(`/notes?note=${existingNote.id}`);
+  }
+
+  const [meetingBrief, recentTasks, recentResults] = await Promise.all([
+    prisma.note.findFirst({
+      where: {
+        folder: "组会",
+        content: { contains: period.marker, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, title: true, updatedAt: true },
+    }),
+    prisma.task.findMany({
+      where: {
+        status: { not: "done" },
+        OR: [{ priority: "high" }, { dueDate: { lt: period.endExclusive } }],
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 6,
+      include: { milestone: { include: { project: true } } },
+    }),
+    prisma.result.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: { experiment: { include: { project: true } } },
+    }),
+  ]);
+
+  const note = await prisma.note.create({
+    data: {
+      title: `导师反馈回填 ${period.shortLabel}`,
+      folder: "组会",
+      content: meetingFeedbackMarkdown({
+        generatedAt: now,
+        marker,
+        period,
+        meetingBrief,
+        recentTasks,
+        recentResults,
+      }),
+      tags: tagsToString(["导师反馈", "组会", "任务回填", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createDailyPlanNote() {
   const now = new Date();
   const period = getDailyPlanPeriod(now);
@@ -3030,6 +3097,101 @@ function meetingBriefMarkdown({
   );
 
   return lines.join("\n");
+}
+
+function meetingFeedbackMarker(scope: MeetingBriefScope, start: Date) {
+  return `<!-- meeting-feedback:${scope}:${start.toISOString().slice(0, 10)} -->`;
+}
+
+function meetingFeedbackMarkdown({
+  generatedAt,
+  marker,
+  period,
+  meetingBrief,
+  recentTasks,
+  recentResults,
+}: {
+  generatedAt: Date;
+  marker: string;
+  period: ReturnType<typeof getMeetingBriefPeriod>;
+  meetingBrief: { id: string; title: string; updatedAt: Date } | null;
+  recentTasks: MeetingBriefTask[];
+  recentResults: Array<Result & { experiment: (Experiment & { project: Project | null }) | null }>;
+}) {
+  const taskLines = recentTasks.length
+    ? recentTasks.map((task) => {
+        const owner = task.milestone
+          ? `${task.milestone.project.title} / ${task.milestone.title}`
+          : "独立任务";
+        return `- ${task.title}（${owner}；${taskPriorityText(task.priority)}；${dateText(task.dueDate)}）`;
+      })
+    : ["- 暂无高优先级或临近任务。"];
+
+  const resultLines = recentResults.length
+    ? recentResults.map((result) => {
+        const config = parseJsonObjectText(result.config);
+        return [
+          `- ${result.title}`,
+          `  - 项目：${result.experiment?.project?.title ?? "未关联项目"}；实验：${result.experiment?.title ?? "未关联实验"}`,
+          `  - 复现：${reproducibilityText(String(config.reproducibility ?? "unknown"))}；图表：${result.artifactPath || "待补"}`,
+          `  - 结论：${result.notes?.trim() || "待补"}`,
+        ].join("\n");
+      })
+    : ["- 暂无近期结果证据。"];
+
+  return [
+    marker,
+    "",
+    `# 导师反馈回填 ${period.shortLabel}`,
+    "",
+    `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
+    "",
+    "> 会后 5 分钟内先写下来。这里不是正式会议纪要，只负责把导师判断、风险和下一步收进可拆任务的笔记。",
+    "",
+    "## 本次沟通结论",
+    "",
+    "- 导师最认可的进展：",
+    "- 导师最担心的问题：",
+    "- 本周/下周必须交付的最小结果：",
+    "- 暂时不要做或需要降级的方向：",
+    "",
+    "## 反馈原文 / 关键句",
+    "",
+    "- ",
+    "",
+    "## 需要立刻拆成任务",
+    "",
+    "- [ ] 按导师反馈补一个最小实验或对照",
+    "- [ ] 把需要导师确认的问题整理成下次沟通清单",
+    "- [ ] 更新相关结果证据或图表路径",
+    "",
+    "## 需要回填到平台的位置",
+    "",
+    "- [ ] 项目页：更新下一步任务和优先级",
+    "- [ ] 实验页：补实验观察、失败原因或新对照",
+    "- [ ] 成果页：补复现状态、图表路径或一句话结论",
+    "- [ ] 文献页：把导师提到的文献加入 Zotero 或待读队列",
+    "",
+    "## 会前草稿",
+    "",
+    meetingBrief
+      ? `- 已有关联草稿：${meetingBrief.title}（${dateText(meetingBrief.updatedAt)} 更新）`
+      : "- 本周期还没有生成会前周报草稿。",
+    "",
+    "## 会前未完成任务参考",
+    "",
+    taskLines.join("\n"),
+    "",
+    "## 近期结果证据参考",
+    "",
+    resultLines.join("\n"),
+    "",
+    "## 下次沟通前检查",
+    "",
+    "- [ ] 上面的待办已用笔记页“拆成任务”同步到项目页",
+    "- [ ] 需要导师判断的问题不超过 3 个",
+    "- [ ] 有至少一条可展示结果或明确失败证据",
+  ].join("\n");
 }
 
 function dailyPlanMarkdown({

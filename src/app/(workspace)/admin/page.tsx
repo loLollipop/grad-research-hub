@@ -20,6 +20,7 @@ import Link from "next/link";
 import type { AdminItem, Prisma } from "@prisma/client";
 
 import {
+  createMeetingFeedbackNote,
   createMeetingBriefNote,
   createAdminItem,
   deleteAdminItem,
@@ -489,20 +490,29 @@ export default async function AdminPage({ searchParams }: Props) {
                   : "自动把近期任务、事务、实验、结果和待读文献汇成一篇可编辑草稿，先写结论，再删减细节。"}
               </p>
             </div>
-            {currentMeetingBrief ? (
-              <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentMeetingBrief.id}`}>
-                <FileText className="size-4" />
-                继续编辑草稿
-              </Link>
-            ) : (
-              <form action={createMeetingBriefNote}>
-                <input type="hidden" name="scope" value="week" />
-                <SubmitButton variant="default" className="w-fit">
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {currentMeetingBrief ? (
+                <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentMeetingBrief.id}`}>
                   <FileText className="size-4" />
-                  生成周报笔记
+                  继续编辑草稿
+                </Link>
+              ) : (
+                <form action={createMeetingBriefNote}>
+                  <input type="hidden" name="scope" value="week" />
+                  <SubmitButton variant="default" className="w-fit">
+                    <FileText className="size-4" />
+                    生成周报笔记
+                  </SubmitButton>
+                </form>
+              )}
+              <form action={createMeetingFeedbackNote}>
+                <input type="hidden" name="scope" value="week" />
+                <SubmitButton variant="outline" className="w-fit">
+                  <ClipboardList className="size-4" />
+                  回填导师反馈
                 </SubmitButton>
               </form>
-            )}
+            </div>
           </div>
 
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] md:grid-cols-[1fr_150px_150px_auto]">
