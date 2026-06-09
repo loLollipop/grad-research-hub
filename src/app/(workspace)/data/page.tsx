@@ -26,6 +26,7 @@ import { ResultMetricsChart } from "@/components/charts/result-metrics-chart";
 import { CaptureNotice } from "@/components/shared/capture-notice";
 import {
   createDataset,
+  createDatasetAuditNote,
   createResultBriefNote,
   createTaskFromResult,
   createWritingNoteFromResult,
@@ -1090,6 +1091,13 @@ function DatasetCard({ dataset }: { dataset: Dataset }) {
           <p className="text-sm leading-6 text-muted-foreground">{dataset.description}</p>
         ) : null}
         <div className="flex flex-wrap justify-end gap-2 border-t border-border/65 pt-3">
+          <form action={createDatasetAuditNote}>
+            <input type="hidden" name="id" value={dataset.id} />
+            <Button type="submit" variant="outline" size="sm">
+              <FileCheck2 className="size-3.5" />
+              复现清单
+            </Button>
+          </form>
           <CreateDialog title="编辑数据集" label="编辑" icon={Edit3}>
             <DatasetForm action={updateDataset} dataset={dataset} />
           </CreateDialog>

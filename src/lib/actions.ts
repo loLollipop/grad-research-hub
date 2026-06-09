@@ -2105,6 +2105,48 @@ export async function deleteDataset(formData: FormData) {
   revalidatePath("/data");
 }
 
+export async function createDatasetAuditNote(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const dataset = await prisma.dataset.findUnique({
+    where: { id },
+    include: {
+      results: {
+        orderBy: { updatedAt: "desc" },
+        include: { experiment: true },
+      },
+    },
+  });
+
+  if (!dataset) return;
+
+  const marker = datasetAuditMarker(dataset.id);
+  const existing = await prisma.note.findFirst({
+    where: { content: { contains: marker, mode: "insensitive" } },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `数据复现清单：${dataset.name}`.slice(0, 80),
+      folder: "结果",
+      content: buildDatasetAuditNote(dataset, marker),
+      tags: tagsToString(["数据复现", "数据来源", ...parseTags(dataset.tags).slice(0, 4)]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/data");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createResult(formData: FormData) {
   const parsed = resultSchema.safeParse(resultFormData(formData));
   if (!parsed.success) fail(parsed.error);
@@ -2502,6 +2544,77 @@ function resultBriefMarkdown(
 
 function resultWritingNoteMarker(id: string) {
   return `result-writing-note:${id}`;
+}
+
+function datasetAuditMarker(id: string) {
+  return `dataset-audit:${id}`;
+}
+
+function buildDatasetAuditNote(
+  dataset: Dataset & {
+    results: Array<
+      Result & {
+        experiment: Experiment | null;
+      }
+    >;
+  },
+  marker: string,
+) {
+  const tags = parseTags(dataset.tags);
+  const linkedResults = dataset.results.length
+    ? dataset.results.slice(0, 12).map((result, index) => {
+        const config = parseJsonObjectText(result.config);
+        const reproducibility = reproducibilityText(String(config.reproducibility ?? "unknown"));
+        const manuscriptReady = config.manuscriptReady ? "是" : result.artifactPath ? "有图表路径" : "否";
+
+        return [
+          `### ${index + 1}. ${result.title}`,
+          `- 关联实验：${result.experiment?.title ?? "未关联实验"}`,
+          `- 复现状态：${reproducibility}`,
+          `- 可写入论文/组会：${manuscriptReady}`,
+          `- 图表或结果文件：${result.artifactPath || "待补"}`,
+          `- 一句话结论：${result.notes?.trim() || "待补"}`,
+        ].join("\n");
+      }).join("\n\n")
+    : "暂无关联结果。可以先到成果页把关键结果关联到这个数据来源。";
+
+  return [
+    `<!-- ${marker} -->`,
+    `# 数据复现清单：${dataset.name}`,
+    "",
+    "> 这不是完整数据仓库文档，只用来确认以后能找回、复现、交接和写进组会/论文。",
+    "",
+    "## 数据来源",
+    "",
+    `- 名称：${dataset.name}`,
+    `- 来源：${dataset.source || "待补"}`,
+    `- 版本：${dataset.version || "待补"}`,
+    `- 本地/服务器路径：${dataset.path || "待补"}`,
+    `- 外部链接：${dataset.externalUrl || "待补"}`,
+    tags.length ? `- 标签：${tags.join(" / ")}` : "- 标签：待补",
+    "",
+    "## 复现核对",
+    "",
+    "- [ ] 数据路径仍然可访问",
+    "- [ ] 版本、清洗规则或采集批次写清楚",
+    "- [ ] 依赖这个数据的结果已经关联到成果页",
+    "- [ ] 图表/结果文件路径能从当前环境找回",
+    "- [ ] 如果要交接或开源，已标明可公开范围和限制",
+    "",
+    "## 处理说明",
+    "",
+    dataset.description?.trim() || "- 用途：\n- 处理状态：\n- 依赖结果：",
+    "",
+    "## 依赖结果",
+    "",
+    linkedResults,
+    "",
+    "## 下次要补",
+    "",
+    "- [ ] 补缺失的版本、路径或外部链接",
+    "- [ ] 确认至少一条关键结果已关联该数据来源",
+    "- [ ] 如需组会或论文，生成对应结果的写作素材笔记",
+  ].join("\n");
 }
 
 function buildResultWritingNote(
