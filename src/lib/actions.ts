@@ -440,6 +440,60 @@ export async function createLiteratureMatrixNote(formData: FormData) {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createReadingClosureNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 16);
+  const returnTo = safePapersReturnTo(String(formData.get("returnTo") ?? "/papers"));
+
+  if (!ids.length) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}closure=empty`);
+  }
+
+  const papers = await prisma.paper.findMany({
+    where: { id: { in: ids } },
+    orderBy: [{ readStatus: "desc" }, { updatedAt: "asc" }],
+  });
+
+  const candidates = papers.filter((paper) =>
+    ["reading", "read"].includes(paper.readStatus) && !paper.notes?.trim(),
+  );
+
+  if (!candidates.length) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}closure=empty`);
+  }
+
+  const marker = readingClosureMarker(candidates);
+  const existing = await prisma.note.findFirst({
+    where: {
+      folder: "文献",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `阅读收口清单 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "文献",
+      content: buildReadingClosureNote(candidates, marker),
+      tags: tagsToString(["阅读收口", "文献", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/papers");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 function paperNoteMarker(id: string) {
   return `paper-reading-note:${id}`;
 }
@@ -468,6 +522,15 @@ function literatureMatrixMarker(papers: Paper[]) {
     .sort()
     .join("|");
   return `literature-matrix:${day}:${stableHash(key)}`;
+}
+
+function readingClosureMarker(papers: Paper[]) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = papers
+    .map((paper) => paper.id)
+    .sort()
+    .join("|");
+  return `reading-closure:${day}:${stableHash(key)}`;
 }
 
 function buildReadingPlanNote(papers: Paper[], marker: string) {
@@ -521,6 +584,66 @@ function buildReadingPlanNote(papers: Paper[], marker: string) {
     "- [ ] 把可复用方法或待验证想法拆成项目任务",
     "- [ ] 把需要做对照的部分写进实验日志",
     "- [ ] 把综述/引言可用句子移到写作笔记",
+  );
+
+  return lines.join("\n");
+}
+
+function buildReadingClosureNote(papers: Paper[], marker: string) {
+  const lines = [
+    `<!-- ${marker} -->`,
+    `# 阅读收口清单 ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "> 这不是新的文献库。只把已经读中/已读但没有沉淀的文献收住，避免组会、开题或写 related work 时找不回。",
+    "",
+    "## 今天只补三件事",
+    "",
+    "- [ ] 每篇补一句话问题",
+    "- [ ] 每篇补一个可复用方法、数据、指标或反例",
+    "- [ ] 判断是否需要转任务、转实验或进入综述矩阵",
+    "",
+    "## 待收口文献",
+    "",
+  ];
+
+  papers.forEach((paper, index) => {
+    const authors = parseTags(paper.authors).slice(0, 3).join(", ") || "作者未知";
+    const source = [
+      paper.year ? String(paper.year) : "",
+      paper.journal || paper.category,
+      paper.doi ? `DOI: ${paper.doi}` : "",
+      paper.arxivId ? `arXiv: ${paper.arxivId}` : "",
+    ].filter(Boolean).join("；") || "来源未填";
+
+    lines.push(
+      `### ${index + 1}. ${paper.title}`,
+      "",
+      `- 状态：${paperStatusText(paper.readStatus)}`,
+      `- 作者：${authors}`,
+      `- 来源：${source}`,
+      paper.externalUrl ? `- 链接：${paper.externalUrl}` : "",
+      "",
+      "- 一句话问题：",
+      "- 方法/数据/指标抓手：",
+      "- 能否服务当前课题：",
+      "- 下一步：",
+      "  - [ ] 生成单篇阅读笔记",
+      "  - [ ] 转成待验证任务",
+      "  - [ ] 转成复现实验草稿",
+      "",
+      "原始摘要 / 备注：",
+      "",
+      paper.abstract?.trim() || "暂无摘要。",
+      "",
+    );
+  });
+
+  lines.push(
+    "## 收口后动作",
+    "",
+    "- [ ] 对最关键的 1-2 篇生成单篇阅读笔记",
+    "- [ ] 把可验证想法转成项目任务或实验草稿",
+    "- [ ] 如果要写 related work，回文献页生成综述矩阵",
   );
 
   return lines.join("\n");

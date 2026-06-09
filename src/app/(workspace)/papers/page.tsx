@@ -26,6 +26,7 @@ import {
   createExperimentFromPaper,
   createLiteratureMatrixNote,
   createPaper,
+  createReadingClosureNote,
   createReadingPlanNote,
   createReadingNoteFromPaper,
   createTaskFromPaper,
@@ -68,6 +69,7 @@ type Props = {
     captured?: string;
     bulk?: string;
     bulkStatus?: string;
+    closure?: string;
     matrix?: string;
     plan?: string;
   }>;
@@ -94,6 +96,7 @@ export default async function PapersPage({ searchParams }: Props) {
   const bulk = valueOf(params.bulk);
   const bulkCount = Number(valueOf(params.count) ?? 0);
   const bulkStatus = valueOf(params.bulkStatus);
+  const closure = valueOf(params.closure);
   const matrix = valueOf(params.matrix);
   const plan = valueOf(params.plan);
   const zotero = await getZoteroConfigStatus();
@@ -149,6 +152,9 @@ export default async function PapersPage({ searchParams }: Props) {
   const visibleReadingCount = papers.filter((paper) => paper.readStatus === "reading").length;
   const visibleNeedNoteCount = papers.filter(
     (paper) => paper.readStatus === "read" && !paper.notes?.trim(),
+  ).length;
+  const visibleClosureCount = papers.filter(
+    (paper) => ["reading", "read"].includes(paper.readStatus) && !paper.notes?.trim(),
   ).length;
   const visibleNotedCount = papers.filter((paper) => paper.notes?.trim()).length;
   const readingRadarStatus = visibleReadingCount ? "reading" : visibleUnreadCount ? "unread" : undefined;
@@ -316,6 +322,14 @@ export default async function PapersPage({ searchParams }: Props) {
         />
       ) : null}
 
+      {closure === "empty" ? (
+        <SyncNotice
+          tone="error"
+          title="没有需要收口的阅读"
+          description="当前列表里没有读中/已读但缺少笔记的文献。可以先标记阅读状态，或清除筛选后再试。"
+        />
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
         <aside className="grid content-start gap-4">
           <Card className="workbench-card">
@@ -377,6 +391,19 @@ export default async function PapersPage({ searchParams }: Props) {
                 href="/notes?folder=文献"
                 tone={visibleNotedCount ? "green" : "quiet"}
               />
+              <form action={createReadingClosureNote} className="pt-1">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {papers
+                  .filter((paper) => ["reading", "read"].includes(paper.readStatus) && !paper.notes?.trim())
+                  .slice(0, 16)
+                  .map((paper) => (
+                    <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                  ))}
+                <SubmitButton variant="outline" className="w-full" disabled={!visibleClosureCount}>
+                  <NotebookPen className="size-3.5" />
+                  生成阅读收口清单
+                </SubmitButton>
+              </form>
             </CardContent>
           </Card>
 
