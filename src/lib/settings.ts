@@ -31,6 +31,7 @@ const ZOTERO_LIBRARY_ID_KEY = "zotero.libraryId";
 const ZOTERO_LIBRARY_TYPE_KEY = "zotero.libraryType";
 const ZOTERO_COLLECTION_KEY = "zotero.collectionKey";
 const ZOTERO_SYNC_LIMIT_KEY = "zotero.syncLimit";
+const ZOTERO_SYNC_CURSOR_PREFIX = "zotero.syncCursor";
 const PASSWORD_HASH_ITERATIONS = 210_000;
 
 export type AccessSettings = {
@@ -51,6 +52,17 @@ export type ZoteroSettings = {
 
 export type ZoteroRuntimeConfig = ZoteroSettings & {
   apiKey: string;
+};
+
+export type ZoteroSyncCursorInput = Pick<
+  ZoteroRuntimeConfig,
+  "collectionKey" | "libraryId" | "libraryType"
+>;
+
+export type ZoteroSyncCursor = {
+  key: string;
+  version: number | null;
+  updatedAt: Date | null;
 };
 
 export async function getAiSettings(): Promise<AiSettings> {
@@ -221,6 +233,28 @@ export async function saveZoteroSettings(input: {
   await Promise.all(writes);
 }
 
+export async function getZoteroSyncCursor(
+  input: ZoteroSyncCursorInput,
+): Promise<ZoteroSyncCursor> {
+  const key = zoteroSyncCursorKey(input);
+  const row = await prisma.appSetting.findUnique({ where: { key } });
+  const version = row?.value ? Number(row.value) : NaN;
+
+  return {
+    key,
+    version: Number.isInteger(version) && version > 0 ? version : null,
+    updatedAt: row?.updatedAt ?? null,
+  };
+}
+
+export async function saveZoteroSyncCursor(input: ZoteroSyncCursorInput, version: number) {
+  if (!Number.isInteger(version) || version <= 0) {
+    return;
+  }
+
+  await upsertSetting(zoteroSyncCursorKey(input), String(version), false);
+}
+
 export async function getAiRuntimeConfig() {
   const rows = await prisma.appSetting.findMany({
     where: {
@@ -361,6 +395,16 @@ function constantTimeTextEqual(left: string, right: string) {
 function numberOrDefault(value: string | undefined, fallback: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function zoteroSyncCursorKey(input: ZoteroSyncCursorInput) {
+  const scope = input.collectionKey.trim() || "top";
+  return [
+    ZOTERO_SYNC_CURSOR_PREFIX,
+    input.libraryType,
+    input.libraryId.trim() || "missing-library",
+    scope,
+  ].join(".");
 }
 
 function encryptSecret(value: string) {

@@ -1,5 +1,10 @@
 import { tagsToString } from "@/lib/format";
-import { getZoteroRuntimeConfig, getZoteroSettings } from "@/lib/settings";
+import {
+  getZoteroRuntimeConfig,
+  getZoteroSettings,
+  getZoteroSyncCursor,
+  saveZoteroSyncCursor,
+} from "@/lib/settings";
 
 const ZOTERO_API_BASE = "https://api.zotero.org";
 
@@ -74,9 +79,13 @@ export type ZoteroConnectionResult = {
 };
 
 export type ZoteroSyncSummary = {
+  cursorUpdatedAt: Date | null;
   fetchedItems: number;
+  incremental: boolean;
   importedPapers: number;
+  libraryVersion: number | null;
   requestedLimit: number;
+  sinceVersion: number | null;
   scopeLabel: string;
   totalResults: number | null;
   hasMore: boolean;
@@ -108,8 +117,9 @@ export async function fetchZoteroPapers(): Promise<ZoteroSyncResult> {
     throw new Error("Zotero 尚未配置：需要 ZOTERO_API_KEY 和 ZOTERO_LIBRARY_ID。");
   }
 
+  const cursor = await getZoteroSyncCursor(config);
   const [itemResult, collectionNames] = await Promise.all([
-    fetchZoteroItems(config, apiKey),
+    fetchZoteroItems(config, apiKey, cursor.version),
     fetchZoteroCollectionNames(config, apiKey),
   ]);
   const syncedAt = new Date();
@@ -119,19 +129,28 @@ export async function fetchZoteroPapers(): Promise<ZoteroSyncResult> {
   const scopeLabel = config.collectionKey
     ? collectionNames.get(config.collectionKey) ?? config.collectionKey
     : "库内顶层文献";
+  const hasMore =
+    itemResult.totalResults !== null
+      ? itemResult.totalResults > itemResult.items.length
+      : itemResult.items.length >= itemResult.requestedLimit;
+
+  if (itemResult.libraryVersion && !hasMore) {
+    await saveZoteroSyncCursor(config, itemResult.libraryVersion);
+  }
 
   return {
     papers,
     summary: {
+      cursorUpdatedAt: cursor.updatedAt,
       fetchedItems: itemResult.items.length,
+      incremental: Boolean(cursor.version),
       importedPapers: papers.length,
+      libraryVersion: itemResult.libraryVersion,
       requestedLimit: itemResult.requestedLimit,
+      sinceVersion: cursor.version,
       scopeLabel,
       totalResults: itemResult.totalResults,
-      hasMore:
-        itemResult.totalResults !== null
-          ? itemResult.totalResults > itemResult.items.length
-          : itemResult.items.length >= itemResult.requestedLimit,
+      hasMore,
     },
   };
 }
@@ -144,11 +163,13 @@ async function fetchZoteroItems(
     syncLimit: number;
   },
   apiKey: string,
+  sinceVersion: number | null,
 ) {
   const pageSize = 100;
   const target = Math.min(Math.max(config.syncLimit, 1), 500);
   const items: ZoteroItem[] = [];
   let totalResults: number | null = null;
+  let libraryVersion: number | null = null;
 
   for (let start = 0; start < target; start += pageSize) {
     const url = zoteroItemsUrl(config);
@@ -156,6 +177,9 @@ async function fetchZoteroItems(
     url.searchParams.set("include", "data");
     url.searchParams.set("limit", String(Math.min(pageSize, target - start)));
     url.searchParams.set("start", String(start));
+    if (sinceVersion) {
+      url.searchParams.set("since", String(sinceVersion));
+    }
 
     const response = await fetch(url, {
       headers: zoteroHeaders(apiKey),
@@ -172,6 +196,14 @@ async function fetchZoteroItems(
       totalResults = Number.isFinite(parsed) ? parsed : null;
     }
 
+    const libraryVersionHeader = response.headers.get("Last-Modified-Version");
+    if (libraryVersionHeader) {
+      const parsed = Number(libraryVersionHeader);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        libraryVersion = Math.max(libraryVersion ?? 0, parsed);
+      }
+    }
+
     const page = (await response.json()) as ZoteroItem[];
     items.push(...page);
 
@@ -182,6 +214,7 @@ async function fetchZoteroItems(
 
   return {
     items,
+    libraryVersion,
     requestedLimit: target,
     totalResults,
   };

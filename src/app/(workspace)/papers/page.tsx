@@ -61,11 +61,14 @@ type Props = {
     sync?: string;
     count?: string;
     fetched?: string;
+    incremental?: string;
     limit?: string;
     message?: string;
     more?: string;
     scope?: string;
+    since?: string;
     total?: string;
+    version?: string;
     captured?: string;
     bulk?: string;
     bulkStatus?: string;
@@ -87,11 +90,14 @@ export default async function PapersPage({ searchParams }: Props) {
   const sync = valueOf(params.sync);
   const syncedCount = Number(valueOf(params.count) ?? 0);
   const fetchedCount = Number(valueOf(params.fetched) ?? syncedCount);
+  const incrementalSync = valueOf(params.incremental) === "true";
   const requestedLimit = Number(valueOf(params.limit) ?? 0);
   const syncMessage = valueOf(params.message);
   const syncMore = valueOf(params.more) === "true";
   const syncScope = valueOf(params.scope);
+  const syncSince = valueOf(params.since);
   const syncTotal = valueOf(params.total);
+  const syncVersion = valueOf(params.version);
   const captured = valueOf(params.captured);
   const bulk = valueOf(params.bulk);
   const bulkCount = Number(valueOf(params.count) ?? 0);
@@ -272,9 +278,12 @@ export default async function PapersPage({ searchParams }: Props) {
             count: syncedCount,
             fetched: fetchedCount,
             hasMore: syncMore,
+            incremental: incrementalSync,
             limit: requestedLimit || zotero.syncLimit,
+            since: syncSince,
             scope: syncScope,
             total: syncTotal,
+            version: syncVersion,
           })}
         />
       ) : null}
@@ -629,25 +638,35 @@ function zoteroSyncSuccessDescription({
   count,
   fetched,
   hasMore,
+  incremental,
   limit,
+  since,
   scope,
   total,
+  version,
 }: {
   count: number;
   fetched: number;
   hasMore: boolean;
+  incremental: boolean;
   limit: number;
+  since?: string;
   scope?: string;
   total?: string;
+  version?: string;
 }) {
   if (count <= 0) {
-    return "Zotero 返回了 0 条可同步文献。可以检查 Collection Key、同步数量或 Zotero 集合内容。";
+    return incremental
+      ? "Zotero 增量同步完成，当前范围没有新的或更新过的文献。"
+      : "Zotero 返回了 0 条可同步文献。可以检查 Collection Key、同步数量或 Zotero 集合内容。";
   }
 
   const pieces = [
-    `已同步 ${count} 条文献`,
+    incremental ? `增量同步 ${count} 条文献` : `已同步 ${count} 条文献`,
     fetched !== count ? `读取到 ${fetched} 条 Zotero 条目` : null,
     scope ? `范围：${scope}` : null,
+    since ? `从版本 ${since} 后更新` : null,
+    version ? `当前版本 ${version}` : null,
     total ? `Zotero 当前范围共 ${total} 条` : null,
     hasMore ? zoteroMoreHint(limit) : null,
   ].filter((item): item is string => Boolean(item));

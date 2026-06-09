@@ -910,12 +910,19 @@ export async function syncZoteroPapers() {
     sync: "success",
     count: String(papers.length),
     fetched: String(summary.fetchedItems),
+    incremental: summary.incremental ? "true" : "false",
     limit: String(summary.requestedLimit),
     scope: summary.scopeLabel,
     more: summary.hasMore ? "true" : "false",
   });
   if (summary.totalResults !== null) {
     params.set("total", String(summary.totalResults));
+  }
+  if (summary.libraryVersion !== null) {
+    params.set("version", String(summary.libraryVersion));
+  }
+  if (summary.sinceVersion !== null) {
+    params.set("since", String(summary.sinceVersion));
   }
 
   redirect(`/papers?${params.toString()}`);
