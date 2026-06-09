@@ -18,7 +18,7 @@ import { checkAiConnection } from "@/lib/ai";
 import { accessSettingsSchema, zoteroSettingsSchema } from "@/lib/config-validators";
 import { getDailyPlanPeriod } from "@/lib/daily-plan";
 import { prisma } from "@/lib/db";
-import { parseTags, splitTags, tagsToString } from "@/lib/format";
+import { extractWikiLinks, parseTags, splitTags, tagsToString } from "@/lib/format";
 import { getMeetingBriefPeriod, type MeetingBriefScope } from "@/lib/meeting-brief";
 import {
   extractQuickPrefix,
@@ -1804,6 +1804,57 @@ export async function createTasksFromNoteChecklist(formData: FormData) {
   redirect(`/projects?status=todo&taskSync=success&taskSyncCount=${checklistItems.length}`);
 }
 
+export async function createNoteCloseoutNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 8);
+
+  if (!ids.length) {
+    redirect("/notes");
+  }
+
+  const notes = await prisma.note.findMany({
+    where: { id: { in: ids } },
+  });
+
+  if (!notes.length) {
+    redirect("/notes");
+  }
+
+  const rank = new Map(ids.map((id, index) => [id, index]));
+  const orderedNotes = notes.sort(
+    (left, right) => (rank.get(left.id) ?? 99) - (rank.get(right.id) ?? 99),
+  );
+  const marker = noteCloseoutMarker(orderedNotes);
+  const existing = await prisma.note.findFirst({
+    where: {
+      folder: "写作",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `笔记沉淀清单 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "写作",
+      content: noteCloseoutMarkdown(orderedNotes, marker),
+      tags: tagsToString(["笔记沉淀", "写作素材", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createNoteFromAiDraft(formData: FormData) {
   const prompt = String(formData.get("prompt") ?? "").trim().slice(0, 4_000);
   const draft = String(formData.get("draft") ?? "").trim().slice(0, 20_000);
@@ -2054,6 +2105,100 @@ function stableHash(value: string) {
 
 function noteTaskMarker(noteId: string, key: string) {
   return `<!-- note-task:${noteId}:${key} -->`;
+}
+
+function noteCloseoutMarker(notes: Note[]) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = notes
+    .map((note) => note.id)
+    .sort()
+    .join("|");
+  return `note-closeout:${day}:${stableHash(key)}`;
+}
+
+function noteCloseoutMarkdown(notes: Note[], marker: string) {
+  const allTitles = new Set(notes.map((note) => normalizeNoteTitle(note.title)));
+  const lines = [
+    `<!-- ${marker} -->`,
+    `# 笔记沉淀清单 ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "> 不做完整知识图谱。只把今天最值得处理的 1-3 篇笔记收住：能拆任务就拆任务，能补双链就补主题，能进入组会/论文就打磨成素材。",
+    "",
+    "## 今天只做三件事",
+    "",
+    "- [ ] 把待办清单拆回项目任务",
+    "- [ ] 把未创建的 `[[双链]]` 判断是否需要新建主题",
+    "- [ ] 把可用材料移入写作素材包或组会草稿",
+    "",
+  ];
+
+  notes.forEach((note, index) => {
+    const links = extractWikiLinks(note.content).map((link) => link.trim()).filter(Boolean);
+    const missingLinks = links.filter((link) => !allTitles.has(normalizeNoteTitle(link)));
+    const checklistItems = extractOpenChecklistItems(note.content);
+    const actionItems = noteCloseoutActions(note, missingLinks, checklistItems);
+
+    lines.push(
+      `## ${index + 1}. ${note.title}`,
+      "",
+      `- 分类：${note.folder || "Inbox"}`,
+      `- 更新：${dateText(note.updatedAt)}`,
+      `- 标签：${parseTags(note.tags).join("，") || "无"}`,
+      `- 待办数：${checklistItems.length}`,
+      `- 双链数：${links.length}`,
+      `- 未创建链接：${missingLinks.join("，") || "无"}`,
+      "",
+      "### 建议动作",
+      "",
+      ...actionItems.map((item) => `- [ ] ${item}`),
+      "",
+      "### 摘要",
+      "",
+      noteSnippetForCloseout(note.content),
+      "",
+    );
+  });
+
+  lines.push(
+    "## 收口后动作",
+    "",
+    "- [ ] 回笔记页拆任务或补双链",
+    "- [ ] 如果要写周报/论文，生成写作素材包",
+    "- [ ] 收件箱笔记处理完后改分类和标签",
+  );
+
+  return lines.join("\n");
+}
+
+function noteCloseoutActions(note: Note, missingLinks: string[], checklistItems: Array<{ title: string }>) {
+  const actions = [
+    checklistItems.length ? `拆出 ${checklistItems.length} 个项目任务` : "",
+    missingLinks.length ? `判断是否新建主题：${missingLinks.slice(0, 4).join("，")}` : "",
+    note.folder === "Inbox" || !note.folder ? "补分类和标签，避免长期停在收件箱" : "",
+    isWritingNoteMaterial(note) ? "提炼一段能放进组会/周报/论文的表述" : "",
+  ].filter(Boolean);
+
+  return actions.length ? actions : ["继续补背景、关键观察和下一步"];
+}
+
+function normalizeNoteTitle(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isWritingNoteMaterial(note: Note) {
+  const text = `${note.folder} ${note.title} ${note.tags}`.toLowerCase();
+  return ["组会", "阅读", "实验", "结果", "写作", "论文", "素材"].some((keyword) =>
+    text.includes(keyword.toLowerCase()),
+  );
+}
+
+function noteSnippetForCloseout(content: string) {
+  const text = content
+    .replace(/[#*_`>\-[\]()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text ? oneLine(text, 220) : "暂无正文。";
 }
 
 function aiDraftNoteMarkdown({

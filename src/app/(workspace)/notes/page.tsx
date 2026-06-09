@@ -24,6 +24,7 @@ import remarkGfm from "remark-gfm";
 
 import {
   createNote,
+  createNoteCloseoutNote,
   createTasksFromNoteChecklist,
   createWritingPackNote,
   deleteNote,
@@ -461,10 +462,27 @@ export default async function NotesPage({ searchParams }: Props) {
 
           <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
             <div>
-              <p className="flex items-center gap-2 text-xs font-medium text-white/68">
-                <BookOpenText className="size-3.5" />
-                今日沉淀栈
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-xs font-medium text-white/68">
+                  <BookOpenText className="size-3.5" />
+                  今日沉淀栈
+                </p>
+                {noteStack.length ? (
+                  <form action={createNoteCloseoutNote}>
+                    {noteStack.map(({ note }) => (
+                      <input key={note.id} type="hidden" name="ids" value={note.id} />
+                    ))}
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 border-white/16 bg-white/10 px-2 text-[11px] text-white hover:bg-white/16 hover:text-white"
+                    >
+                      生成清单
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
               <div className="mt-4 grid gap-2.5">
                 {noteStack.length ? (
                   noteStack.map(({ note, action }, index) => (
