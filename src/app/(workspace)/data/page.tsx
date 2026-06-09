@@ -325,6 +325,8 @@ export default async function DataPage({ searchParams }: Props) {
 
       <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
         <aside className="grid content-start gap-4">
+          <QuickResultCapture />
+
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -745,6 +747,94 @@ function ResultStackItem({
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
       <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
     </div>
+  );
+}
+
+function QuickResultCapture() {
+  return (
+    <Card className="workbench-card border-primary/12 bg-[linear-gradient(135deg,rgba(239,247,247,0.94),rgba(255,250,238,0.76))]">
+      <CardHeader className="border-b border-white/70 bg-white/38 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <FileChartColumn className="size-4 text-primary" />
+          60 秒记录证据
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={createResult} className="grid gap-3">
+          <Field label="一句话结果">
+            <Input
+              name="title"
+              required
+              placeholder="例如：Ablation 后 F1 下降 3.2%"
+              className="h-10 border-[#cadbe1] bg-white/92 font-medium"
+            />
+          </Field>
+
+          <input type="hidden" name="experimentId" value="" />
+          <input type="hidden" name="datasetId" value="" />
+          <input type="hidden" name="metrics" value="{}" />
+          <input type="hidden" name="config" value="{}" />
+
+          <div className="grid gap-2 sm:grid-cols-[1fr_0.8fr]">
+            <Field label="指标">
+              <Input
+                name="metricName"
+                placeholder="F1 / RMSE / Accuracy"
+                className="h-9 border-[#d4e0e5] bg-white/90"
+              />
+            </Field>
+            <Field label="数值">
+              <Input
+                name="metricValue"
+                placeholder="0.86 / -3.2%"
+                className="h-9 border-[#d4e0e5] bg-white/90"
+              />
+            </Field>
+          </div>
+
+          <Field label="复现状态">
+            <select
+              name="reproducibility"
+              defaultValue="unknown"
+              className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
+            >
+              {reproducibilityOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="图表或文件路径">
+            <Input
+              name="artifactPath"
+              placeholder="figures/result.png 或结果目录"
+              className="h-9 border-[#d4e0e5] bg-white/90"
+            />
+          </Field>
+
+          <Textarea
+            name="notes"
+            rows={3}
+            placeholder={"结论：\n下一步："}
+            className="min-h-24 resize-none border-[#d4e0e5] bg-white/90 text-sm leading-6"
+          />
+
+          <div className="flex items-start gap-2 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
+            <input type="checkbox" name="manuscriptReady" value="true" className="mt-0.5 size-4 shrink-0" />
+            <span>这条结果已经能进入组会、周报或论文素材。</span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2">
+            <p className="text-xs leading-5 text-muted-foreground">
+              先收住证据，关联实验和数据集之后再补。
+            </p>
+            <SubmitButton className="w-fit">加入证据台</SubmitButton>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
