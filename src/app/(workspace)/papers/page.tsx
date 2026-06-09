@@ -278,20 +278,7 @@ export default async function PapersPage({ searchParams }: Props) {
       ) : null}
 
       {!zotero.ready ? (
-        <Card className="border-amber-200 bg-[#fff8eb] shadow-sm">
-          <CardContent className="flex flex-col gap-3 py-4 text-sm text-amber-950 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-medium">Zotero 尚未连接</p>
-              <p className="mt-1 text-amber-900/80">
-                到设置中心填写 API Key、Library ID 和同步数量后，回到这里点一次同步即可。
-              </p>
-            </div>
-            <Link className={buttonVariants({ variant: "outline" })} href="/settings">
-              <Settings className="size-4" />
-              去设置
-            </Link>
-          </CardContent>
-        </Card>
+        <ZoteroConnectionOnboarding />
       ) : null}
 
       <CaptureNotice kind={captured} />
@@ -899,6 +886,80 @@ function ReadingRadarItem({
         </span>
       </span>
     </Link>
+  );
+}
+
+function ZoteroConnectionOnboarding() {
+  const steps = [
+    {
+      title: "先在 Zotero 新建只读 Key",
+      detail: "只勾选读取文献库权限。PDF 和附件仍留在 Zotero，不会上传到研途 Hub。",
+    },
+    {
+      title: "在设置中心填 Library ID",
+      detail: "个人库填 userID；群组库填 group ID，并把类型切到“群组”。",
+    },
+    {
+      title: "回到文献页同步一次",
+      detail: "同步后这里会自动出现三篇启动队列，先读 3 篇，不被长列表拖住。",
+    },
+  ];
+
+  return (
+    <section className="grid gap-3 rounded-2xl border border-[#ead8ac] bg-[linear-gradient(135deg,rgba(255,249,234,0.96),rgba(239,247,247,0.84))] p-4 shadow-[0_10px_24px_rgba(75,56,28,0.045)]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-sm font-semibold text-[#6f542c]">
+            <AlertCircle className="size-4" />
+            Zotero 还没接上，先别手动录一堆文献
+          </p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6f542c]/86">
+            文献源头建议继续放在 Zotero。研途 Hub 只负责同步条目、安排阅读、生成笔记和转实验线索，避免重复维护两套文献库。
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          <Link className={buttonVariants({ variant: "default" })} href="/settings">
+            <Settings className="size-4" />
+            去设置连接
+          </Link>
+          <a
+            className={buttonVariants({ variant: "outline" })}
+            href="https://www.zotero.org/settings/keys/new"
+            target="_blank"
+            rel="noreferrer"
+          >
+            创建 Zotero Key
+          </a>
+        </div>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <div key={step.title} className="rounded-xl border border-white/72 bg-white/72 p-3">
+            <div className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-lg border border-[#ead8ac] bg-[#fff8e8] font-mono text-[11px] font-semibold text-[#7a5a2f]">
+                0{index + 1}
+              </span>
+              <p className="text-sm font-medium text-[var(--workspace-title)]">{step.title}</p>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{step.detail}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-[#d5e4e8] bg-white/62 px-3 py-2 text-xs leading-5 text-muted-foreground md:flex-row md:items-center md:justify-between">
+        <p>临时网页、导师转发材料、还没入库的预印本，才适合用“补录文献”。</p>
+        <CreateDialog
+          title="手动补录文献"
+          description="只给临时材料使用，正式文献建议回到 Zotero 管理。"
+          label="临时补录"
+          icon={Plus}
+          wide
+        >
+          <PaperForm action={createPaper} />
+        </CreateDialog>
+      </div>
+    </section>
   );
 }
 
