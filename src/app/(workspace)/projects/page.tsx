@@ -183,7 +183,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
   }
   const taskWhere: Prisma.TaskWhereInput = taskFilters.length ? { AND: taskFilters } : {};
 
-  const [projects, milestones, tasks, allTasks] = await Promise.all([
+  const [projects, milestones, tasks, allTasks, pushCandidates] = await Promise.all([
     prisma.project.findMany({
       orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
       include: {
@@ -207,6 +207,12 @@ export default async function ProjectsPage({ searchParams }: Props) {
       orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { updatedAt: "desc" }],
       include: { milestone: { include: { project: true } } },
     }),
+    prisma.task.findMany({
+      where: { status: { not: "done" } },
+      orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { updatedAt: "asc" }],
+      include: { milestone: { include: { project: true } } },
+      take: 24,
+    }),
   ]);
 
   const activeProjects = projects.filter((project) => project.status === "active");
@@ -218,9 +224,9 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const nextTasks = [...openTasks]
     .sort((left, right) => taskRank(left) - taskRank(right))
     .slice(0, 6);
-  const projectStack = [...quickOpenTasks]
-    .sort((left, right) => taskRank(left) - taskRank(right))
+  const projectStack = prioritizePushTasks(pushCandidates)
     .slice(0, 3);
+  const totalPushCount = pushCandidates.length;
   const nextMilestones = milestones
     .filter((milestone) => milestone.status !== "completed")
     .slice(0, 5);
@@ -309,9 +315,8 @@ export default async function ProjectsPage({ searchParams }: Props) {
                   projectStack.map((task, index) => (
                     <ProjectStackItem
                       key={task.id}
+                      task={task}
                       index={`0${index + 1}`}
-                      title={task.title}
-                      detail={`${task.milestone?.project.title ?? "独立任务"} · ${dueText(task.dueDate)}`}
                     />
                   ))
                 ) : (
@@ -340,6 +345,36 @@ export default async function ProjectsPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      {projectStack.length ? (
+        <section className="grid gap-3 rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(240,247,247,0.78))] p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)]">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+                <TimerReset className="size-4 text-primary" />
+                三项课题推进
+              </p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                先推进逾期、今天截止、高优先级或可转实验的 3 个动作。任务队列再长，也先从这里开始。
+              </p>
+            </div>
+            <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+              全库待推进 {totalPushCount} 个
+            </span>
+          </div>
+          <div className="grid gap-2 lg:grid-cols-3">
+            {projectStack.map((task, index) => (
+              <PushTaskCard
+                key={task.id}
+                index={index + 1}
+                milestones={milestones}
+                returnTo={returnTo}
+                task={task}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[0.36fr_0.64fr]">
         <aside className="grid content-start gap-4">
@@ -725,12 +760,14 @@ function TaskBulkNotice({
 
 function ProjectStackItem({
   index,
+  task,
   title,
   detail,
 }: {
   index: string;
-  title: string;
-  detail: string;
+  task?: TaskFull;
+  title?: string;
+  detail?: string;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
@@ -738,8 +775,14 @@ function ProjectStackItem({
         <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
         <span className="h-px flex-1 bg-white/12" />
       </div>
-      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">
+        {task?.title ?? title}
+      </p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">
+        {task
+          ? `${task.milestone?.project.title ?? "独立任务"} · ${dueText(task.dueDate)}`
+          : detail}
+      </p>
     </div>
   );
 }
@@ -853,6 +896,67 @@ function NextTaskRow({
         </CreateDialog>
       </div>
     </div>
+  );
+}
+
+function PushTaskCard({
+  index,
+  milestones,
+  returnTo,
+  task,
+}: {
+  index: number;
+  milestones: MilestoneFull[];
+  returnTo: string;
+  task: TaskFull;
+}) {
+  const actionLabel = taskActionLabel(task);
+  const actionReason = taskActionReason(task);
+  const isExperimentCandidate = isExperimentCandidateTask(task);
+
+  return (
+    <Card className="border-border/72 bg-white/86 shadow-[0_8px_22px_rgba(27,42,56,0.038)]">
+      <CardContent className="grid h-full gap-3 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-mono text-xs font-semibold text-primary">0{index}</span>
+          <span
+            className={
+              task.priority === "high"
+                ? "rounded-full border border-[#edd8a5] bg-[#fff7df] px-2 py-0.5 text-[11px] font-medium text-[#7a5a2f]"
+                : "rounded-full border border-[#c9e0ea] bg-[#eef6f7] px-2 py-0.5 text-[11px] font-medium text-primary"
+            }
+          >
+            {priorityLabel(task.priority)}
+          </span>
+        </div>
+
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-6">{task.title}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+            {task.milestone?.project.title ?? "独立任务"} · {dueText(task.dueDate)}
+          </p>
+        </div>
+
+        <p className="line-clamp-2 rounded-xl border border-[#d5e4e8] bg-[#f5fafb] px-3 py-2 text-xs leading-5 text-muted-foreground">
+          {actionLabel}：{actionReason}
+        </p>
+
+        <div className="mt-auto flex flex-wrap gap-2">
+          <TaskMoveForm task={task} compact />
+          {!task.milestoneId ? (
+            <TaskMilestoneAttachForm
+              task={task}
+              milestones={milestones}
+              returnTo={returnTo}
+              compact
+            />
+          ) : null}
+          {isExperimentCandidate ? (
+            <CreateExperimentFromTaskButton task={task} compact />
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1070,6 +1174,27 @@ function isExperimentCandidateTask(task: Task) {
   return /实验|试验|复现|对照|数据|指标|样本|采集|测量|仿真|simulation|experiment|dataset|metric|ablation/i.test(
     [task.title, task.description, task.tags].filter(Boolean).join(" "),
   );
+}
+
+function prioritizePushTasks(tasks: TaskFull[]) {
+  return [...tasks].sort((left, right) => {
+    const rank = pushTaskRank(left) - pushTaskRank(right);
+    if (rank !== 0) return rank;
+
+    return taskRank(left) - taskRank(right);
+  });
+}
+
+function pushTaskRank(task: TaskFull) {
+  const distance = daysUntil(task.dueDate);
+
+  if (distance !== null && distance < 0) return 0;
+  if (distance === 0) return 1;
+  if (task.priority === "high") return 2;
+  if (task.status === "doing") return 3;
+  if (isExperimentCandidateTask(task)) return 4;
+  if (!task.milestoneId) return 5;
+  return 6;
 }
 
 function taskMatchesProjectBase(task: TaskFull, q?: string, projectId?: string) {
