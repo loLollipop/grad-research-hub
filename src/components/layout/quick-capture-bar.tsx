@@ -6,116 +6,16 @@ import { Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { quickCapture } from "@/lib/actions";
-
-const captureExamples = [
-  "导师 反馈：先补对照实验",
-  "卡点 模型在第三批数据上不稳定",
-  "观察 样本 B 的裂纹扩展更明显",
-  "结果 消融实验准确率提升 2%",
-  "文献 补读最新综述",
-  "组会 周五汇报准备图表",
-  "复盘 今天失败可能是参数窗口太窄",
-] as const;
-
-const captureTargets = {
-  idle: {
-    label: "等待输入",
-    detail: "写一句话后显示去向",
-  },
-  task: {
-    label: "任务",
-    detail: "进入课题页待办队列",
-  },
-  experiment: {
-    label: "实验",
-    detail: "生成实验记录草稿",
-  },
-  result: {
-    label: "成果",
-    detail: "进入结果证据台",
-  },
-  paper: {
-    label: "文献",
-    detail: "进入待读文献",
-  },
-  admin: {
-    label: "事务",
-    detail: "进入组会/材料提醒",
-  },
-  dataset: {
-    label: "数据",
-    detail: "登记数据来源",
-  },
-  note: {
-    label: "笔记",
-    detail: "进入收件箱",
-  },
-} as const;
-
-type CaptureTargetKey = keyof typeof captureTargets;
-
-const captureAlias: Record<string, CaptureTargetKey> = {
-  任务: "task",
-  待办: "task",
-  下一步: "task",
-  行动: "task",
-  导师: "task",
-  反馈: "task",
-  卡点: "task",
-  问题: "task",
-  待确认: "task",
-  todo: "task",
-  task: "task",
-  t: "task",
-  实验: "experiment",
-  试验: "experiment",
-  观察: "experiment",
-  现象: "experiment",
-  复盘: "experiment",
-  失败: "experiment",
-  experiment: "experiment",
-  exp: "experiment",
-  e: "experiment",
-  文献: "paper",
-  论文: "paper",
-  阅读: "paper",
-  article: "paper",
-  paper: "paper",
-  p: "paper",
-  事务: "admin",
-  提醒: "admin",
-  组会: "admin",
-  会议: "admin",
-  截止: "admin",
-  材料: "admin",
-  报销: "admin",
-  meeting: "admin",
-  deadline: "admin",
-  admin: "admin",
-  结果: "result",
-  成果: "result",
-  证据: "result",
-  result: "result",
-  evidence: "result",
-  数据: "dataset",
-  数据集: "dataset",
-  dataset: "dataset",
-  data: "dataset",
-  笔记: "note",
-  想法: "note",
-  灵感: "note",
-  idea: "note",
-  note: "note",
-  写作: "note",
-  周报: "note",
-  初稿: "note",
-  draft: "note",
-};
+import {
+  inferQuickCaptureTarget,
+  quickCaptureExamples,
+  quickCaptureTargets,
+} from "@/lib/quick-capture";
 
 export function QuickCaptureBar() {
   const [content, setContent] = useState("");
   const examplesId = useId();
-  const target = captureTargets[inferCaptureTarget(content)];
+  const target = quickCaptureTargets[inferQuickCaptureTarget(content)];
 
   return (
     <form action={quickCapture} className="w-full max-w-3xl">
@@ -131,7 +31,7 @@ export function QuickCaptureBar() {
             className="h-9 rounded-xl border-transparent bg-white/0 pl-8 text-sm shadow-none focus-visible:bg-white/88 md:h-10"
           />
           <datalist id={examplesId}>
-            {captureExamples.map((example) => (
+            {quickCaptureExamples.map((example) => (
               <option key={example} value={example} />
             ))}
           </datalist>
@@ -147,7 +47,7 @@ export function QuickCaptureBar() {
           <span className="hidden sm:inline">· {target.detail}</span>
         </div>
         <div className="hidden min-w-0 flex-1 gap-1.5 overflow-x-auto lg:flex">
-          {captureExamples.map((example) => (
+          {quickCaptureExamples.map((example) => (
             <button
               key={example}
               type="button"
@@ -162,28 +62,4 @@ export function QuickCaptureBar() {
       </div>
     </form>
   );
-}
-
-function inferCaptureTarget(content: string): CaptureTargetKey {
-  if (!content.trim()) return "idle";
-
-  const prefix = extractPrefix(content);
-  if (!prefix) return "note";
-
-  return captureAlias[prefix.trim().replace(/^[/#]/, "").toLowerCase()] ?? "note";
-}
-
-function extractPrefix(content: string) {
-  const trimmed = content.trim();
-  const colonMatch = trimmed.match(/^([^:：]{1,16})[:：]\s*(.+)$/);
-  if (colonMatch?.[1] && colonMatch[2]?.trim()) {
-    return colonMatch[1];
-  }
-
-  const tokenMatch = trimmed.match(/^([/#]?[A-Za-z][\w-]{0,15}|[/#]?[\p{Script=Han}]{1,8})\s+(.+)$/u);
-  if (tokenMatch?.[1] && tokenMatch[2]?.trim()) {
-    return tokenMatch[1];
-  }
-
-  return null;
 }
