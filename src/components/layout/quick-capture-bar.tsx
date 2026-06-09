@@ -17,7 +17,9 @@ export function QuickCaptureBar() {
   const examplesId = useId();
   const helpId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const target = quickCaptureTargets[inferQuickCaptureTarget(content)];
+  const hasContent = content.trim().length > 0;
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -44,7 +46,7 @@ export function QuickCaptureBar() {
   }, []);
 
   return (
-    <form action={quickCapture} className="w-full max-w-3xl">
+    <form ref={formRef} action={quickCapture} className="w-full max-w-3xl">
       <div className="command-bar flex items-center gap-1.5 rounded-2xl border border-border/60 bg-white/68 p-1 md:gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -58,6 +60,11 @@ export function QuickCaptureBar() {
               if (event.key === "Escape" && content) {
                 event.preventDefault();
                 setContent("");
+              }
+
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && hasContent) {
+                event.preventDefault();
+                formRef.current?.requestSubmit();
               }
             }}
             aria-describedby={helpId}
@@ -76,7 +83,11 @@ export function QuickCaptureBar() {
             ))}
           </datalist>
         </div>
-        <Button type="submit" className="h-9 shrink-0 rounded-xl px-3 md:h-10 md:px-4">
+        <Button
+          type="submit"
+          className="h-9 shrink-0 rounded-xl px-3 md:h-10 md:px-4"
+          disabled={!hasContent}
+        >
           <Sparkles className="size-4" />
           捕捉
         </Button>
@@ -89,7 +100,7 @@ export function QuickCaptureBar() {
           <span className="font-medium text-primary">将保存到：{target.label}</span>
           <span className="hidden sm:inline">· {target.detail}</span>
           <span className="hidden border-l border-border/70 pl-1.5 xl:inline">
-            Ctrl/Cmd+K 聚焦，Esc 清空
+            Ctrl/Cmd+K 聚焦，Ctrl/Cmd+Enter 提交，Esc 清空
           </span>
         </div>
         <div className="hidden min-w-0 flex-1 gap-1.5 overflow-x-auto lg:flex">
