@@ -276,6 +276,8 @@ export default async function AdminPage({ searchParams }: Props) {
 
       <section className="workbench-dual-grid grid gap-4 xl:grid-cols-[0.34fr_0.66fr]">
         <aside className="grid content-start gap-4">
+          <QuickAdminCapture />
+
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -611,6 +613,75 @@ function AdminStackItem({
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
       <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
     </div>
+  );
+}
+
+function QuickAdminCapture() {
+  return (
+    <Card className="workbench-card border-primary/12 bg-[linear-gradient(135deg,rgba(239,247,247,0.94),rgba(255,250,238,0.76))]">
+      <CardHeader className="border-b border-white/70 bg-white/38 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <Inbox className="size-4 text-primary" />
+          30 秒登记小事
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={createAdminItem} className="grid gap-3">
+          <Field label="要处理什么">
+            <Input
+              name="title"
+              required
+              placeholder="例如：周五组会补两张结果图"
+              className="h-10 border-[#cadbe1] bg-white/92 font-medium"
+            />
+          </Field>
+
+          <input type="hidden" name="status" value="todo" />
+          <input type="hidden" name="tags" value="快速事务" />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="类型">
+              <select
+                name="type"
+                defaultValue="meeting"
+                className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
+              >
+                {itemTypes.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="截止">
+              <Input name="dueDate" type="date" className="h-9 border-[#d4e0e5] bg-white/90" />
+            </Field>
+          </div>
+
+          <Field label="地点 / 渠道">
+            <Input
+              name="location"
+              placeholder="会议室 / 微信群 / 学院系统"
+              className="h-9 border-[#d4e0e5] bg-white/90"
+            />
+          </Field>
+
+          <Textarea
+            name="notes"
+            rows={3}
+            placeholder={"入口/地点：\n缺什么："}
+            className="min-h-24 resize-none border-[#d4e0e5] bg-white/90 text-sm leading-6"
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2">
+            <p className="text-xs leading-5 text-muted-foreground">
+              先收住小事，处理完就回科研主线。
+            </p>
+            <SubmitButton className="w-fit">加入减负栈</SubmitButton>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
