@@ -68,6 +68,25 @@ type ClosingItem = {
   tone: "urgent" | "watch" | "quiet";
 };
 
+type WorkspaceCounts = {
+  papers: number;
+  projects: number;
+  tasks: number;
+  experiments: number;
+  notes: number;
+  datasets: number;
+  results: number;
+  adminItems: number;
+  substantive: number;
+};
+
+type GuideNoteSummary = {
+  id: string;
+  updatedAt: Date;
+};
+
+const FIRST_RUN_GUIDE_MARKER = "first-run-guide:v1";
+
 export default async function DashboardPage() {
   const dailyPlanPeriod = getDailyPlanPeriod();
   const meetingBriefPeriod = getMeetingBriefPeriod();
@@ -91,7 +110,8 @@ export default async function DashboardPage() {
     results,
     currentDailyPlan,
     currentMeetingBrief,
-    totalRecords,
+    workspaceCounts,
+    currentFirstRunGuide,
   ] = await Promise.all([
     prisma.task.groupBy({ by: ["status"], _count: true }),
     prisma.task.findMany({
@@ -182,15 +202,51 @@ export default async function DashboardPage() {
       prisma.project.count(),
       prisma.task.count(),
       prisma.experiment.count(),
-      prisma.note.count(),
+      prisma.note.count({
+        where: {
+          NOT: {
+            content: { contains: FIRST_RUN_GUIDE_MARKER, mode: "insensitive" },
+          },
+        },
+      }),
       prisma.dataset.count(),
       prisma.result.count(),
       prisma.adminItem.count(),
-    ]).then((counts) => counts.reduce((sum, count) => sum + count, 0)),
+    ]).then<WorkspaceCounts>(
+      ([
+        papers,
+        projects,
+        tasks,
+        experiments,
+        notes,
+        datasets,
+        results,
+        adminItems,
+      ]) => ({
+        papers,
+        projects,
+        tasks,
+        experiments,
+        notes,
+        datasets,
+        results,
+        adminItems,
+        substantive:
+          papers + projects + tasks + experiments + notes + datasets + results + adminItems,
+      }),
+    ),
+    prisma.note.findFirst({
+      where: {
+        folder: "上手",
+        content: { contains: FIRST_RUN_GUIDE_MARKER, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, updatedAt: true },
+    }),
   ]);
 
-  if (totalRecords === 0) {
-    return <FirstRunDashboard />;
+  if (workspaceCounts.substantive === 0) {
+    return <FirstRunDashboard guideNote={currentFirstRunGuide} />;
   }
 
   const todo = taskCounts.find((item) => item.status === "todo")?._count ?? 0;
@@ -483,6 +539,8 @@ export default async function DashboardPage() {
         evidence={`${manuscriptReady} 条可写入`}
       />
 
+      <StarterProgress counts={workspaceCounts} guideNote={currentFirstRunGuide} />
+
       <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/72 p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)] lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
           <p className="text-sm font-semibold hero-title">
@@ -742,7 +800,7 @@ export default async function DashboardPage() {
   );
 }
 
-function FirstRunDashboard() {
+function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }) {
   return (
     <div className="grid gap-5">
       <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
@@ -765,12 +823,19 @@ function FirstRunDashboard() {
               建一个正在做的课题，再写下第一条实验/笔记，首页就会开始帮你排序。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <form action={createFirstRunGuideNote}>
-                <SubmitButton variant="default">
+              {guideNote ? (
+                <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${guideNote.id}`}>
                   <FileText className="size-4" />
-                  生成上手清单
-                </SubmitButton>
-              </form>
+                  打开上手清单
+                </Link>
+              ) : (
+                <form action={createFirstRunGuideNote}>
+                  <SubmitButton variant="default">
+                    <FileText className="size-4" />
+                    生成上手清单
+                  </SubmitButton>
+                </form>
+              )}
               <Link className={buttonVariants({ variant: "outline" })} href="/papers">
                 <UploadCloud className="size-4" />
                 同步文献
@@ -789,12 +854,21 @@ function FirstRunDashboard() {
                 10 分钟开箱顺序
               </p>
               <div className="mt-4 grid gap-2.5">
-                <FirstRunStep
-                  index="01"
-                  title="生成 10 分钟上手清单"
-                  detail="先得到一篇可勾选路线图，之后在笔记里继续改。"
-                  action={createFirstRunGuideNote}
-                />
+                {guideNote ? (
+                  <FirstRunStep
+                    index="01"
+                    title="打开 10 分钟上手清单"
+                    detail={`已生成，更新 ${formatDateTime(guideNote.updatedAt)}。继续按清单完成真实数据。`}
+                    href={`/notes?note=${guideNote.id}`}
+                  />
+                ) : (
+                  <FirstRunStep
+                    index="01"
+                    title="生成 10 分钟上手清单"
+                    detail="先得到一篇可勾选路线图，之后在笔记里继续改。"
+                    action={createFirstRunGuideNote}
+                  />
+                )}
                 <FirstRunStep
                   index="02"
                   title="同步 Zotero 或补一篇临时文献"
@@ -863,6 +937,14 @@ function FirstRunDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
+            <ChecklistRow
+              title={guideNote ? "上手清单已生成，继续完成真实数据" : "先生成一篇 10 分钟上手清单"}
+              detail={
+                guideNote
+                  ? "上手清单不会再把首页误判为已完成开箱；真正开始以后再进入日常指挥台。"
+                  : "清单只是路线图，不算正式数据。生成后首页仍会保留开箱引导。"
+              }
+            />
             <ChecklistRow title="确认设置中心能保存 Key" detail="后续换模型、换 Zotero Key 都在网页端完成。" />
             <ChecklistRow title="把一个真实课题放进去" detail="不要搬历史资料，先放当前正在推进的题目。" />
             <ChecklistRow title="留下第一条能复盘的记录" detail="实验目的、阅读摘录、组会提醒，任选一个。" />
@@ -885,6 +967,162 @@ function FirstRunDashboard() {
         </Card>
       </section>
     </div>
+  );
+}
+
+function StarterProgress({
+  counts,
+  guideNote,
+}: {
+  counts: WorkspaceCounts;
+  guideNote: GuideNoteSummary | null;
+}) {
+  const steps = [
+    {
+      done: Boolean(guideNote),
+      icon: FileText,
+      title: "上手清单",
+      detail: guideNote ? `已生成，更新 ${formatDateTime(guideNote.updatedAt)}` : "先生成一篇可勾选路线图",
+      href: guideNote ? `/notes?note=${guideNote.id}` : undefined,
+      action: createFirstRunGuideNote,
+      actionLabel: guideNote ? "打开清单" : "生成清单",
+    },
+    {
+      done: counts.papers > 0,
+      icon: BookOpenText,
+      title: "文献入口",
+      detail: counts.papers ? `${counts.papers} 篇文献已进入阅读队列` : "同步 Zotero 或补一篇临时文献",
+      href: "/papers",
+      actionLabel: counts.papers ? "看文献" : "去同步",
+    },
+    {
+      done: counts.projects > 0 || counts.tasks > 0,
+      icon: FolderKanban,
+      title: "课题主线",
+      detail:
+        counts.projects || counts.tasks
+          ? `${counts.projects} 个课题，${counts.tasks} 个任务`
+          : "建一个正在推进的课题和 1-3 个任务",
+      href: "/projects",
+      actionLabel: counts.projects || counts.tasks ? "看课题" : "建课题",
+    },
+    {
+      done: counts.experiments + counts.notes + counts.results > 0,
+      icon: FlaskConical,
+      title: "研究记录",
+      detail:
+        counts.experiments + counts.notes + counts.results
+          ? `${counts.experiments} 条实验，${counts.results} 条结果，${counts.notes} 篇笔记`
+          : "留下第一条实验、结果或笔记",
+      href: counts.experiments ? "/experiments" : "/notes?mode=new",
+      actionLabel: counts.experiments + counts.notes + counts.results ? "继续记录" : "写一条",
+    },
+  ];
+  const doneCount = steps.filter((step) => step.done).length;
+  const progress = Math.round((doneCount / steps.length) * 100);
+
+  if (doneCount === steps.length || (counts.substantive > 8 && doneCount >= 3)) {
+    return null;
+  }
+
+  return (
+    <section className="grid gap-3 rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(240,247,247,0.76))] p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_18rem] lg:items-center">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+            <CircleCheck className="size-4 text-primary" />
+            启动进度
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            这不是配置清单，只确认工作台有没有接住真实科研流。完成后这里会自动消失。
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/72 bg-white/64 p-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>开箱完成度</span>
+            <span className="font-medium hero-title">{doneCount}/{steps.length}</span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+            <div className="h-full rounded-full bg-[#365a7d]" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {steps.map((step) => (
+          <StarterStepCard key={step.title} {...step} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StarterStepCard({
+  action,
+  actionLabel,
+  detail,
+  done,
+  href,
+  icon: Icon,
+  title,
+}: {
+  action?: () => Promise<void>;
+  actionLabel: string;
+  detail: string;
+  done: boolean;
+  href?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+}) {
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={
+            done
+              ? "flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#d8e5ee] bg-[#eef4fb] text-[#365a7d]"
+          }
+        >
+          <Icon className="size-4" />
+        </span>
+        <span
+          className={
+            done
+              ? "rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"
+              : "rounded-full border bg-white px-2 py-0.5 text-[11px] text-muted-foreground"
+          }
+        >
+          {done ? "已完成" : "待处理"}
+        </span>
+      </div>
+      <span>
+        <span className="block font-semibold hero-title">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
+      </span>
+      <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
+        {actionLabel}
+        <ArrowRight className="size-3.5" />
+      </span>
+    </>
+  );
+  const className =
+    "grid h-full gap-3 rounded-xl border border-border/70 bg-white/74 p-3 text-left transition hover:border-primary/25 hover:bg-white hover:shadow-[0_10px_24px_rgba(27,42,56,0.05)]";
+
+  if (!href && action) {
+    return (
+      <form action={action}>
+        <button type="submit" className={className}>
+          {body}
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <Link href={href ?? "/"} className={className}>
+      {body}
+    </Link>
   );
 }
 
