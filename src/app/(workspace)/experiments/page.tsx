@@ -68,6 +68,7 @@ function valueOf(value: string | string[] | undefined) {
 
 export default async function ExperimentsPage({ searchParams }: Props) {
   const params = await searchParams;
+  const now = new Date();
   const q = valueOf(params.q)?.trim();
   const projectId = valueOf(params.project);
   const status = valueOf(params.status);
@@ -95,7 +96,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
     where.template = template;
   }
 
-  const [experiments, projects, papers] = await Promise.all([
+  const [experiments, projects, papers, closeoutCandidates] = await Promise.all([
     prisma.experiment.findMany({
       where,
       orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
@@ -110,16 +111,33 @@ export default async function ExperimentsPage({ searchParams }: Props) {
     }),
     prisma.project.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.paper.findMany({ orderBy: { updatedAt: "desc" } }),
+    prisma.experiment.findMany({
+      where: {
+        OR: [
+          { status: "failed" },
+          { status: "running" },
+          { status: "completed", results: { none: {} } },
+        ],
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 18,
+      include: {
+        project: true,
+        papers: true,
+        results: {
+          orderBy: { updatedAt: "desc" },
+          select: { id: true, title: true, updatedAt: true },
+        },
+      },
+    }),
   ]);
 
   const running = experiments.filter((experiment) => experiment.status === "running").length;
   const completed = experiments.filter((experiment) => experiment.status === "completed").length;
   const failed = experiments.filter((experiment) => experiment.status === "failed").length;
   const selectedProjectTitle = projects.find((project) => project.id === projectId)?.title;
-  const experimentStack = [
-    ...experiments.filter((experiment) => experiment.status === "running"),
-    ...experiments.filter((experiment) => experiment.status === "failed"),
-  ].slice(0, 3);
+  const experimentStack = prioritizeExperimentCloseout(closeoutCandidates).slice(0, 3);
+  const totalCloseoutCount = closeoutCandidates.length;
 
   return (
     <div className="grid gap-5">
@@ -174,9 +192,8 @@ export default async function ExperimentsPage({ searchParams }: Props) {
                   experimentStack.map((experiment, index) => (
                     <ExperimentStackItem
                       key={experiment.id}
+                      experiment={experiment}
                       index={`0${index + 1}`}
-                      title={experiment.title}
-                      detail={`${statusLabel(experiment.status)} · ${experiment.project?.title ?? "未关联项目"}`}
                     />
                   ))
                 ) : (
@@ -189,11 +206,40 @@ export default async function ExperimentsPage({ searchParams }: Props) {
               </div>
             </div>
             <p className="mt-4 text-xs leading-5 text-white/62">
-              先收口进行中和失败实验，再把关键结果回填到正文。
+              从全库自动挑 3 条最该收口的实验，不受当前筛选影响。
             </p>
           </div>
         </div>
       </section>
+
+      {experimentStack.length ? (
+        <section className="grid gap-3 rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(240,247,247,0.78))] p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)]">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+                <TimerReset className="size-4 text-primary" />
+                三项实验收口
+              </p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                先处理失败、久未更新或缺结果证据的实验。目标不是补全所有字段，而是留下能复盘的下一步。
+              </p>
+            </div>
+            <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+              全库待收口 {totalCloseoutCount} 条
+            </span>
+          </div>
+          <div className="grid gap-2 lg:grid-cols-3">
+            {experimentStack.map((experiment, index) => (
+              <ExperimentCloseoutCard
+                key={experiment.id}
+                experiment={experiment}
+                index={index + 1}
+                now={now}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
         <aside className="grid content-start gap-4">
@@ -421,12 +467,14 @@ function ExperimentCloseout({
 
 function ExperimentStackItem({
   index,
+  experiment,
   title,
   detail,
 }: {
   index: string;
-  title: string;
-  detail: string;
+  experiment?: ExperimentFull;
+  title?: string;
+  detail?: string;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.07] p-3">
@@ -434,9 +482,120 @@ function ExperimentStackItem({
         <span className="font-mono text-[11px] font-semibold text-white/50">{index}</span>
         <span className="h-px flex-1 bg-white/12" />
       </div>
-      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">
+        {experiment?.title ?? title}
+      </p>
+      <p className="mt-1 line-clamp-1 text-xs text-white/58">
+        {experiment
+          ? `${statusLabel(experiment.status)} · ${experiment.project?.title ?? "未关联项目"} · 结果 ${experiment.results.length} 条`
+          : detail}
+      </p>
     </div>
+  );
+}
+
+function prioritizeExperimentCloseout(experiments: ExperimentFull[]) {
+  return [...experiments].sort((left, right) => {
+    const statusRank = experimentCloseoutRank(left) - experimentCloseoutRank(right);
+    if (statusRank !== 0) return statusRank;
+
+    const resultRank = left.results.length - right.results.length;
+    if (resultRank !== 0) return resultRank;
+
+    return left.updatedAt.getTime() - right.updatedAt.getTime();
+  });
+}
+
+function experimentCloseoutRank(experiment: ExperimentFull) {
+  if (experiment.status === "failed") return 0;
+  if (experiment.status === "running" && experiment.results.length === 0) return 1;
+  if (experiment.status === "running") return 2;
+  if (experiment.status === "completed" && experiment.results.length === 0) return 3;
+  return 4;
+}
+
+function ExperimentCloseoutCard({
+  experiment,
+  index,
+  now,
+}: {
+  experiment: ExperimentFull;
+  index: number;
+  now: Date;
+}) {
+  const nextAction = experimentNextAction(experiment);
+  const Icon = nextAction.icon;
+  const staleDays = Math.max(
+    0,
+    Math.floor((now.getTime() - experiment.updatedAt.getTime()) / 86_400_000),
+  );
+
+  return (
+    <Card className="border-border/72 bg-white/86 shadow-[0_8px_22px_rgba(27,42,56,0.038)]">
+      <CardContent className="grid h-full gap-3 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-mono text-xs font-semibold text-primary">0{index}</span>
+          <span
+            className={
+              experiment.status === "failed"
+                ? "rounded-full border border-[#edd8a5] bg-[#fff7df] px-2 py-0.5 text-[11px] font-medium text-[#7a5a2f]"
+                : "rounded-full border border-[#c9e0ea] bg-[#eef6f7] px-2 py-0.5 text-[11px] font-medium text-primary"
+            }
+          >
+            {statusLabel(experiment.status)}
+          </span>
+        </div>
+
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-6">{experiment.title}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+            {experiment.project?.title ?? "未关联项目"} · {staleDays ? `${staleDays} 天未更新` : "今天更新"}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] px-3 py-2">
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg border border-[#d5e4e8] bg-white/72 text-primary">
+              <Icon className="size-3.5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs font-medium">{nextAction.label}</span>
+              <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+                {nextAction.detail}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-auto flex flex-wrap gap-2">
+          {experiment.status === "failed" ? (
+            <form action={createExperimentReviewTask}>
+              <input type="hidden" name="id" value={experiment.id} />
+              <Button type="submit" variant="outline" size="sm">
+                <ClipboardList className="size-3.5" />
+                复盘任务
+              </Button>
+            </form>
+          ) : null}
+          {!experiment.results.length ? (
+            <form action={createResultFromExperiment}>
+              <input type="hidden" name="id" value={experiment.id} />
+              <Button type="submit" variant="outline" size="sm">
+                <FileChartColumn className="size-3.5" />
+                结果证据
+              </Button>
+            </form>
+          ) : null}
+          <form action={createExperimentReviewNote}>
+            <input type="hidden" name="id" value={experiment.id} />
+            <Button type="submit" variant={experiment.status === "failed" ? "default" : "outline"} size="sm">
+              <FileText className="size-3.5" />
+              复盘笔记
+            </Button>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
