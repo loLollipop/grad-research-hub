@@ -252,7 +252,14 @@ export default async function ExperimentsPage({ searchParams }: Props) {
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
               {EXPERIMENT_TEMPLATES.map((template) => (
-                <TemplateHint key={template.value} title={template.label} detail={template.detail} />
+                <TemplateHint
+                  key={template.value}
+                  value={template.value}
+                  title={template.label}
+                  detail={template.detail}
+                  projects={projects}
+                  papers={papers}
+                />
               ))}
             </CardContent>
           </Card>
@@ -414,11 +421,41 @@ export default async function ExperimentsPage({ searchParams }: Props) {
   );
 }
 
-function TemplateHint({ title, detail }: { title: string; detail: string }) {
+function TemplateHint({
+  value,
+  title,
+  detail,
+  projects,
+  papers,
+}: {
+  value: string;
+  title: string;
+  detail: string;
+  projects: Project[];
+  papers: Paper[];
+}) {
   return (
     <div className="soft-tile rounded-xl p-3">
-      <p className="font-medium">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium">{title}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+        </div>
+        <CreateDialog
+          title={`新建${title}`}
+          description="已预选模板，只需要补标题、项目和实验正文。"
+          label="使用"
+          icon={Plus}
+          wide
+        >
+          <ExperimentForm
+            action={createExperiment}
+            defaultTemplate={value}
+            projects={projects}
+            papers={papers}
+          />
+        </CreateDialog>
+      </div>
     </div>
   );
 }

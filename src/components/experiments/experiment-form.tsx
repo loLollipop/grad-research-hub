@@ -16,16 +16,18 @@ import { parseTags } from "@/lib/format";
 
 export function ExperimentForm({
   action,
+  defaultTemplate,
   projects,
   papers,
   experiment,
 }: {
   action: (formData: FormData) => Promise<void>;
+  defaultTemplate?: string;
   projects: Project[];
   papers: Paper[];
   experiment?: Experiment & { papers?: Paper[] };
 }) {
-  const initialTemplate = experiment?.template ?? "purpose-method-result";
+  const initialTemplate = experiment?.template ?? defaultTemplate ?? "purpose-method-result";
   const [template, setTemplate] = useState(initialTemplate);
   const [content, setContent] = useState(
     experiment?.content || experimentTemplateContent(initialTemplate),
