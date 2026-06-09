@@ -208,6 +208,8 @@ export default async function SettingsPage({ searchParams }: Props) {
               </a>
             </CardContent>
           </Card>
+
+          <ZoteroQuickGuideCard />
         </aside>
 
         <div className="stretch-panel gap-4 rounded-2xl border border-border/70 bg-white/58 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_12px_28px_rgba(34,48,71,0.035)]">
@@ -496,6 +498,67 @@ function ZoteroSettingsForm({
         <SubmitButton className="w-fit">保存 Zotero</SubmitButton>
       </div>
     </form>
+  );
+}
+
+function ZoteroQuickGuideCard() {
+  const steps = [
+    {
+      title: "创建只读 API Key",
+      detail: "在 Zotero 网页端创建 Key，勾选读取文献库权限即可；研途 Hub 不需要写入 Zotero。",
+      action: "打开 Key 页面",
+      href: "https://www.zotero.org/settings/keys/new",
+    },
+    {
+      title: "填写 Library ID",
+      detail: "个人库填 Zotero userID；群组库填 group ID，并把类型切到“群组”。",
+      action: "查看我的 Key",
+      href: "https://www.zotero.org/settings/keys",
+    },
+    {
+      title: "按需填写 Collection Key",
+      detail: "不填就同步当前库范围；文献很多时，复制某个集合 URL 里的 collections 后缀再分批同步。",
+      action: "查看群组",
+      href: "https://www.zotero.org/groups",
+    },
+  ];
+
+  return (
+    <Card className="workbench-card bg-white/95">
+      <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <UploadCloud className="size-4 text-primary" />
+          Zotero 三步连接
+        </CardTitle>
+        <CardDescription>只同步元数据，不托管 PDF，不替代 Zotero。</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        {steps.map((step, index) => (
+          <div key={step.title} className="soft-tile rounded-xl p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-[#d5e4e8] bg-white/80 font-mono text-[11px] font-semibold text-primary">
+                0{index + 1}
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{step.title}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{step.detail}</p>
+                <a
+                  href={step.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex text-xs font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  {step.action}
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
+        <div className="rounded-xl border border-[#edd8a5] bg-[#fff8e8] px-3 py-2 text-xs leading-5 text-[#6f542c]">
+          常见填错：Collection Key 不是集合名称；个人库和群组库的 Library ID 不能混用；服务器网络访问 Zotero 失败也会导致测试不通过。
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
