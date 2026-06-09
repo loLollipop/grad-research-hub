@@ -83,7 +83,9 @@ export default async function AdminPage({ searchParams }: Props) {
   const q = first(params.q)?.trim();
   const type = first(params.type);
   const status = first(params.status);
-  const meetingBriefPeriod = getMeetingBriefPeriod();
+  const now = new Date();
+  const meetingBriefPeriod = getMeetingBriefPeriod(now, "week");
+  const todayMeetingBriefPeriod = getMeetingBriefPeriod(now, "today");
   const scope = first(params.scope);
   const captured = first(params.captured);
   const currentFilters = { q, type, status, scope };
@@ -104,7 +106,6 @@ export default async function AdminPage({ searchParams }: Props) {
     where.status = status;
   }
   if (scope === "today") {
-    const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setHours(0, 0, 0, 0);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -120,6 +121,7 @@ export default async function AdminPage({ searchParams }: Props) {
     typeCounts,
     statusCounts,
     currentMeetingBrief,
+    currentTodayMeetingBrief,
     briefTaskCount,
     briefResultCount,
     briefPaperCount,
@@ -137,6 +139,14 @@ export default async function AdminPage({ searchParams }: Props) {
       where: {
         folder: "组会",
         content: { contains: meetingBriefPeriod.marker, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.note.findFirst({
+      where: {
+        folder: "组会",
+        content: { contains: todayMeetingBriefPeriod.marker, mode: "insensitive" },
       },
       orderBy: { updatedAt: "desc" },
       select: { id: true, updatedAt: true },
@@ -320,14 +330,16 @@ export default async function AdminPage({ searchParams }: Props) {
             <CardContent className="grid gap-2">
               <AdvisorPrepItem
                 index="01"
-                label="先有草稿"
-                value={currentMeetingBrief ? "已生成" : "待生成"}
+                label="先有沟通单"
+                value={currentTodayMeetingBrief ? "今日已生成" : currentMeetingBrief ? "周报已生成" : "待生成"}
                 detail={
-                  currentMeetingBrief
-                    ? `覆盖 ${meetingBriefPeriod.shortLabel}，可继续压缩成 5 分钟版本。`
-                    : "先自动整理任务、实验、结果、文献和阻塞，别从空白文档开始。"
+                  currentTodayMeetingBrief
+                    ? `覆盖今天，可直接用于临时碰导师或会前 5 分钟准备。`
+                    : currentMeetingBrief
+                      ? `覆盖 ${meetingBriefPeriod.shortLabel}，可继续压缩成 5 分钟版本。`
+                      : "先自动整理任务、实验、结果、文献和阻塞，别从空白文档开始。"
                 }
-                done={Boolean(currentMeetingBrief)}
+                done={Boolean(currentTodayMeetingBrief || currentMeetingBrief)}
               />
               <AdvisorPrepItem
                 index="02"
@@ -344,6 +356,23 @@ export default async function AdminPage({ searchParams }: Props) {
                 done={meetingOpenCount > 0 || briefPaperCount > 0}
               />
               <div className="mt-1 flex flex-wrap gap-2 border-t border-border/65 pt-3">
+                {currentTodayMeetingBrief ? (
+                  <Link
+                    className={buttonVariants({ variant: "default", size: "sm" })}
+                    href={`/notes?note=${currentTodayMeetingBrief.id}`}
+                  >
+                    <FileText className="size-3.5" />
+                    今日沟通单
+                  </Link>
+                ) : (
+                  <form action={createMeetingBriefNote}>
+                    <input type="hidden" name="scope" value="today" />
+                    <SubmitButton variant="default" size="sm">
+                      <FileText className="size-3.5" />
+                      今日沟通单
+                    </SubmitButton>
+                  </form>
+                )}
                 {currentMeetingBrief ? (
                   <Link
                     className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -506,26 +535,46 @@ export default async function AdminPage({ searchParams }: Props) {
           <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#173042]">
-                {currentMeetingBrief ? "本周组会/周报草稿已经准备好" : "组会/导师周报准备"}
+                {currentTodayMeetingBrief
+                  ? "今日导师沟通单已经准备好"
+                  : currentMeetingBrief
+                    ? "本周组会/周报草稿已经准备好"
+                    : "组会/导师周报准备"}
               </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                {currentMeetingBrief
-                  ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
-                  : "自动把近期任务、事务、实验、结果和待读文献汇成一篇可编辑草稿，先写结论，再删减细节。"}
+                {currentTodayMeetingBrief
+                  ? `覆盖今天，最近更新 ${formatDateTime(currentTodayMeetingBrief.updatedAt)}。适合临时碰导师、当天组会或发一段简短进展。`
+                  : currentMeetingBrief
+                    ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
+                    : "自动把近期任务、事务、实验、结果和待读文献汇成可编辑草稿，先写结论，再删减细节。"}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 lg:justify-end">
-              {currentMeetingBrief ? (
-                <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentMeetingBrief.id}`}>
+              {currentTodayMeetingBrief ? (
+                <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentTodayMeetingBrief.id}`}>
                   <FileText className="size-4" />
-                  继续编辑草稿
+                  打开今日沟通单
+                </Link>
+              ) : (
+                <form action={createMeetingBriefNote}>
+                  <input type="hidden" name="scope" value="today" />
+                  <SubmitButton variant="default" className="w-fit">
+                    <FileText className="size-4" />
+                    生成今日沟通单
+                  </SubmitButton>
+                </form>
+              )}
+              {currentMeetingBrief ? (
+                <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentMeetingBrief.id}`}>
+                  <FileText className="size-4" />
+                  周报草稿
                 </Link>
               ) : (
                 <form action={createMeetingBriefNote}>
                   <input type="hidden" name="scope" value="week" />
-                  <SubmitButton variant="default" className="w-fit">
+                  <SubmitButton variant="outline" className="w-fit">
                     <FileText className="size-4" />
-                    生成周报笔记
+                    生成周报草稿
                   </SubmitButton>
                 </form>
               )}

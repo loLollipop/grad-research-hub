@@ -3,6 +3,7 @@ export type MeetingBriefScope = "today" | "week";
 export type MeetingBriefPeriod = {
   endExclusive: Date;
   marker: string;
+  scope: MeetingBriefScope;
   shortLabel: string;
   start: Date;
   title: string;
@@ -23,9 +24,10 @@ export function getMeetingBriefPeriod(
   return {
     endExclusive,
     marker: `<!-- meeting-brief:${scope}:${startKey} -->`,
+    scope,
     shortLabel,
     start,
-    title: scope === "today" ? `组会/周报准备 ${startKey}` : `组会/周报准备 ${startKey} 至 ${endKey}`,
+    title: scope === "today" ? `今日导师沟通单 ${startKey}` : `组会/周报准备 ${startKey} 至 ${endKey}`,
   };
 }
 

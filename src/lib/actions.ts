@@ -3271,6 +3271,9 @@ function meetingBriefMarkdown({
   results: MeetingBriefResult[];
   papers: Paper[];
 }) {
+  const isToday = period.scope === "today";
+  const planLabel = isToday ? "今天沟通后的最小动作" : "下周最小计划";
+  const summaryLabel = isToday ? "3 分钟沟通版本" : "5 分钟汇报版本";
   const lines = [
     period.marker,
     "",
@@ -3279,19 +3282,19 @@ function meetingBriefMarkdown({
     `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
     `覆盖范围：${period.shortLabel}`,
     "",
-    "> 自动整理自研途 Hub。先把“本次沟通先看这里”压缩到 5 分钟能讲完，再按需要删减下面的证据材料。",
+    `> 自动整理自研途 Hub。先把“本次沟通先看这里”压缩成${isToday ? "临时沟通能直接说出口" : "5 分钟能讲完"}的版本，再按需要删减下面的证据材料。`,
     "",
-    "## 本次沟通先看这里",
+    `## 本次${isToday ? "导师沟通" : "组会/周报"}先看这里`,
     "",
     "- 最想让导师知道的进展：",
     "- 最需要导师判断的问题：",
     "- 会后立刻要做的下一步：",
     "",
-    "## 5 分钟汇报版本",
+    `## ${summaryLabel}`,
     "",
-    "- 本周推进：",
+    isToday ? "- 今天可说的进展：" : "- 本周推进：",
     "- 当前结论：",
-    "- 下周最小计划：",
+    isToday ? "- 今天之后立刻要做：" : "- 下周最小计划：",
     "- 主要风险 / 阻塞：",
     "",
     "## 需要导师确认",
@@ -3301,7 +3304,7 @@ function meetingBriefMarkdown({
     "- [ ] 文献或写作重点：",
     "- [ ] 哪个结果可以进入组会/论文主线：",
     "",
-    "## 下周最小计划",
+    `## ${planLabel}`,
     "",
   ];
 
@@ -3398,7 +3401,9 @@ function meetingBriefMarkdown({
     "- [ ] 把需要补实验的结果转成待补任务",
     "- [ ] 把新的阅读建议同步到 Zotero 或文献台",
     "- [ ] 把本次会议结论写回相关实验/结果/笔记",
-    "- [ ] 如果要发周报，删掉内部备注，只保留进展、问题和下周计划",
+    isToday
+      ? "- [ ] 如果只是临时沟通，删掉无关证据，只保留进展、问题和下一步"
+      : "- [ ] 如果要发周报，删掉内部备注，只保留进展、问题和下周计划",
   );
 
   return lines.join("\n");
