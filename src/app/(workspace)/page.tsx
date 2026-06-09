@@ -26,6 +26,7 @@ import { SubmitButton } from "@/components/shared/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  createClosingReviewNote,
   createDailyPlanNote,
   createFirstRunGuideNote,
   createMeetingBriefNote,
@@ -1168,9 +1169,17 @@ function ClosingRadar({ items }: { items: ClosingItem[] }) {
             只提醒最容易被遗忘的任务、实验、结果和文献，不增加新的配置。
           </p>
         </div>
-        <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
-          {items.length ? `${items.length} 项需要看一眼` : "状态稳定"}
-        </span>
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+            {items.length ? `${items.length} 项需要看一眼` : "状态稳定"}
+          </span>
+          <form action={createClosingReviewNote}>
+            <SubmitButton variant="outline" className="h-8 px-2.5 text-xs">
+              <TimerReset className="size-3.5" />
+              生成收口清单
+            </SubmitButton>
+          </form>
+        </div>
       </div>
 
       {items.length ? (

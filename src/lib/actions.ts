@@ -2101,6 +2101,95 @@ export async function createDailyPlanNote() {
   redirect(`/notes?note=${note.id}`);
 }
 
+export async function createClosingReviewNote() {
+  const now = new Date();
+  const marker = closingReviewMarker(now);
+
+  const existingNote = await prisma.note.findFirst({
+    where: {
+      folder: "日计划",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existingNote) {
+    redirect(`/notes?note=${existingNote.id}`);
+  }
+
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const staleSince = new Date(todayStart);
+  staleSince.setDate(staleSince.getDate() - 7);
+  const readingSince = new Date(todayStart);
+  readingSince.setDate(readingSince.getDate() - 14);
+
+  const [overdueTasks, staleTasks, staleExperiments, results, stalePapers] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        status: { not: "done" },
+        dueDate: { lt: todayStart },
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 8,
+      include: { milestone: { include: { project: true } } },
+    }),
+    prisma.task.findMany({
+      where: {
+        status: "doing",
+        updatedAt: { lt: staleSince },
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 8,
+      include: { milestone: { include: { project: true } } },
+    }),
+    prisma.experiment.findMany({
+      where: {
+        status: "running",
+        updatedAt: { lt: staleSince },
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 8,
+      include: { project: true, results: true },
+    }),
+    prisma.result.findMany({
+      orderBy: { updatedAt: "asc" },
+      take: 12,
+      include: { dataset: true, experiment: { include: { project: true } } },
+    }),
+    prisma.paper.findMany({
+      where: {
+        readStatus: { in: ["unread", "reading"] },
+        updatedAt: { lt: readingSince },
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 8,
+    }),
+  ]);
+
+  const note = await prisma.note.create({
+    data: {
+      title: `今日收口清单 ${now.toISOString().slice(0, 10)}`,
+      folder: "日计划",
+      content: closingReviewMarkdown({
+        generatedAt: now,
+        marker,
+        overdueTasks,
+        staleTasks,
+        staleExperiments,
+        results: results.filter(resultNeedsClosing).slice(0, 8),
+        stalePapers,
+      }),
+      tags: tagsToString(["收口清单", "日计划", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
 export async function createFirstRunGuideNote() {
   const marker = firstRunGuideMarker();
   const existingNote = await prisma.note.findFirst({
@@ -3309,6 +3398,133 @@ function dailyPlanMarkdown({
     "- [ ] 今天读过的文献是否生成阅读笔记",
     "- [ ] 今天得到的结果是否能变成写作素材",
     "- [ ] 明天第一件事是否已经明确",
+  );
+
+  return lines.join("\n");
+}
+
+function closingReviewMarker(value: Date) {
+  return `closing-review:${value.toISOString().slice(0, 10)}`;
+}
+
+function resultNeedsClosing(result: Result) {
+  const config = parseJsonObjectText(result.config);
+  return config.reproducibility !== "verified" || (!config.manuscriptReady && !result.artifactPath);
+}
+
+function closingReviewMarkdown({
+  generatedAt,
+  marker,
+  overdueTasks,
+  staleTasks,
+  staleExperiments,
+  results,
+  stalePapers,
+}: {
+  generatedAt: Date;
+  marker: string;
+  overdueTasks: DailyPlanTask[];
+  staleTasks: DailyPlanTask[];
+  staleExperiments: DailyPlanExperiment[];
+  results: DailyPlanResult[];
+  stalePapers: Paper[];
+}) {
+  const lines = [
+    `<!-- ${marker} -->`,
+    "",
+    `# 今日收口清单 ${generatedAt.toISOString().slice(0, 10)}`,
+    "",
+    `生成时间：${generatedAt.toLocaleString("zh-CN", { hour12: false })}`,
+    "",
+    "> 不新增管理负担。只把逾期、久未更新、待补证据和长期未处理文献收成一张当天可编辑清单。",
+    "",
+    "## 先处理：逾期任务",
+    "",
+  ];
+
+  if (overdueTasks.length) {
+    overdueTasks.forEach((task) => {
+      lines.push(
+        `- [ ] ${task.title}`,
+        `  - 归属：${taskOwnerText(task)}；截止：${dateText(task.dueDate)}；优先级：${taskPriorityText(task.priority)}`,
+        task.description?.trim() ? `  - 必要上下文：${oneLine(task.description, 120)}` : "",
+      );
+    });
+  } else {
+    lines.push("- 暂无逾期任务。");
+  }
+
+  lines.push("", "## 看一眼：久未更新任务", "");
+
+  if (staleTasks.length) {
+    staleTasks.forEach((task) => {
+      lines.push(
+        `- [ ] ${task.title}`,
+        `  - 归属：${taskOwnerText(task)}；${dateText(task.updatedAt)} 后未更新`,
+        "  - 今天只需判断：继续推进 / 改期 / 标记完成 / 拆成更小任务",
+      );
+    });
+  } else {
+    lines.push("- 暂无久未更新的进行中任务。");
+  }
+
+  lines.push("", "## 实验收口", "");
+
+  if (staleExperiments.length) {
+    staleExperiments.forEach((experiment) => {
+      lines.push(
+        `- [ ] ${experiment.title}`,
+        `  - 项目：${experiment.project?.title ?? "未关联项目"}；结果数：${experiment.results.length}；${dateText(experiment.updatedAt)} 后未更新`,
+        "  - 今天要补：观察 / 结论 / 下一步，必要时生成结果证据",
+      );
+    });
+  } else {
+    lines.push("- 暂无久未收口的进行中实验。");
+  }
+
+  lines.push("", "## 结果证据缺口", "");
+
+  if (results.length) {
+    results.forEach((result) => {
+      const config = parseJsonObjectText(result.config);
+      const need = [
+        config.reproducibility === "verified" ? "" : "复现状态",
+        result.artifactPath ? "" : "图表/结果路径",
+        config.manuscriptReady ? "" : "写作素材判断",
+      ].filter(Boolean).join("、") || "复核";
+
+      lines.push(
+        `- [ ] ${result.title}`,
+        `  - 项目：${result.experiment?.project?.title ?? "未关联项目"}；实验：${result.experiment?.title ?? "未关联实验"}`,
+        `  - 待补：${need}；数据集：${result.dataset?.name ?? "未关联数据集"}`,
+        result.notes?.trim() ? `  - 当前结论：${oneLine(result.notes, 120)}` : "",
+      );
+    });
+  } else {
+    lines.push("- 暂无待补结果证据。");
+  }
+
+  lines.push("", "## 文献阅读尾巴", "");
+
+  if (stalePapers.length) {
+    stalePapers.forEach((paper) => {
+      lines.push(
+        `- [ ] ${paper.title}`,
+        `  - 状态：${paperStatusText(paper.readStatus)}；来源：${paper.journal || paper.category || "未填写"}；${dateText(paper.updatedAt)} 后未更新`,
+        "  - 今天只需判断：继续读 / 转任务 / 转实验 / 标记已读",
+      );
+    });
+  } else {
+    lines.push("- 暂无长期未处理的待读/读中文献。");
+  }
+
+  lines.push(
+    "",
+    "## 今天收口原则",
+    "",
+    "- [ ] 每类最多处理 1-2 项，避免把收口变成新的工作量",
+    "- [ ] 能改状态就改状态，能生成任务就生成任务，不能处理就写明原因",
+    "- [ ] 处理完后回到今日计划或项目页，只推进一个最小下一步",
   );
 
   return lines.join("\n");
