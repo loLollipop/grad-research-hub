@@ -157,20 +157,6 @@ export default async function AdminPage({ searchParams }: Props) {
     }),
   ]);
 
-  const openItems = items.filter((item) => item.status !== "done");
-  const dueToday = openItems.filter((item) => daysUntil(item.dueDate) === 0);
-  const overdue = openItems.filter((item) => {
-    const distance = daysUntil(item.dueDate);
-    return distance !== null && distance < 0;
-  });
-  const upcoming = openItems.filter((item) => {
-    const distance = daysUntil(item.dueDate);
-    return distance !== null && distance >= 0 && distance <= 7;
-  });
-  const focusItem = overdue[0] ?? dueToday[0] ?? upcoming[0] ?? openItems[0];
-  const adminStack = [...items]
-    .sort((left, right) => adminItemRank(left) - adminItemRank(right))
-    .slice(0, 3);
   const allItemsCount = statusCounts.reduce((sum, item) => sum + item._count, 0);
   const doneBaseCount = statusCounts.find((item) => item.status === "done")?._count ?? 0;
   const openBaseItems = allAdminItems.filter((item) => item.status !== "done");
@@ -190,6 +176,12 @@ export default async function AdminPage({ searchParams }: Props) {
     ["material", "deadline"].includes(item.type),
   ).length;
   const typeCount = (value: string) => typeCounts.find((item) => item.type === value)?._count ?? 0;
+  const adminStack = prioritizeAdminRelief(allAdminItems).slice(0, 3);
+  const focusItem = adminStack[0];
+  const upcomingBaseCount = openBaseItems.filter((item) => {
+    const distance = daysUntil(item.dueDate);
+    return distance !== null && distance >= 0 && distance <= 7;
+  }).length;
 
   return (
     <div className="grid gap-5">
@@ -266,15 +258,15 @@ export default async function AdminPage({ searchParams }: Props) {
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
               <div>
-                <p className="text-lg font-semibold tracking-tight">{openItems.length}</p>
+                <p className="text-lg font-semibold tracking-tight">{openBaseCount}</p>
                 <p className="mt-0.5 text-[11px] text-white/54">待处理</p>
               </div>
               <div>
-                <p className="text-lg font-semibold tracking-tight">{dueToday.length + overdue.length}</p>
+                <p className="text-lg font-semibold tracking-tight">{todayBaseCount}</p>
                 <p className="mt-0.5 text-[11px] text-white/54">今天/逾期</p>
               </div>
               <div>
-                <p className="text-lg font-semibold tracking-tight">{upcoming.length}</p>
+                <p className="text-lg font-semibold tracking-tight">{upcomingBaseCount}</p>
                 <p className="mt-0.5 text-[11px] text-white/54">7 天内</p>
               </div>
             </div>
@@ -478,6 +470,36 @@ export default async function AdminPage({ searchParams }: Props) {
 
         <div className="workbench-column stretch-panel gap-3">
           <CaptureNotice kind={captured} />
+
+          <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/74 p-3 shadow-[0_12px_30px_rgba(27,42,56,0.045)]">
+            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+                  <Clock3 className="size-4 text-primary" />
+                  三件事务减负
+                </p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  从全库事务里优先挑 3 件最该处理的小事，不受当前筛选影响。先处理逾期、今天截止、组会和进行中事项。
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-[#d5e4e8] bg-[#eef6f4] px-2.5 py-1 text-xs font-medium text-[#315266]">
+                全库待处理 {openBaseCount} 件
+              </span>
+            </div>
+            {adminStack.length ? (
+              <div className="grid gap-3 lg:grid-cols-3">
+                {adminStack.map((item, index) => (
+                  <AdminReliefCard key={item.id} item={item} index={index + 1} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={ClipboardList}
+                title="暂时没有需要收口的小事"
+                description="没有待处理事务时，优先回到文献、实验和结果主线。"
+              />
+            )}
+          </section>
 
           <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="min-w-0">
@@ -695,6 +717,54 @@ function AdminReliefRadarItem({
         </span>
       </span>
     </Link>
+  );
+}
+
+function AdminReliefCard({ item, index }: { item: AdminItem; index: number }) {
+  const typeMeta = itemTypes.find((type) => type.value === item.type);
+  const Icon = typeMeta?.icon ?? ClipboardList;
+
+  return (
+    <Card className="workbench-card border-[#d7e3e8]/90 bg-white/84">
+      <CardContent className="grid h-full gap-3 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f4] font-mono text-xs font-semibold text-[#315266]">
+            0{index}
+          </span>
+          <span className="flex items-center gap-1.5 rounded-full border border-[#d5e4e8] bg-white/78 px-2.5 py-1 text-xs text-muted-foreground">
+            <Icon className="size-3.5" />
+            {typeMeta?.label ?? "事务"}
+          </span>
+        </div>
+
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-5">{item.title}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{dueText(item.dueDate)}</p>
+        </div>
+
+        <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3">
+          <p className="text-sm font-medium text-[var(--workspace-title)]">
+            {adminActionLabel(item)}
+          </p>
+          <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">
+            {adminActionReason(item)}
+          </p>
+        </div>
+
+        <div className="mt-auto flex flex-wrap items-center justify-end gap-2 border-t border-border/65 pt-3">
+          <form action={setAdminStatus} className="flex gap-2">
+            <input type="hidden" name="id" value={item.id} />
+            <input type="hidden" name="status" value={item.status === "todo" ? "doing" : "done"} />
+            <Button type="submit" variant="outline" size="sm">
+              {item.status === "todo" ? "开始处理" : "标记完成"}
+            </Button>
+          </form>
+          <CreateDialog title="编辑事务" label="编辑" icon={Edit3} wide>
+            <AdminItemForm action={updateAdminItem} item={item} />
+          </CreateDialog>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -982,6 +1052,17 @@ function adminActionReason(item: AdminItem) {
   }
 
   return "先登记最小下一步，处理完就回到文献、实验和结果。";
+}
+
+function prioritizeAdminRelief(items: AdminItem[]) {
+  return items
+    .filter((item) => item.status !== "done")
+    .sort((left, right) => {
+      const rank = adminItemRank(left) - adminItemRank(right);
+      if (rank !== 0) return rank;
+
+      return right.updatedAt.getTime() - left.updatedAt.getTime();
+    });
 }
 
 function adminItemRank(item: AdminItem) {
