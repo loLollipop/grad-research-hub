@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { quickCapture } from "@/lib/actions";
 
 const captureExamples = [
-  "任务 整理今天的实验观察",
-  "实验 复现论文里的关键对照",
+  "导师 反馈：先补对照实验",
+  "卡点 模型在第三批数据上不稳定",
+  "观察 样本 B 的裂纹扩展更明显",
   "结果 消融实验准确率提升 2%",
   "文献 补读最新综述",
   "组会 周五汇报准备图表",
-  "想法 把失败样本单独分析",
+  "复盘 今天失败可能是参数窗口太窄",
 ] as const;
 
 export function QuickCaptureBar() {
@@ -45,7 +46,7 @@ export function QuickCaptureBar() {
         </Button>
       </div>
       <div className="mt-1.5 hidden gap-1.5 overflow-x-auto px-1 lg:flex">
-        {captureExamples.slice(0, 5).map((example) => (
+        {captureExamples.map((example) => (
           <button
             key={example}
             type="button"
