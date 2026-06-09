@@ -378,6 +378,8 @@ export default async function ProjectsPage({ searchParams }: Props) {
 
       <section className="grid gap-4 xl:grid-cols-[0.36fr_0.64fr]">
         <aside className="grid content-start gap-4">
+          <QuickTaskCapture milestones={milestones} />
+
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -1173,6 +1175,74 @@ function isExperimentCandidateTask(task: Task) {
 
   return /实验|试验|复现|对照|数据|指标|样本|采集|测量|仿真|simulation|experiment|dataset|metric|ablation/i.test(
     [task.title, task.description, task.tags].filter(Boolean).join(" "),
+  );
+}
+
+function QuickTaskCapture({ milestones }: { milestones: MilestoneFull[] }) {
+  return (
+    <Card className="workbench-card border-primary/12 bg-[linear-gradient(135deg,rgba(239,247,247,0.94),rgba(255,250,238,0.76))]">
+      <CardHeader className="border-b border-white/70 bg-white/38 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <ListTodo className="size-4 text-primary" />
+          30 秒加任务
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={createTask} className="grid gap-3">
+          <Field label="下一步动作">
+            <Input
+              name="title"
+              required
+              placeholder="例如：补第三组对照实验图"
+              className="h-10 border-[#cadbe1] bg-white/92 font-medium"
+            />
+          </Field>
+
+          <input type="hidden" name="status" value="todo" />
+          <input type="hidden" name="description" value="" />
+          <input type="hidden" name="tags" value="快速任务" />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="优先级">
+              <select
+                name="priority"
+                defaultValue="medium"
+                className="h-9 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
+              >
+                <option value="high">高</option>
+                <option value="medium">中</option>
+                <option value="low">低</option>
+              </select>
+            </Field>
+            <Field label="截止">
+              <Input name="dueDate" type="date" className="h-9 border-[#d4e0e5] bg-white/90" />
+            </Field>
+          </div>
+
+          <Field label="挂到路线">
+            <select
+              name="milestoneId"
+              defaultValue=""
+              className="h-9 min-w-0 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
+            >
+              <option value="">先放独立任务</option>
+              {milestones.slice(0, 12).map((milestone) => (
+                <option key={milestone.id} value={milestone.id}>
+                  {milestone.project.title} / {milestone.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2">
+            <p className="text-xs leading-5 text-muted-foreground">
+              只收下一步；复杂上下文后面再补。
+            </p>
+            <SubmitButton className="w-fit">加入队列</SubmitButton>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
