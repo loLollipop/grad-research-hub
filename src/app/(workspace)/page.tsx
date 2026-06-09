@@ -29,8 +29,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   createClosingReviewNote,
   createDailyPlanNote,
+  createExperimentCloseoutNote,
   createFirstRunGuideNote,
   createMeetingBriefNote,
+  createNoteCloseoutNote,
+  createProjectProgressNote,
+  createReadingPlanNote,
+  createResultCloseoutNote,
 } from "@/lib/actions";
 import { getDailyPlanPeriod } from "@/lib/daily-plan";
 import { prisma } from "@/lib/db";
@@ -96,12 +101,19 @@ type GuideNoteSummary = {
   updatedAt: Date;
 };
 
+type ChecklistCandidate = {
+  id: string;
+  title: string;
+};
+
 const FIRST_RUN_GUIDE_MARKER = "first-run-guide:v1";
 
 export default async function DashboardPage() {
-  const dailyPlanPeriod = getDailyPlanPeriod();
-  const meetingBriefPeriod = getMeetingBriefPeriod();
-  const todayStart = new Date();
+  const now = new Date();
+  const dailyPlanPeriod = getDailyPlanPeriod(now);
+  const meetingBriefPeriod = getMeetingBriefPeriod(now);
+  const todayMeetingBriefPeriod = getMeetingBriefPeriod(now, "today");
+  const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const staleSince = new Date(todayStart);
   staleSince.setDate(staleSince.getDate() - 7);
@@ -115,12 +127,14 @@ export default async function DashboardPage() {
     staleExperiments,
     recentPapers,
     stalePapers,
+    readingPlanPapers,
     recentNotes,
     adminItems,
     projects,
     results,
     currentDailyPlan,
     currentMeetingBrief,
+    currentTodayMeetingBrief,
     workspaceCounts,
     currentFirstRunGuide,
   ] = await Promise.all([
@@ -166,6 +180,11 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "asc" },
       take: 3,
     }),
+    prisma.paper.findMany({
+      where: { readStatus: { in: ["reading", "unread"] } },
+      orderBy: [{ readStatus: "asc" }, { updatedAt: "desc" }],
+      take: 3,
+    }),
     prisma.note.findMany({
       orderBy: { updatedAt: "desc" },
       take: 4,
@@ -204,6 +223,14 @@ export default async function DashboardPage() {
       where: {
         folder: "组会",
         content: { contains: meetingBriefPeriod.marker, mode: "insensitive" },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.note.findFirst({
+      where: {
+        folder: "组会",
+        content: { contains: todayMeetingBriefPeriod.marker, mode: "insensitive" },
       },
       orderBy: { updatedAt: "desc" },
       select: { id: true, updatedAt: true },
@@ -409,6 +436,30 @@ export default async function DashboardPage() {
       tone: "quiet",
     })),
   ].slice(0, 4);
+  const projectPlanTasks = uniqueById([...upcomingTasks, ...staleDoingTasks]).slice(0, 3);
+  const experimentCloseoutCandidates = uniqueById([
+    ...staleExperiments,
+    ...recentExperiments.filter((experiment) => experiment.status !== "completed"),
+  ]).slice(0, 3);
+  const resultClosingCandidates = results
+    .filter((result) => {
+      const config = parseJson<{ reproducibility?: string; manuscriptReady?: boolean }>(
+        result.config,
+        {},
+      );
+      return config.reproducibility !== "verified" || (!config.manuscriptReady && !result.artifactPath);
+    })
+    .slice(0, 3);
+  const noteCloseoutCandidates = recentNotes
+    .filter((note) => !note.content.includes(FIRST_RUN_GUIDE_MARKER))
+    .slice(0, 3);
+  const dailyChecklistCandidates = {
+    experiments: experimentCloseoutCandidates.map(toChecklistCandidate),
+    notes: noteCloseoutCandidates.map(toChecklistCandidate),
+    papers: readingPlanPapers.map(toChecklistCandidate),
+    results: resultClosingCandidates.map(toChecklistCandidate),
+    tasks: projectPlanTasks.map(toChecklistCandidate),
+  };
   const openingActions = uniqueOpeningActions([
     ...upcomingTasks.map<OpeningAction>((task) => {
       const distance = daysUntil(task.dueDate);
@@ -634,6 +685,12 @@ export default async function DashboardPage() {
         paper={`${readingPapers + unreadPapers} 篇待处理`}
         experiment={`${runningExperiments} 个进行中`}
         evidence={`${manuscriptReady} 条可写入`}
+      />
+
+      <DailyChecklistHub
+        candidates={dailyChecklistCandidates}
+        currentDailyPlan={currentDailyPlan}
+        currentTodayMeetingBrief={currentTodayMeetingBrief}
       />
 
       <StarterProgress counts={workspaceCounts} guideNote={currentFirstRunGuide} />
@@ -1078,6 +1135,190 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
           </CardContent>
         </Card>
       </section>
+    </div>
+  );
+}
+
+function DailyChecklistHub({
+  candidates,
+  currentDailyPlan,
+  currentTodayMeetingBrief,
+}: {
+  candidates: {
+    experiments: ChecklistCandidate[];
+    notes: ChecklistCandidate[];
+    papers: ChecklistCandidate[];
+    results: ChecklistCandidate[];
+    tasks: ChecklistCandidate[];
+  };
+  currentDailyPlan: GuideNoteSummary | null;
+  currentTodayMeetingBrief: GuideNoteSummary | null;
+}) {
+  return (
+    <section className="rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(241,247,249,0.8))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.036)]">
+      <div className="grid gap-3 xl:grid-cols-[0.33fr_0.67fr] xl:items-stretch">
+        <div className="grid gap-3 rounded-xl border border-white/72 bg-white/64 p-3">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+              <Sparkles className="size-4 text-primary" />
+              3 分钟自动整理
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              不翻长列表。每天只生成会用到的计划、导师沟通单和跨模块收口清单。
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {currentDailyPlan ? (
+              <Link
+                className={buttonVariants({ variant: "default" })}
+                href={`/notes?note=${currentDailyPlan.id}`}
+              >
+                <FileText className="size-4" />
+                打开今日计划
+              </Link>
+            ) : (
+              <form action={createDailyPlanNote}>
+                <SubmitButton variant="default" className="w-full justify-start">
+                  <FileText className="size-4" />
+                  生成今日计划
+                </SubmitButton>
+              </form>
+            )}
+            {currentTodayMeetingBrief ? (
+              <Link
+                className={buttonVariants({ variant: "outline" })}
+                href={`/notes?note=${currentTodayMeetingBrief.id}`}
+              >
+                <CalendarClock className="size-4" />
+                打开导师沟通单
+              </Link>
+            ) : (
+              <form action={createMeetingBriefNote}>
+                <input type="hidden" name="scope" value="today" />
+                <SubmitButton variant="outline" className="w-full justify-start bg-white/74">
+                  <CalendarClock className="size-4" />
+                  生成导师沟通单
+                </SubmitButton>
+              </form>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+          <ChecklistActionCard
+            action={createProjectProgressNote}
+            buttonText="生成三项"
+            detail="课题下一步"
+            emptyText="先加任务"
+            href="/projects?scope=today"
+            icon={FolderKanban}
+            ids={candidates.tasks}
+            returnTo="/projects?scope=today"
+            title="课题推进"
+          />
+          <ChecklistActionCard
+            action={createReadingPlanNote}
+            buttonText="生成三篇"
+            detail="Zotero 阅读"
+            emptyText="先同步文献"
+            href="/papers"
+            icon={BookOpenText}
+            ids={candidates.papers}
+            returnTo="/papers"
+            title="文献启动"
+          />
+          <ChecklistActionCard
+            action={createExperimentCloseoutNote}
+            buttonText="生成收口"
+            detail="实验观察/结论"
+            emptyText="先记录实验"
+            href="/experiments"
+            icon={FlaskConical}
+            ids={candidates.experiments}
+            title="实验收口"
+          />
+          <ChecklistActionCard
+            action={createResultCloseoutNote}
+            buttonText="生成证据"
+            detail="复现/图表素材"
+            emptyText="先登记结果"
+            href="/data"
+            icon={FileChartColumn}
+            ids={candidates.results}
+            title="结果证据"
+          />
+          <ChecklistActionCard
+            action={createNoteCloseoutNote}
+            buttonText="生成沉淀"
+            detail="笔记转写作"
+            emptyText="先写笔记"
+            href="/notes"
+            icon={PenLine}
+            ids={candidates.notes}
+            title="笔记沉淀"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ChecklistActionCard({
+  action,
+  buttonText,
+  detail,
+  emptyText,
+  href,
+  icon: Icon,
+  ids,
+  returnTo,
+  title,
+}: {
+  action: (formData: FormData) => Promise<void>;
+  buttonText: string;
+  detail: string;
+  emptyText: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  ids: ChecklistCandidate[];
+  returnTo?: string;
+  title: string;
+}) {
+  const disabled = ids.length === 0;
+
+  return (
+    <div className="grid min-h-36 gap-3 rounded-xl border border-border/65 bg-white/74 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+      <Link href={href} className="group grid gap-2">
+        <span className="flex items-start justify-between gap-2">
+          <span className="flex size-9 items-center justify-center rounded-xl border border-[#d8e5ee] bg-[#eef4fb] text-[#365a7d] transition group-hover:bg-primary group-hover:text-primary-foreground">
+            <Icon className="size-4" />
+          </span>
+          <span className="rounded-full border border-border/70 bg-white/72 px-2 py-0.5 text-[11px] text-muted-foreground">
+            {ids.length ? `${ids.length} 项` : "空"}
+          </span>
+        </span>
+        <span>
+          <span className="block text-sm font-semibold hero-title">{title}</span>
+          <span className="mt-1 block text-xs text-muted-foreground">{detail}</span>
+          <span className="mt-2 block line-clamp-1 text-xs text-muted-foreground">
+            {ids[0]?.title ?? emptyText}
+          </span>
+        </span>
+      </Link>
+      <form action={action} className="mt-auto">
+        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        {ids.map((item) => (
+          <input key={item.id} type="hidden" name="ids" value={item.id} />
+        ))}
+        <SubmitButton
+          variant="outline"
+          className="h-8 w-full justify-center bg-white/74 px-2.5 text-xs"
+          disabled={disabled}
+        >
+          <FileText className="size-3.5" />
+          {disabled ? emptyText : buttonText}
+        </SubmitButton>
+      </form>
     </div>
   );
 }
@@ -1838,4 +2079,21 @@ function priorityBias(priority: string) {
   };
 
   return bias[priority] ?? 0;
+}
+
+function uniqueById<T extends { id: string }>(items: T[]) {
+  const seen = new Set<string>();
+
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function toChecklistCandidate(item: { id: string; title?: string; name?: string }) {
+  return {
+    id: item.id,
+    title: item.title ?? item.name ?? "未命名条目",
+  };
 }
