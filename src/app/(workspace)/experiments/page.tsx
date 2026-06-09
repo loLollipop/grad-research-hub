@@ -23,6 +23,7 @@ import remarkGfm from "remark-gfm";
 import {
   appendResultToExperiment,
   createExperiment,
+  createExperimentCloseoutNote,
   createExperimentReviewNote,
   createExperimentReviewTask,
   createResultFromExperiment,
@@ -224,9 +225,20 @@ export default async function ExperimentsPage({ searchParams }: Props) {
                 先处理失败、久未更新或缺结果证据的实验。目标不是补全所有字段，而是留下能复盘的下一步。
               </p>
             </div>
-            <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
-              全库待收口 {totalCloseoutCount} 条
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                全库待收口 {totalCloseoutCount} 条
+              </span>
+              <form action={createExperimentCloseoutNote}>
+                {experimentStack.map((experiment) => (
+                  <input key={experiment.id} type="hidden" name="ids" value={experiment.id} />
+                ))}
+                <Button type="submit" variant="outline" size="sm" className="bg-white/82">
+                  <ClipboardList className="size-3.5" />
+                  生成收口清单
+                </Button>
+              </form>
+            </div>
           </div>
           <div className="grid gap-2 lg:grid-cols-3">
             {experimentStack.map((experiment, index) => (

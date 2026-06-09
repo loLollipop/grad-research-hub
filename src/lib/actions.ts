@@ -1422,6 +1422,172 @@ function experimentNoteMarker(id: string) {
   return `experiment-review-note:${id}`;
 }
 
+export async function createExperimentCloseoutNote(formData: FormData) {
+  const ids = formData
+    .getAll("ids")
+    .map((id) => String(id))
+    .filter(Boolean)
+    .slice(0, 8);
+
+  if (!ids.length) {
+    redirect("/experiments?closeout=empty");
+  }
+
+  const experiments = await prisma.experiment.findMany({
+    where: { id: { in: ids } },
+    include: {
+      project: true,
+      papers: true,
+      results: {
+        orderBy: { updatedAt: "desc" },
+        include: { dataset: true },
+      },
+    },
+  });
+
+  if (!experiments.length) {
+    redirect("/experiments?closeout=empty");
+  }
+
+  const rank = new Map(ids.map((id, index) => [id, index]));
+  const orderedExperiments = experiments.sort(
+    (left, right) => (rank.get(left.id) ?? 99) - (rank.get(right.id) ?? 99),
+  );
+  const marker = experimentCloseoutMarker(orderedExperiments);
+  const existing = await prisma.note.findFirst({
+    where: {
+      folder: "实验",
+      content: { contains: marker, mode: "insensitive" },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/notes?note=${existing.id}`);
+  }
+
+  const note = await prisma.note.create({
+    data: {
+      title: `实验收口清单 ${new Date().toISOString().slice(0, 10)}`,
+      folder: "实验",
+      content: buildExperimentCloseoutNote(orderedExperiments, marker),
+      tags: tagsToString(["实验收口", "复盘", "自动整理"]),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/experiments");
+  revalidatePath("/notes");
+  redirect(`/notes?note=${note.id}`);
+}
+
+function experimentCloseoutMarker(experiments: Experiment[]) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = experiments
+    .map((experiment) => experiment.id)
+    .sort()
+    .join("|");
+  return `experiment-closeout:${day}:${stableHash(key)}`;
+}
+
+function buildExperimentCloseoutNote(
+  experiments: Array<
+    Experiment & {
+      project: Project | null;
+      papers: Paper[];
+      results: Array<Result & { dataset: Dataset | null }>;
+    }
+  >,
+  marker: string,
+) {
+  const lines = [
+    `<!-- ${marker} -->`,
+    `# 实验收口清单 ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "> 只处理当前最该收口的 1-3 个实验。目标不是补完整档案，而是把目的、观察、结论和下一步写清楚，让实验不会散在聊天、截图和脑子里。",
+    "",
+    "## 今天收口原则",
+    "",
+    "- [ ] 每个实验只补 5 分钟内能补清楚的内容",
+    "- [ ] 有关键指标就登记结果证据",
+    "- [ ] 失败实验只追一个最可能原因和下一次对照",
+    "- [ ] 收口后回到课题页，只留下一个下一步任务",
+    "",
+  ];
+
+  experiments.forEach((experiment, index) => {
+    const linkedPapers = experiment.papers
+      .slice(0, 3)
+      .map((paper) => paper.title)
+      .join("；") || "暂无";
+    const resultSummary = experiment.results.length
+      ? experiment.results.slice(0, 3).map(experimentCloseoutResultLine).join("\n")
+      : "- 暂无结果证据";
+
+    lines.push(
+      `## ${index + 1}. ${experiment.title}`,
+      "",
+      `- 项目：${experiment.project?.title ?? "未关联项目"}`,
+      `- 状态：${experimentStatusText(experiment.status)}`,
+      `- 模板：${experiment.template}`,
+      `- 最近更新：${dateText(experiment.updatedAt)}`,
+      `- 关联文献：${linkedPapers}`,
+      "",
+      "### 先补三件事",
+      "",
+      "- [ ] 实验目的是否还准确：",
+      "- [ ] 最新观察 / 异常现象：",
+      "- [ ] 下一步最小动作：",
+      "",
+      "### 按情况处理",
+      "",
+      experiment.status === "failed"
+        ? "- [ ] 写清失败原因假设和下一次对照"
+        : "- [ ] 判断继续观察、标记完成或放弃",
+      experiment.results.length
+        ? "- [ ] 把最关键指标回填到实验正文"
+        : "- [ ] 如果已有指标或图表，去成果页登记一条结果证据",
+      "- [ ] 必要时拆一个项目任务给明天",
+      "",
+      "### 已有结果",
+      "",
+      resultSummary,
+      "",
+      "### 当前记录摘要",
+      "",
+      experimentSnippet(experiment.content),
+      "",
+    );
+  });
+
+  lines.push(
+    "## 收口后",
+    "",
+    "- [ ] 回到实验页更新状态",
+    "- [ ] 回到成果页确认关键结果是否有证据",
+    "- [ ] 回到课题页确认下一步任务是否明确",
+  );
+
+  return lines.join("\n");
+}
+
+function experimentCloseoutResultLine(result: Result & { dataset: Dataset | null }) {
+  const metrics = parseJsonObjectText(result.metrics);
+  const metricText = Object.entries(metrics)
+    .filter(([, value]) => String(value).trim())
+    .slice(0, 3)
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join("；") || "未填写指标";
+
+  return [
+    `- ${result.title}`,
+    `  - 数据集：${result.dataset?.name ?? "未关联数据集"}`,
+    `  - 指标：${metricText}`,
+    result.notes?.trim() ? `  - 结论：${oneLine(result.notes, 100)}` : "",
+  ].filter(Boolean).join("\n");
+}
+
 function buildExperimentReviewNote(
   experiment: Experiment & {
     project: Project | null;
