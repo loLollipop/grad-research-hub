@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import { QuickCaptureBar } from "@/components/layout/quick-capture-bar";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -992,6 +993,21 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
         experiment="写第一条记录"
         evidence="先别搬旧资料"
       />
+
+      <section className="rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(241,248,246,0.78))] p-4 shadow-[0_12px_28px_rgba(27,42,56,0.04)]">
+        <div className="grid gap-4 xl:grid-cols-[0.36fr_0.64fr] xl:items-center">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+              <Lightbulb className="size-4 text-primary" />
+              先写第一条真实记录
+            </p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              不确定先填哪个模块时，直接用一句话捕捉。示例会先填入输入框，确认后再提交。
+            </p>
+          </div>
+          <QuickCaptureBar />
+        </div>
+      </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <StartCard

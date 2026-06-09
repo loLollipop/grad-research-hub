@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ const captureExamples = [
 
 export function QuickCaptureBar() {
   const [content, setContent] = useState("");
+  const examplesId = useId();
 
   return (
     <form action={quickCapture} className="w-full max-w-3xl">
@@ -26,13 +27,13 @@ export function QuickCaptureBar() {
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             name="content"
-            list="quick-capture-examples"
+            list={examplesId}
             value={content}
             onChange={(event) => setContent(event.target.value)}
             placeholder="一句话捕捉：任务 / 实验 / 结果 / 文献 / 组会 / 想法"
             className="h-9 rounded-xl border-transparent bg-white/0 pl-8 text-sm shadow-none focus-visible:bg-white/88 md:h-10"
           />
-          <datalist id="quick-capture-examples">
+          <datalist id={examplesId}>
             {captureExamples.map((example) => (
               <option key={example} value={example} />
             ))}
