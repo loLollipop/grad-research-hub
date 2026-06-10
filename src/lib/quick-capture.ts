@@ -24,13 +24,21 @@ export type QuickCapturePrefix = {
 };
 
 export const quickCaptureExamples = [
-  "导师 反馈：先补对照实验",
-  "卡点 模型在第三批数据上不稳定",
-  "观察 样本 B 的裂纹扩展更明显",
-  "结果 消融实验准确率提升 2%",
-  "文献 补读最新综述",
-  "组会 周五汇报准备图表",
-  "复盘 今天失败可能是参数窗口太窄",
+  "周五组会准备图表",
+  "先补一组对照实验",
+  "样本 B 的裂纹扩展更明显",
+  "消融实验准确率提升 2%",
+  "补读最新综述",
+  "今天失败可能是参数窗口太窄",
+] as const;
+
+export const quickCaptureTypeChips = [
+  { hint: "下一步 / 导师反馈", label: "任务", prefix: "任务" },
+  { hint: "观察 / 失败 / 复现", label: "实验", prefix: "实验" },
+  { hint: "指标 / 图表 / 结论", label: "成果", prefix: "结果" },
+  { hint: "待读 / 综述 / DOI", label: "文献", prefix: "文献" },
+  { hint: "组会 / 材料 / 截止", label: "事务", prefix: "组会" },
+  { hint: "想法 / 写作素材", label: "笔记", prefix: "想法" },
 ] as const;
 
 export const quickCaptureTargets: Record<
@@ -38,8 +46,8 @@ export const quickCaptureTargets: Record<
   { detail: string; label: string }
 > = {
   idle: {
-    label: "等待输入",
-    detail: "写一句话后显示去向",
+    label: "直接写一句话",
+    detail: "按关键词自动归档，也可点类型",
   },
   task: {
     label: "任务",
@@ -67,7 +75,7 @@ export const quickCaptureTargets: Record<
   },
   note: {
     label: "笔记",
-    detail: "进入收件箱",
+    detail: "先放收件箱，之后再整理",
   },
 };
 
@@ -133,6 +141,37 @@ const quickCaptureAliasMap = new Map(
   quickCaptureAliasEntries.map(([prefix, alias]) => [normalizeQuickPrefix(prefix), alias]),
 );
 
+const quickCaptureAutoRules: Array<{ alias: QuickCaptureAlias; pattern: RegExp }> = [
+  {
+    alias: { kind: "admin" },
+    pattern: /组会|会议|汇报|报销|发票|经费|材料|表格|证明|申请|截止|ddl|deadline|meeting|seminar/i,
+  },
+  {
+    alias: { kind: "paper" },
+    pattern: /文献|论文|综述|阅读|引用|doi|arxiv|zotero|related\s*work|paper|article|review/i,
+  },
+  {
+    alias: { kind: "result" },
+    pattern: /结果|成果|证据|图表|曲线|表格|指标|准确率|精度|召回|auc|rmse|mae|提升|下降|显著|消融/i,
+  },
+  {
+    alias: { kind: "task" },
+    pattern: /待办|下一步|需要|整理|跟进|确认|检查|明天|本周|todo|task/i,
+  },
+  {
+    alias: { kind: "dataset" },
+    pattern: /数据集|数据来源|样本库|dataset|data\s*source/i,
+  },
+  {
+    alias: { kind: "experiment" },
+    pattern: /实验|试验|观察|现象|复现|对照|样本|参数|失败|不稳定|baseline|ablation/i,
+  },
+  {
+    alias: { kind: "note", folder: "Inbox", tags: ["想法"] },
+    pattern: /想法|灵感|假设|思路|脑洞|idea|note/i,
+  },
+];
+
 export function extractQuickPrefix(content: string): QuickCapturePrefix | null {
   const colonMatch = content.match(/^([^:：]{1,16})[:：]\s*(.+)$/);
   if (colonMatch?.[1] && colonMatch[2]?.trim()) {
@@ -157,13 +196,23 @@ export function quickCaptureAlias(prefix: string): QuickCaptureAlias | null {
   return quickCaptureAliasMap.get(normalizeQuickPrefix(prefix)) ?? null;
 }
 
+export function inferQuickCaptureAlias(content: string): QuickCaptureAlias | null {
+  const trimmed = content.trim();
+  if (!trimmed) return null;
+
+  const prefixed = extractQuickPrefix(trimmed);
+  if (prefixed) {
+    const alias = quickCaptureAlias(prefixed.prefix);
+    if (alias) return alias;
+  }
+
+  return quickCaptureAutoRules.find((rule) => rule.pattern.test(trimmed))?.alias ?? null;
+}
+
 export function inferQuickCaptureTarget(content: string): QuickCaptureTargetKey {
   if (!content.trim()) return "idle";
 
-  const prefixed = extractQuickPrefix(content);
-  if (!prefixed) return "note";
-
-  return quickCaptureAlias(prefixed.prefix)?.kind ?? "note";
+  return inferQuickCaptureAlias(content)?.kind ?? "note";
 }
 
 function normalizeQuickPrefix(prefix: string) {

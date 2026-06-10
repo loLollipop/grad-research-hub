@@ -22,6 +22,7 @@ import { extractWikiLinks, parseTags, splitTags, tagsToString } from "@/lib/form
 import { getMeetingBriefPeriod, type MeetingBriefScope } from "@/lib/meeting-brief";
 import {
   extractQuickPrefix,
+  inferQuickCaptureAlias,
   quickCaptureAlias,
 } from "@/lib/quick-capture";
 import { getWritingPackPeriod } from "@/lib/writing-pack";
@@ -2030,16 +2031,15 @@ type QuickCaptureResult =
 
 function parseQuickCapture(content: string): QuickCaptureResult {
   const prefixed = extractQuickPrefix(content);
-  if (!prefixed) {
-    return { kind: "note" as const, body: content };
+  if (prefixed) {
+    const captured = quickCaptureAlias(prefixed.prefix);
+    if (captured) {
+      return { ...captured, body: prefixed.body };
+    }
   }
 
-  const captured = quickCaptureAlias(prefixed.prefix);
-  if (!captured) {
-    return { kind: "note" as const, body: content };
-  }
-
-  return { ...captured, body: prefixed.body };
+  const inferred = inferQuickCaptureAlias(content);
+  return inferred ? { ...inferred, body: content } : { kind: "note" as const, body: content };
 }
 
 function quickNoteContent(captured: Extract<QuickCaptureResult, { kind: "note" }>) {
