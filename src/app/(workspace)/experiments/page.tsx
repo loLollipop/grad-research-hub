@@ -11,6 +11,7 @@ import {
   Link2,
   Microscope,
   Plus,
+  RotateCcw,
   Search,
   TimerReset,
   Trash2,
@@ -139,6 +140,55 @@ export default async function ExperimentsPage({ searchParams }: Props) {
   const selectedProjectTitle = projects.find((project) => project.id === projectId)?.title;
   const experimentStack = prioritizeExperimentCloseout(closeoutCandidates).slice(0, 3);
   const totalCloseoutCount = closeoutCandidates.length;
+  const staleRunningCount = experiments.filter(
+    (experiment) =>
+      experiment.status === "running" &&
+      now.getTime() - experiment.updatedAt.getTime() > 7 * 86_400_000,
+  ).length;
+  const completedWithoutResultCount = experiments.filter(
+    (experiment) => experiment.status === "completed" && experiment.results.length === 0,
+  ).length;
+  const experimentsWithEvidenceCount = experiments.filter((experiment) => experiment.results.length > 0).length;
+  const unresolvedExperimentCount = experiments.filter(
+    (experiment) =>
+      experiment.status === "running" ||
+      experiment.status === "failed" ||
+      (experiment.status === "completed" && experiment.results.length === 0),
+  ).length;
+  const reproducibilitySignals = [
+    {
+      detail: staleRunningCount ? `${staleRunningCount} 个超过 7 天未更新，建议先补观察。` : "正在跑的实验先补最新观察和下一步。",
+      href: experimentHref({ q, project: projectId, status: "running", template }),
+      icon: FlaskConical,
+      label: "继续观察",
+      tone: "running" as const,
+      value: `${running} 个`,
+    },
+    {
+      detail: "失败实验要先变成原因、对照和下一次修改。",
+      href: experimentHref({ q, project: projectId, status: "failed", template }),
+      icon: AlertTriangle,
+      label: "失败复盘",
+      tone: "failed" as const,
+      value: `${failed} 个`,
+    },
+    {
+      detail: "完成但缺结果证据，组会和论文前最容易断线。",
+      href: experimentHref({ q, project: projectId, status: "completed", template }),
+      icon: CheckCircle2,
+      label: "缺结果证据",
+      tone: "gap" as const,
+      value: `${completedWithoutResultCount} 条`,
+    },
+    {
+      detail: "已有结果可以回填正文，或进入成果页补复现状态。",
+      href: "/data",
+      icon: FileChartColumn,
+      label: "已有证据",
+      tone: "evidence" as const,
+      value: `${experimentsWithEvidenceCount} 条`,
+    },
+  ];
 
   return (
     <div className="grid gap-5">
@@ -259,6 +309,13 @@ export default async function ExperimentsPage({ searchParams }: Props) {
           </div>
         </section>
       ) : null}
+
+      <ExperimentReproBoard
+        experimentStack={experimentStack}
+        signals={reproducibilitySignals}
+        totalCloseoutCount={totalCloseoutCount}
+        unresolvedExperimentCount={unresolvedExperimentCount}
+      />
 
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
         <aside className="grid content-start gap-4">
@@ -495,6 +552,148 @@ function TemplateHint({
         </CreateDialog>
       </div>
     </div>
+  );
+}
+
+function ExperimentReproBoard({
+  experimentStack,
+  signals,
+  totalCloseoutCount,
+  unresolvedExperimentCount,
+}: {
+  experimentStack: ExperimentFull[];
+  signals: Array<{
+    detail: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    tone: "evidence" | "failed" | "gap" | "running";
+    value: string;
+  }>;
+  totalCloseoutCount: number;
+  unresolvedExperimentCount: number;
+}) {
+  return (
+    <section className="experiment-repro overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.052)]">
+      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr] xl:items-stretch">
+        <div className="experiment-repro-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <RotateCcw className="size-3.5" />
+            复现与收口板
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            实验不是写完就算完，要能复盘、复现、回填证据。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            参考 ELN 的模板、状态和正文思路，但这里只保留个人研究最常用的四个判断：
+            还在观察、失败复盘、缺结果证据、已有证据。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">待收口实验</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{totalCloseoutCount}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">当前筛选未闭环</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{unresolvedExperimentCount}</p>
+            </div>
+          </div>
+          {experimentStack.length ? (
+            <form action={createExperimentCloseoutNote} className="mt-4">
+              {experimentStack.map((experiment) => (
+                <input key={experiment.id} type="hidden" name="ids" value={experiment.id} />
+              ))}
+              <SubmitButton className="w-full">
+                <ClipboardList className="size-4" />
+                收成三项实验清单
+              </SubmitButton>
+            </form>
+          ) : (
+            <p className="mt-4 rounded-xl border border-white/68 bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
+              暂时没有明显待收口实验。继续记录新实验，或把已有结果回填到实验正文。
+            </p>
+          )}
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {signals.map((signal) => (
+              <ExperimentReproSignal key={signal.label} {...signal} />
+            ))}
+          </div>
+
+          <div className="grid gap-2 rounded-2xl border border-white/72 bg-white/60 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] lg:grid-cols-3">
+            {experimentStack.length ? (
+              experimentStack.map((experiment, index) => {
+                const action = experimentNextAction(experiment);
+                const Icon = action.icon;
+
+                return (
+                  <div key={experiment.id} className="rounded-xl border border-white/74 bg-white/66 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[11px] font-semibold text-primary">
+                        0{index + 1}
+                      </span>
+                      <span className="rounded-full border border-[#d5e4e8] bg-[#eef6f4] px-2 py-0.5 text-[11px] text-primary">
+                        {action.label}
+                      </span>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-sm font-semibold hero-title">{experiment.title}</p>
+                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                      {experiment.project?.title ?? "未关联项目"} · 结果 {experiment.results.length} 条
+                    </p>
+                    <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-2">
+                      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/72 text-primary">
+                        <Icon className="size-3.5" />
+                      </span>
+                      <p className="line-clamp-3 text-xs leading-5 text-muted-foreground">{action.detail}</p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#d5e4e8] bg-white/58 p-4 text-sm text-muted-foreground lg:col-span-3">
+                没有待收口队列。下一次实验记录只需要先写目的、观察、结论和下一步。
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ExperimentReproSignal({
+  detail,
+  href,
+  icon: Icon,
+  label,
+  tone,
+  value,
+}: {
+  detail: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  tone: "evidence" | "failed" | "gap" | "running";
+  value: string;
+}) {
+  const toneClass = {
+    evidence: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    failed: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+    gap: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    running: "border-[#d5e4e8] bg-[#eef6f4] text-primary",
+  }[tone];
+
+  return (
+    <Link href={href} className="experiment-repro-card group">
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
+        <Icon className="size-4" />
+      </span>
+      <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </Link>
   );
 }
 
