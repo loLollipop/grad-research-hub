@@ -39,6 +39,7 @@ import {
 } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { formatDateTime, metricsFromJson, parseJson, parseTags } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CreateDialog } from "@/components/shared/create-dialog";
 import { Field } from "@/components/shared/field";
@@ -102,12 +103,31 @@ type DataFilters = {
 };
 
 type FigureEvidenceSignal = {
+  action: string;
   detail: string;
   href: string;
   icon: LucideIcon;
   label: string;
   tone: "evidence" | "figure" | "repro" | "writing";
   value: string;
+};
+
+type DatasetHealthSignal = {
+  action: string;
+  detail: string;
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  tone: "link" | "location" | "result" | "version";
+  value: string;
+};
+
+type DatasetHealthCandidate = {
+  dataset: Dataset;
+  latestResultAt: Date | null;
+  linkedResultCount: number;
+  missing: string[];
+  score: number;
 };
 
 function dataHref(filters: DataFilters, patch: Partial<DataFilters>) {
@@ -162,7 +182,7 @@ export default async function DataPage({ searchParams }: Props) {
   }
   const resultWhere: Prisma.ResultWhereInput = resultFilters.length ? { AND: resultFilters } : {};
 
-  const [datasets, experiments, results, evidenceCandidates] = await Promise.all([
+  const [datasets, experiments, results, evidenceCandidates, allResultSources] = await Promise.all([
     prisma.dataset.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.experiment.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.result.findMany({
@@ -174,6 +194,10 @@ export default async function DataPage({ searchParams }: Props) {
       orderBy: { updatedAt: "desc" },
       include: { experiment: true, dataset: true },
       take: 24,
+    }),
+    prisma.result.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { experiment: true, dataset: true },
     }),
   ]);
 
@@ -248,6 +272,7 @@ export default async function DataPage({ searchParams }: Props) {
     .slice(0, 3);
   const figureSignals: FigureEvidenceSignal[] = [
     {
+      action: "看可讲结果",
       detail: "已复现，并且有图表路径或写作标记。",
       href: dataHref(currentFilters, { reproducibility: "verified", manuscript: "ready" }),
       icon: CheckCircle2,
@@ -256,6 +281,7 @@ export default async function DataPage({ searchParams }: Props) {
       value: `${speakableCount} 条`,
     },
     {
+      action: "补路径",
       detail: "缺图表、表格、结果文件或输出目录路径。",
       href: dataHref(currentFilters, { reproducibility: undefined, manuscript: "not-ready" }),
       icon: Link2,
@@ -264,6 +290,7 @@ export default async function DataPage({ searchParams }: Props) {
       value: `${missingFigurePathCount} 条`,
     },
     {
+      action: "补复现",
       detail: "未复现或还在复现中，先补对照和日志。",
       href: dataHref(currentFilters, { reproducibility: "todo", manuscript: undefined }),
       icon: RotateCcw,
@@ -272,12 +299,57 @@ export default async function DataPage({ searchParams }: Props) {
       value: `${missingReproCount} 条`,
     },
     {
+      action: "标素材",
       detail: "已有路径但还没确认能写进组会/周报/论文。",
       href: dataHref(currentFilters, { reproducibility: undefined, manuscript: "ready" }),
       icon: FileText,
       label: "待写作标记",
       tone: "writing",
       value: `${missingWritingFlagCount} 条`,
+    },
+  ];
+  const datasetHealthCandidates = prioritizeDatasetHealth(datasets, allResultSources);
+  const traceableDatasetCount = datasetHealthCandidates.filter((item) => item.missing.length === 0).length;
+  const missingLocationCount = datasets.filter((dataset) => !dataset.path && !dataset.externalUrl).length;
+  const missingVersionCount = datasets.filter((dataset) => !dataset.version || !dataset.source).length;
+  const unlinkedDatasetCount = datasetHealthCandidates.filter((item) => item.linkedResultCount === 0).length;
+  const unscopedResultCount = allResultSources.filter((result) => !result.datasetId).length;
+  const datasetHealthSignals: DatasetHealthSignal[] = [
+    {
+      action: "补路径",
+      detail: "至少留下服务器路径、NAS 路径、DOI、OSF 或云盘入口之一。",
+      href: "/data",
+      icon: Link2,
+      label: "缺数据位置",
+      tone: "location",
+      value: `${missingLocationCount} 个`,
+    },
+    {
+      action: "补来源",
+      detail: "来源和版本能帮你半年后判断这批数据还能不能复现。",
+      href: "/data",
+      icon: Database,
+      label: "缺来源/版本",
+      tone: "version",
+      value: `${missingVersionCount} 个`,
+    },
+    {
+      action: "关联结果",
+      detail: "没有关联结果的数据源，写周报和论文时很难证明它被用在哪里。",
+      href: "/data",
+      icon: FileChartColumn,
+      label: "未关联结果",
+      tone: "result",
+      value: `${unlinkedDatasetCount} 个`,
+    },
+    {
+      action: "固定来源",
+      detail: "结果没有固定数据来源时，后续图表、复现和交接最容易断线。",
+      href: "/data",
+      icon: AlertCircle,
+      label: "结果缺来源",
+      tone: "link",
+      value: `${unscopedResultCount} 条`,
     },
   ];
 
@@ -397,6 +469,13 @@ export default async function DataPage({ searchParams }: Props) {
         figureResults={figurePackResults}
         reportResults={filteredResults.slice(0, 12)}
         signals={figureSignals}
+      />
+
+      <DatasetHealthBoard
+        candidates={datasetHealthCandidates}
+        signals={datasetHealthSignals}
+        totalDatasets={datasets.length}
+        traceableDatasetCount={traceableDatasetCount}
       />
 
       <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
@@ -941,6 +1020,7 @@ function FigureEvidencePack({
 }
 
 function FigureEvidenceSignalCard({
+  action,
   detail,
   href,
   icon: Icon,
@@ -956,6 +1036,10 @@ function FigureEvidenceSignalCard({
       <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
       <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+        {action}
+        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+      </span>
     </Link>
   );
 }
@@ -982,6 +1066,262 @@ function figurePackRank(result: ResultFull) {
   const writingBonus = config.manuscriptReady ? -0.2 : 0;
 
   return (reproducibilityRank[reproducibility] ?? 3) + figureBonus + writingBonus;
+}
+
+function DatasetHealthBoard({
+  candidates,
+  signals,
+  totalDatasets,
+  traceableDatasetCount,
+}: {
+  candidates: DatasetHealthCandidate[];
+  signals: DatasetHealthSignal[];
+  totalDatasets: number;
+  traceableDatasetCount: number;
+}) {
+  const topCandidate = candidates[0];
+  const riskyCandidates = candidates.filter((candidate) => candidate.missing.length > 0).slice(0, 4);
+
+  return (
+    <section className="dataset-health-board overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.048)]">
+      <div className="grid gap-4 xl:grid-cols-[0.32fr_0.68fr] xl:items-stretch">
+        <div className="dataset-health-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <Database className="size-3.5" />
+            数据来源体检台
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            别做完整数据仓库，只保证以后能找回、复现和解释来源。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            研究数据最常见的断点是路径、版本、来源和结果关联缺失。这里把缺口前置，
+            需要时一键生成复现清单，不增加日常录入负担。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">可追溯来源</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">
+                {traceableDatasetCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">数据源总数</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{totalDatasets}</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {topCandidate ? (
+              <form action={createDatasetAuditNote}>
+                <input type="hidden" name="id" value={topCandidate.dataset.id} />
+                <SubmitButton className="w-fit">
+                  <FileCheck2 className="size-4" />
+                  生成体检清单
+                </SubmitButton>
+              </form>
+            ) : null}
+            <Button variant="outline" className="bg-white/68" render={<Link href="/data" />}>
+              <Database className="size-4" />
+              看数据来源
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {signals.map((signal) => (
+              <DatasetHealthSignalCard key={signal.label} signal={signal} />
+            ))}
+          </div>
+
+          <div className="grid gap-2 rounded-2xl border border-white/72 bg-white/58 p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold hero-title">优先体检数据源</p>
+              <span className="rounded-full border border-white/72 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+                最多 4 个
+              </span>
+            </div>
+            {riskyCandidates.length ? (
+              <div className="grid gap-2 lg:grid-cols-2">
+                {riskyCandidates.map((candidate) => (
+                  <DatasetHealthCandidateCard key={candidate.dataset.id} candidate={candidate} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 p-3 text-sm leading-6 text-muted-foreground">
+                暂时没有明显数据来源缺口。继续记录结果时，记得固定数据源或路径即可。
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DatasetHealthSignalCard({ signal }: { signal: DatasetHealthSignal }) {
+  const Icon = signal.icon;
+  const tone = datasetHealthToneClass(signal.tone);
+
+  return (
+    <Link href={signal.href} className={cn("dataset-health-signal group", tone.card)}>
+      <span className="flex items-start justify-between gap-3">
+        <span className={cn("dataset-health-icon", tone.icon)}>
+          <Icon className="size-4" />
+        </span>
+        <span className={cn("rounded-full border px-2 py-0.5 text-xs font-semibold", tone.pill)}>
+          {signal.value}
+        </span>
+      </span>
+      <span className="mt-4 block">
+        <span className="text-base font-semibold leading-snug hero-title">{signal.label}</span>
+        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+          {signal.detail}
+        </span>
+      </span>
+      <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold text-primary">
+        {signal.action}
+        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  );
+}
+
+function DatasetHealthCandidateCard({ candidate }: { candidate: DatasetHealthCandidate }) {
+  const { dataset, latestResultAt, linkedResultCount, missing } = candidate;
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-white/72 bg-white/66 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="line-clamp-1 text-sm font-semibold hero-title">{dataset.name}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+            {dataset.source || "来源未填"} · {dataset.version || "版本未填"}
+          </p>
+        </div>
+        <span className="rounded-full border border-[#d5e4e8] bg-[#eef6f4] px-2 py-0.5 text-xs font-semibold text-primary">
+          {linkedResultCount} 结果
+        </span>
+      </div>
+
+      <div className="grid gap-2 text-xs leading-5 text-muted-foreground">
+        <div className="flex items-start gap-2 rounded-lg border border-[#d5e4e8] bg-[#f8fbf8]/78 px-2.5 py-2">
+          <Link2 className="mt-0.5 size-3.5 shrink-0 text-primary" />
+          <span className="line-clamp-2 break-all">
+            {dataset.path || dataset.externalUrl || "缺少服务器路径、NAS 路径、DOI、OSF 或云盘入口"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-[#d5e4e8] bg-white/72 px-2.5 py-2">
+          <FileChartColumn className="size-3.5 shrink-0 text-primary" />
+          <span>
+            {latestResultAt
+              ? `最近结果更新 ${formatDateTime(latestResultAt)}`
+              : "还没有结果固定到这个数据源"}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {missing.length ? (
+          missing.map((item) => (
+            <span
+              key={item}
+              className="rounded-full border border-[#ead8ac] bg-[#fff8e7] px-2 py-0.5 text-[11px] font-medium text-[#765a23]"
+            >
+              缺{item}
+            </span>
+          ))
+        ) : (
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+            来源已闭环
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap justify-end gap-2 border-t border-border/60 pt-3">
+        <form action={createDatasetAuditNote}>
+          <input type="hidden" name="id" value={dataset.id} />
+          <Button type="submit" variant="outline" size="sm">
+            <FileCheck2 className="size-3.5" />
+            体检清单
+          </Button>
+        </form>
+        <CreateDialog title="补数据来源" label="补信息" icon={Edit3}>
+          <DatasetForm action={updateDataset} dataset={dataset} />
+        </CreateDialog>
+      </div>
+    </div>
+  );
+}
+
+function datasetHealthToneClass(tone: DatasetHealthSignal["tone"]) {
+  return {
+    link: {
+      card: "from-[#fffbf0] to-[#f6f0de]",
+      icon: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+      pill: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+    },
+    location: {
+      card: "from-[#f9fbff] to-[#eef5fb]",
+      icon: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+      pill: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    },
+    result: {
+      card: "from-[#fbfff8] to-[#eef7ed]",
+      icon: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+      pill: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    },
+    version: {
+      card: "from-[#fbf9ff] to-[#f0edf8]",
+      icon: "border-[#ded6ec] bg-[#f4efff] text-[#5f4f84]",
+      pill: "border-[#ded6ec] bg-[#f4efff] text-[#5f4f84]",
+    },
+  }[tone];
+}
+
+function prioritizeDatasetHealth(datasets: Dataset[], results: ResultFull[]) {
+  return datasets
+    .map<DatasetHealthCandidate>((dataset) => {
+      const linkedResults = results.filter((result) => result.datasetId === dataset.id);
+      const latestResultAt =
+        linkedResults
+          .map((result) => result.updatedAt)
+          .sort((left, right) => right.getTime() - left.getTime())[0] ?? null;
+      const missing = datasetHealthMissing(dataset, linkedResults.length);
+
+      return {
+        dataset,
+        latestResultAt,
+        linkedResultCount: linkedResults.length,
+        missing,
+        score: datasetHealthScore(dataset, linkedResults.length),
+      };
+    })
+    .sort((left, right) => {
+      const score = right.score - left.score;
+      if (score !== 0) return score;
+
+      return right.dataset.updatedAt.getTime() - left.dataset.updatedAt.getTime();
+    });
+}
+
+function datasetHealthMissing(dataset: Dataset, linkedResultCount: number) {
+  const missing: string[] = [];
+
+  if (!dataset.path && !dataset.externalUrl) missing.push("位置");
+  if (!dataset.source) missing.push("来源");
+  if (!dataset.version) missing.push("版本");
+  if (linkedResultCount === 0) missing.push("结果");
+
+  return missing;
+}
+
+function datasetHealthScore(dataset: Dataset, linkedResultCount: number) {
+  return (
+    (!dataset.path && !dataset.externalUrl ? 5 : 0) +
+    (!dataset.source ? 3 : 0) +
+    (!dataset.version ? 3 : 0) +
+    (linkedResultCount === 0 ? 4 : 0)
+  );
 }
 
 function ResultStackItem({
