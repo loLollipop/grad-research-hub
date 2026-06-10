@@ -10,6 +10,7 @@
   Settings,
   ShieldCheck,
   UploadCloud,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -101,6 +102,34 @@ export default async function SettingsPage({ searchParams }: Props) {
       title: accessReady ? "访问保护已开启" : "设置访问密码",
       detail: accessSettings.source === "settings" ? "来自设置中心" : "来自 .env 初始配置",
       ready: accessReady,
+    },
+  ];
+  const connectionShortcuts = [
+    {
+      action: "打开 AI 连接",
+      detail: `${providerLabel(aiSettings.provider)} · ${aiSettings.model}`,
+      href: "#ai-connection",
+      icon: Bot,
+      ready: aiSettings.apiKeyConfigured,
+      title: aiSettings.apiKeyConfigured ? "更换 AI Key / Base URL" : "配置 AI 助手",
+    },
+    {
+      action: "打开 Zotero",
+      detail: zotero.libraryId
+        ? `${zotero.libraryType === "user" ? "个人库" : "群组库"} · ${zotero.libraryId}`
+        : "同步前填写 Library ID 和只读 Key",
+      href: "#zotero-connection",
+      icon: UploadCloud,
+      ready: zotero.ready,
+      title: zotero.ready ? "调整 Zotero 同步范围" : "连接 Zotero 文献库",
+    },
+    {
+      action: "打开密码",
+      detail: accessSettings.source === "settings" ? "当前来自设置中心" : "当前来自 .env 初始配置",
+      href: "#access-connection",
+      icon: Key,
+      ready: accessReady,
+      title: accessReady ? "更新访问密码" : "设置访问密码",
     },
   ];
 
@@ -213,46 +242,40 @@ export default async function SettingsPage({ searchParams }: Props) {
         </aside>
 
         <div className="stretch-panel gap-4 rounded-2xl border border-border/70 bg-white/58 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_12px_28px_rgba(34,48,71,0.035)]">
-          <Card className="workbench-card bg-white/95">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="size-4" />
-                AI 连接
-              </CardTitle>
-              <CardDescription>常换的 Key、模型和代理地址放这里，不用登录服务器改配置。</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <ConnectionControlPanel shortcuts={connectionShortcuts} />
+
+          <SettingsDetailSection
+            defaultOpen={!aiSettings.apiKeyConfigured || feedback.section === "ai"}
+            description="常换的 Key、模型和代理地址放这里，不用登录服务器改配置。"
+            icon={Bot}
+            id="ai-connection"
+            ready={aiSettings.apiKeyConfigured}
+            title="AI 连接"
+          >
               <AiSettingsForm settings={aiSettings} encryptionReady={encryptionReady} />
-            </CardContent>
-          </Card>
+          </SettingsDetailSection>
 
-          <Card className="workbench-card bg-white/95">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UploadCloud className="size-4" />
-                Zotero 同步
-              </CardTitle>
-              <CardDescription>文献库 API、用户/群组库和同步数量可以随时改。</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <SettingsDetailSection
+            defaultOpen={!zotero.ready || feedback.section === "zotero"}
+            description="文献库 API、用户/群组库和同步数量可以随时改。"
+            icon={UploadCloud}
+            id="zotero-connection"
+            ready={zotero.ready}
+            title="Zotero 同步"
+          >
               <ZoteroSettingsForm settings={zotero} />
-            </CardContent>
-          </Card>
+          </SettingsDetailSection>
 
-          <Card className="workbench-card bg-white/95">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="size-4" />
-                访问密码
-              </CardTitle>
-              <CardDescription>
-                当前密码来自{accessSettings.source === "settings" ? "设置中心" : ".env 初始配置"}。
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <SettingsDetailSection
+            defaultOpen={!accessReady}
+            description={`当前密码来自${accessSettings.source === "settings" ? "设置中心" : ".env 初始配置"}。`}
+            icon={Key}
+            id="access-connection"
+            ready={accessReady}
+            title="访问密码"
+          >
               <AccessSettingsForm />
-            </CardContent>
-          </Card>
+          </SettingsDetailSection>
         </div>
       </section>
 
@@ -296,6 +319,123 @@ export default async function SettingsPage({ searchParams }: Props) {
         </div>
       </details>
     </div>
+  );
+}
+
+function ConnectionControlPanel({
+  shortcuts,
+}: {
+  shortcuts: Array<{
+    action: string;
+    detail: string;
+    href: string;
+    icon: LucideIcon;
+    ready: boolean;
+    title: string;
+  }>;
+}) {
+  return (
+    <section className="settings-control-panel rounded-2xl border border-white/72 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+            <KeyRound className="size-4 text-primary" />
+            常用连接
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            常改的只有 AI、Zotero 和访问密码。点卡片再改，平时不用看完整表单。
+          </p>
+        </div>
+        <span className="w-fit rounded-full border border-white/72 bg-white/68 px-2.5 py-1 text-xs text-muted-foreground">
+          部署项已折叠
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-2 lg:grid-cols-3">
+        {shortcuts.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <a key={item.href} href={item.href} className="settings-shortcut-card group">
+              <span className="flex items-start justify-between gap-3">
+                <span
+                  className={
+                    item.ready
+                      ? "flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f4] text-primary"
+                  }
+                >
+                  <Icon className="size-4" />
+                </span>
+                <span
+                  className={
+                    item.ready
+                      ? "rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"
+                      : "rounded-full border border-[#ead9ad] bg-[#fff8e7] px-2 py-0.5 text-[11px] font-medium text-[#765a23]"
+                  }
+                >
+                  {item.ready ? "已可用" : "待配置"}
+                </span>
+              </span>
+              <span className="mt-3 block text-sm font-semibold hero-title">{item.title}</span>
+              <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+                {item.detail}
+              </span>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                {item.action}
+                <Settings className="size-3.5 transition group-hover:rotate-12" />
+              </span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function SettingsDetailSection({
+  children,
+  defaultOpen,
+  description,
+  icon: Icon,
+  id,
+  ready,
+  title,
+}: {
+  children: React.ReactNode;
+  defaultOpen: boolean;
+  description: string;
+  icon: LucideIcon;
+  id: string;
+  ready: boolean;
+  title: string;
+}) {
+  return (
+    <details id={id} className="settings-detail-card group rounded-2xl border border-white/72 bg-white/90" open={defaultOpen}>
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 p-4">
+        <span className="flex min-w-0 gap-3">
+          <span
+            className={
+              ready
+                ? "flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f4] text-primary"
+            }
+          >
+            <Icon className="size-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold hero-title">{title}</span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
+          </span>
+        </span>
+        <span className="shrink-0 rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
+          点击展开
+        </span>
+      </summary>
+      <div className="border-t border-border/60 p-4 pt-3">
+        {children}
+      </div>
+    </details>
   );
 }
 
