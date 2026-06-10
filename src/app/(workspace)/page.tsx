@@ -1045,10 +1045,10 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
       </section>
 
       <ResearchRhythm
-        next="完成设置中心"
+        next="写第一条真实记录"
         paper="同步 Zotero"
-        experiment="写第一条记录"
-        evidence="先别搬旧资料"
+        experiment="建当前课题"
+        evidence="晚上再收口"
       />
 
       <section className="rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(241,248,246,0.78))] p-4 shadow-[0_12px_28px_rgba(27,42,56,0.04)]">
@@ -1068,11 +1068,11 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <StartCard
-          icon={Settings}
-          title="设置中心"
-          detail="修改访问密码、AI Key、Zotero Key 和导出数据。"
-          href="/settings"
-          action="去设置"
+          icon={NotebookPen}
+          title="第一条真实记录"
+          detail="先写导师反馈、实验观察、结果数字或一个想法。"
+          href="/notes?mode=new"
+          action="写一条"
         />
         <StartCard
           icon={BookOpenText}
@@ -1089,11 +1089,11 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
           action="建课题"
         />
         <StartCard
-          icon={NotebookPen}
-          title="第一条记录"
-          detail="写一条实验、笔记或组会提醒，让工作台开始运转。"
-          href="/notes?mode=new"
-          action="写笔记"
+          icon={Settings}
+          title="可选连接"
+          detail="需要同步或生成草稿时，再填 Zotero / AI Key。"
+          href="/settings"
+          action="去设置"
         />
       </section>
 
@@ -1114,9 +1114,9 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
                   : "清单只是路线图，不算正式数据。生成后首页仍会保留开箱引导。"
               }
             />
-            <ChecklistRow title="确认设置中心能保存 Key" detail="后续换模型、换 Zotero Key 都在网页端完成。" />
-            <ChecklistRow title="把一个真实课题放进去" detail="不要搬历史资料，先放当前正在推进的题目。" />
             <ChecklistRow title="留下第一条能复盘的记录" detail="实验目的、阅读摘录、组会提醒，任选一个。" />
+            <ChecklistRow title="把一个真实课题放进去" detail="不要搬历史资料，先放当前正在推进的题目。" />
+            <ChecklistRow title="按需连接 Zotero 或 AI" detail="需要同步文献或生成草稿时，再去设置中心填 Key。" />
           </CardContent>
         </Card>
 
