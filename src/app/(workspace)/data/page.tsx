@@ -214,6 +214,10 @@ export default async function DataPage({ searchParams }: Props) {
     const config = parseResultConfig(result.config);
     return !config.manuscriptReady && !result.artifactPath;
   }).length;
+  const speakableCount = quickBaseResults.filter((result) => {
+    const config = parseResultConfig(result.config);
+    return config.reproducibility === "verified" && (config.manuscriptReady || result.artifactPath);
+  }).length;
   const selectedExperimentTitle = experiments.find((experiment) => experiment.id === experimentId)?.title;
   const selectedDatasetName = datasets.find((dataset) => dataset.id === datasetId)?.name;
 
@@ -327,6 +331,49 @@ export default async function DataPage({ searchParams }: Props) {
       <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
         <aside className="grid content-start gap-4">
           <QuickResultCapture />
+
+          <Card className="workbench-card overflow-hidden">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="size-4 text-primary" />
+                证据可讲度
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <EvidenceTalkabilityStep
+                index="01"
+                title="可以讲"
+                value={`${speakableCount} 条`}
+                detail="已复现，并且有图表路径或写作标记。"
+                href={dataHref(currentFilters, { reproducibility: "verified", manuscript: "ready" })}
+                tone="green"
+              />
+              <EvidenceTalkabilityStep
+                index="02"
+                title="先判定"
+                value={`${unknownCount} 条`}
+                detail="还没判断是否值得投入复现或汇报。"
+                href={dataHref(currentFilters, { reproducibility: "unknown", manuscript: undefined })}
+                tone="warm"
+              />
+              <EvidenceTalkabilityStep
+                index="03"
+                title="补可信度"
+                value={`${evidenceTodoBaseCount} 条`}
+                detail="待复现或复现中，先补对照和日志。"
+                href={dataHref(currentFilters, { reproducibility: "todo", manuscript: undefined })}
+                tone="blue"
+              />
+              <EvidenceTalkabilityStep
+                index="04"
+                title="补素材"
+                value={`${notReadyBaseCount} 条`}
+                detail="缺图表路径或写作标记，汇报前容易找不到。"
+                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: "not-ready" })}
+                tone="quiet"
+              />
+            </CardContent>
+          </Card>
 
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
@@ -877,12 +924,57 @@ function QuickDataLink({
       href={href}
       className={
         active
-          ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4fb] px-3 py-2 text-sm font-medium text-primary"
+          ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4eb] px-3 py-2 text-sm font-medium text-primary"
           : "flex items-center justify-between soft-tile rounded-xl px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
       }
     >
       <span>{label}</span>
       <span className="text-xs text-muted-foreground">{count}</span>
+    </Link>
+  );
+}
+
+function EvidenceTalkabilityStep({
+  detail,
+  href,
+  index,
+  title,
+  tone,
+  value,
+}: {
+  detail: string;
+  href: string;
+  index: string;
+  title: string;
+  tone: "blue" | "green" | "quiet" | "warm";
+  value: string;
+}) {
+  const toneClass = {
+    blue: "border-[#cfe0e4] bg-[#eef6f7] text-[#315266]",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    quiet: "border-border/70 bg-white/72 text-muted-foreground",
+    warm: "border-[#ead8ac] bg-[#fff8e8] text-[#7a5a2f]",
+  }[tone];
+
+  return (
+    <Link
+      href={href}
+      className="group flex gap-2 rounded-xl border border-border/66 bg-[#fffef9]/72 p-2.5 transition hover:border-primary/25 hover:bg-white"
+    >
+      <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg border font-mono text-[11px] font-semibold ${toneClass}`}>
+        {index}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-[var(--workspace-title)]">{title}</span>
+          <span className="shrink-0 rounded-full border border-border/70 bg-white/80 px-2 py-0.5 text-[11px] text-muted-foreground">
+            {value}
+          </span>
+        </span>
+        <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {detail}
+        </span>
+      </span>
     </Link>
   );
 }
