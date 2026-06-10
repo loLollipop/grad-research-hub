@@ -190,35 +190,37 @@ export default async function PapersPage({ searchParams }: Props) {
               需要临时材料时再补录，避免把管理文献变成新的负担。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <form action={syncZoteroPapers}>
-                <SubmitButton variant="default">
-                  <RefreshCw className="size-4" />
-                  同步 Zotero
-                </SubmitButton>
-              </form>
-              <CreateDialog
-                title="临时材料补录"
-                description="只收导师转发、网页预印本或还没进 Zotero 的临时条目。"
-                label="临时材料"
-                icon={Plus}
-                wide
-              >
-                <PaperForm action={createPaper} />
-              </CreateDialog>
-              <Link className={buttonVariants({ variant: "outline" })} href="/settings">
-                <Settings className="size-4" />
-                Zotero 设置
-              </Link>
-              <form action={createReadingPlanNote}>
-                <input type="hidden" name="returnTo" value={returnTo} />
-                {papers.slice(0, 12).map((paper) => (
-                  <input key={paper.id} type="hidden" name="ids" value={paper.id} />
-                ))}
-                <SubmitButton variant="outline" disabled={!papers.length}>
-                  <FileText className="size-4" />
-                  整理阅读计划
-                </SubmitButton>
-              </form>
+              {zotero.ready ? (
+                <form action={syncZoteroPapers}>
+                  <SubmitButton variant="default">
+                    <RefreshCw className="size-4" />
+                    同步 Zotero
+                  </SubmitButton>
+                </form>
+              ) : (
+                <Link className={buttonVariants({ variant: "default" })} href="/settings">
+                  <Settings className="size-4" />
+                  接上 Zotero
+                </Link>
+              )}
+              {readingStack.length ? (
+                <form action={createReadingPlanNote}>
+                  <input type="hidden" name="returnTo" value={returnTo} />
+                  {readingStack.map((paper) => (
+                    <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                  ))}
+                  <SubmitButton variant="outline">
+                    <FileText className="size-4" />
+                    生成三篇计划
+                  </SubmitButton>
+                </form>
+              ) : null}
+              {zotero.ready ? (
+                <Link className={buttonVariants({ variant: "outline" })} href="/settings">
+                  <Settings className="size-4" />
+                  连接设置
+                </Link>
+              ) : null}
             </div>
           </div>
 
@@ -370,16 +372,15 @@ export default async function PapersPage({ searchParams }: Props) {
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
                 <BookOpenCheck className="size-4 text-primary" />
-                阅读节奏
+                Zotero 到阅读
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
-              <ProgressLine label="待读" value={unreadCount} total={totalCount} />
-              <ProgressLine label="读中" value={readingCount} total={totalCount} />
-              <ProgressLine label="已读" value={readCount} total={totalCount} />
-              <div className="rounded-xl border border-border/70 bg-white/70 p-3 text-xs text-muted-foreground">
-                最近同步：{lastSyncedAt ? formatDate(lastSyncedAt) : "暂无"}
-              </div>
+              <ReadingSourcePanel
+                lastSyncedAt={lastSyncedAt}
+                papersCount={totalCount}
+                ready={zotero.ready}
+              />
               <div className="grid gap-2 rounded-xl border border-border/70 bg-white/62 p-3 text-xs leading-5 text-muted-foreground">
                 <p className="font-medium text-foreground">今天只走三步</p>
                 <div className="grid gap-2">
@@ -388,6 +389,20 @@ export default async function PapersPage({ searchParams }: Props) {
                   <ReadingFlowStep index="03" title="留下抓手" detail="读出问题、方法、对照或可复现实验线索。" />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Clock3 className="size-4 text-primary" />
+                阅读状态
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm">
+              <ProgressLine label="待读" value={unreadCount} total={totalCount} />
+              <ProgressLine label="读中" value={readingCount} total={totalCount} />
+              <ProgressLine label="已读" value={readCount} total={totalCount} />
             </CardContent>
           </Card>
 
@@ -851,6 +866,66 @@ function ProgressLine({ label, value, total }: { label: string; value: number; t
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary/72" style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ReadingSourcePanel({
+  lastSyncedAt,
+  papersCount,
+  ready,
+}: {
+  lastSyncedAt?: Date | null;
+  papersCount: number;
+  ready: boolean;
+}) {
+  return (
+    <div className="grid gap-3 rounded-xl border border-[#d5e4e8] bg-[#f5fafb]/86 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[var(--workspace-title)]">
+            {ready ? "Zotero 已作为文献源头" : "先接 Zotero，不手动搬库"}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {ready
+              ? `库内已有 ${papersCount} 篇；最近同步 ${lastSyncedAt ? formatDate(lastSyncedAt) : "暂无记录"}。`
+              : "正式文献继续放在 Zotero。这里同步条目后，只负责安排阅读和沉淀笔记。"}
+          </p>
+        </div>
+        <span
+          className={
+            ready
+              ? "rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"
+              : "rounded-full border border-[#ead8ac] bg-[#fff8e8] px-2 py-0.5 text-[11px] font-medium text-[#7a5a2f]"
+          }
+        >
+          {ready ? "已连接" : "待连接"}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {ready ? (
+          <form action={syncZoteroPapers}>
+            <SubmitButton variant="outline" className="h-8 bg-white/78 px-2.5 text-xs">
+              <RefreshCw className="size-3.5" />
+              同步
+            </SubmitButton>
+          </form>
+        ) : (
+          <Link className={buttonVariants({ variant: "outline", size: "sm" })} href="/settings">
+            <Settings className="size-3.5" />
+            去连接
+          </Link>
+        )}
+        <CreateDialog
+          title="临时材料补录"
+          description="只给导师临时转发、网页预印本或还没来得及进 Zotero 的材料使用。"
+          label="临时补录"
+          icon={Plus}
+          wide
+        >
+          <PaperForm action={createPaper} />
+        </CreateDialog>
       </div>
     </div>
   );
