@@ -8,6 +8,7 @@
   FileText,
   Inbox,
   MapPin,
+  MessageSquareText,
   Plus,
   ReceiptText,
   Search,
@@ -79,6 +80,19 @@ type AdvisorPackItem = {
   icon: LucideIcon;
   id: string;
   label: string;
+  title: string;
+  tone: "admin" | "experiment" | "paper" | "result" | "task";
+};
+
+type AdvisorQuestionItem = {
+  action: string;
+  context: string;
+  href: string;
+  icon: LucideIcon;
+  id: string;
+  question: string;
+  rank: number;
+  source: string;
   title: string;
   tone: "admin" | "experiment" | "paper" | "result" | "task";
 };
@@ -327,6 +341,79 @@ export default async function AdminPage({ searchParams }: Props) {
     briefTaskCount > 0,
     meetingOpenCount > 0 || briefPaperCount > 0,
   ].filter(Boolean).length;
+  const advisorQuestionItems = prioritizeAdvisorQuestions([
+    ...advisorTasks.map<AdvisorQuestionItem>((task) => ({
+      action: "去任务",
+      context: `${task.milestone?.project.title ?? task.milestone?.title ?? "独立任务"} · ${dueText(task.dueDate)}`,
+      href: "/projects?scope=today",
+      icon: ClipboardList,
+      id: `task-question-${task.id}`,
+      question:
+        task.priority === "high"
+          ? `这个高优先级任务是否应该先做，还是等关键结果出来后再推进？`
+          : `这个任务的验收标准是否足够清楚？`,
+      rank: task.priority === "high" ? 1 : 4,
+      source: "任务",
+      title: task.title,
+      tone: "task",
+    })),
+    ...advisorExperiments.map<AdvisorQuestionItem>((experiment) => ({
+      action: "去实验",
+      context: `${experiment.project?.title ?? "未关联课题"} · ${formatDate(experiment.updatedAt)}`,
+      href: "/experiments",
+      icon: FileCheck2,
+      id: `experiment-question-${experiment.id}`,
+      question:
+        experiment.status === "failed"
+          ? `这个失败现象是否值得继续排查，还是应该换对照/换方案？`
+          : `这个进行中的实验下一组对照应该优先补什么？`,
+      rank: experiment.status === "failed" ? 2 : 5,
+      source: "实验",
+      title: experiment.title,
+      tone: "experiment",
+    })),
+    ...advisorResults.map<AdvisorQuestionItem>((result) => ({
+      action: "去成果",
+      context: `${result.experiment?.title ?? result.dataset?.name ?? "未关联来源"} · ${formatDate(result.updatedAt)}`,
+      href: "/data?manuscript=ready",
+      icon: Sparkles,
+      id: `result-question-${result.id}`,
+      question: `这条结果是否已经足够支撑组会/论文里的结论，还是还缺复现或图表？`,
+      rank: 3,
+      source: "结果",
+      title: result.title,
+      tone: "result",
+    })),
+    ...advisorPapers.map<AdvisorQuestionItem>((paper) => ({
+      action: "去文献",
+      context: `${paper.year ?? "年份未知"} · ${paper.category || "未分类"}`,
+      href: `/papers?status=${paper.readStatus}`,
+      icon: FileText,
+      id: `paper-question-${paper.id}`,
+      question: `这篇文献里的方法/对照/指标是否值得转成一个小实验？`,
+      rank: 7,
+      source: "文献",
+      title: paper.title,
+      tone: "paper",
+    })),
+    ...adminStack
+      .filter((item) => item.type === "meeting" || item.type === "deadline")
+      .map<AdvisorQuestionItem>((item) => ({
+        action: "去事务",
+        context: `${itemTypes.find((type) => type.value === item.type)?.label ?? "事务"} · ${dueText(item.dueDate)}`,
+        href: "/admin",
+        icon: UsersRound,
+        id: `admin-question-${item.id}`,
+        question:
+          item.type === "meeting"
+            ? `这次沟通最需要导师判断的问题是什么？`
+            : `这个截止前是否需要提前确认材料、图表或审批口径？`,
+        rank: item.type === "meeting" ? 0 : 6,
+        source: "事务",
+        title: item.title,
+        tone: "admin",
+      })),
+  ]).slice(0, 5);
   const feedbackLoopNotes: FeedbackLoopNote[] = feedbackNotes.map((note) => ({
     ...note,
     openChecklistCount: openChecklistCount(note.content),
@@ -655,6 +742,8 @@ export default async function AdminPage({ searchParams }: Props) {
             questions={advisorQuestions}
             score={advisorPrepScore}
           />
+
+          <AdvisorQuestionQueue questions={advisorQuestionItems} />
 
           <AdvisorFeedbackLoop
             feedbackOpenChecklistCount={feedbackOpenChecklistCount}
@@ -1106,6 +1195,113 @@ function AdvisorFiveMinutePack({
         </div>
       </div>
     </section>
+  );
+}
+
+function AdvisorQuestionQueue({ questions }: { questions: AdvisorQuestionItem[] }) {
+  const primary = questions[0];
+
+  return (
+    <section className="advisor-question-queue overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.048)]">
+      <div className="grid gap-4 xl:grid-cols-[0.32fr_0.68fr]">
+        <div className="advisor-question-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <MessageSquareText className="size-3.5" />
+            导师问题队列
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            会前别只堆材料，先把要问的问题压到 3 个以内。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            任务、实验、结果、文献和事务里最耗时间的是不确定点。这里把它们收成问题队列，
+            见导师时先问判断题，再展开证据。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">候选问题</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{questions.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">最优先</p>
+              <p className="mt-1 line-clamp-1 text-sm font-semibold hero-title">
+                {primary?.source ?? "暂无"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-3">
+            <AdvisorQuestionStep index="01" title="先问判断" detail="需要导师拍板的方向、优先级或是否继续做。" />
+            <AdvisorQuestionStep index="02" title="再给证据" detail="只带能支撑判断的图表、观察或文献线索。" />
+            <AdvisorQuestionStep index="03" title="落成动作" detail="沟通后把结论拆回任务、实验或结果证据。" />
+          </div>
+
+          <div className="grid gap-2">
+            {questions.length ? (
+              questions.map((question) => (
+                <AdvisorQuestionRow key={question.id} item={question} />
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#cfe0df] bg-white/58 p-4 text-sm leading-6 text-muted-foreground">
+                暂时没有可自动推导的问题。先记录一个高优先级任务、失败实验、可讲结果或组会提醒。
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AdvisorQuestionStep({
+  detail,
+  index,
+  title,
+}: {
+  detail: string;
+  index: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+        <MessageSquareText className="size-3.5 text-primary" />
+      </div>
+      <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function AdvisorQuestionRow({ item }: { item: AdvisorQuestionItem }) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      className="group grid gap-3 rounded-2xl border border-white/72 bg-white/64 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
+    >
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${advisorPackToneClass(item.tone)}`}>
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] font-medium text-[#365a7d]">
+            {item.source}
+          </span>
+          <span className="line-clamp-1 text-sm font-semibold hero-title">{item.title}</span>
+        </span>
+        <span className="mt-1 block text-sm leading-5 text-[var(--workspace-title)]">
+          {item.question}
+        </span>
+        <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">{item.context}</span>
+      </span>
+      <span className="inline-flex w-fit items-center gap-1 rounded-full border border-white/80 bg-white/72 px-2.5 py-1 text-xs font-semibold text-primary transition group-hover:border-primary/20 group-hover:bg-white">
+        {item.action}
+      </span>
+    </Link>
   );
 }
 
@@ -1732,4 +1928,22 @@ function adminItemRank(item: AdminItem) {
   const meetingRank = item.type === "meeting" ? -0.5 : 0;
 
   return dueRank + statusRank + meetingRank;
+}
+
+function prioritizeAdvisorQuestions(items: AdvisorQuestionItem[]) {
+  const seen = new Set<string>();
+
+  return [...items]
+    .sort((left, right) => {
+      const rank = left.rank - right.rank;
+      if (rank !== 0) return rank;
+
+      return left.title.localeCompare(right.title, "zh-CN");
+    })
+    .filter((item) => {
+      const key = `${item.source}:${item.title}:${item.question}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
