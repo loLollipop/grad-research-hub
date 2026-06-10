@@ -95,6 +95,17 @@ type ResearchLane = {
   value: string;
 };
 
+type NeedSignal = {
+  action: string;
+  detail: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  source: string;
+  title: string;
+  value: string;
+};
+
 type WorkspaceCounts = {
   papers: number;
   projects: number;
@@ -598,6 +609,58 @@ export default async function DashboardPage() {
       value: `${recentNotes.length} 条最近笔记`,
     },
   ];
+  const needSignals: NeedSignal[] = [
+    {
+      action: "去阅读台",
+      detail: "文献库继续放 Zotero，工作台只接管今日阅读、状态和读后沉淀。",
+      href: "/papers",
+      icon: BookOpenText,
+      label: "文献入口",
+      source: "Zotero API",
+      title: "少维护一套文献库",
+      value: `${workspaceCounts.papers} 篇文献 · ${readingPapers + unreadPapers} 篇近期待推进`,
+    },
+    {
+      action: "开记录纸",
+      detail: "实验记录优先模板、状态、目的、观察、结论和下一步，不堆机器参数。",
+      href: "/experiments",
+      icon: FlaskConical,
+      label: "实验日志",
+      source: "eLabFTW",
+      title: "实验要能复盘",
+      value: `${runningExperiments} 个进行中 · ${staleExperiments.length} 个需收口`,
+    },
+    {
+      action: "补证据",
+      detail: "结果先判断可讲度：复现、图表路径、数据来源和一句话结论够不够。",
+      href: "/data",
+      icon: FileChartColumn,
+      label: "结果证据",
+      source: "RDM / FAIR",
+      title: "指标要能支撑结论",
+      value: `${verifiedResults} 条已复现 · ${manuscriptReady} 条可写入`,
+    },
+    {
+      action: "整理周报",
+      detail: "把任务、实验、结果和文献压缩成导师沟通稿，减少组会前翻材料。",
+      href: currentMeetingBrief ? `/notes?note=${currentMeetingBrief.id}` : "/notes?folder=组会",
+      icon: CalendarClock,
+      label: "导师沟通",
+      source: "PhD workflow",
+      title: "每周都要能讲清进展",
+      value: currentMeetingBrief ? "周报草稿已生成" : `${queue.length + closingItems.length} 个可汇报线索`,
+    },
+    {
+      action: "继续写作",
+      detail: "笔记保留双链和来源视角，让阅读、实验、证据自然沉淀成写作素材。",
+      href: "/notes",
+      icon: PenLine,
+      label: "知识沉淀",
+      source: "Obsidian",
+      title: "材料不能散在各处",
+      value: `${recentNotes.length} 条最近笔记`,
+    },
+  ];
 
   return (
     <div className="grid gap-5">
@@ -743,6 +806,8 @@ export default async function DashboardPage() {
         currentDailyPlan={currentDailyPlan}
         currentTodayMeetingBrief={currentTodayMeetingBrief}
       />
+
+      <ResearchNeedCompass signals={needSignals} />
 
       <StarterProgress counts={workspaceCounts} guideNote={currentFirstRunGuide} />
 
@@ -1093,6 +1158,52 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
         mode="intro"
       />
 
+      <ResearchNeedCompass
+        compact
+        signals={[
+          {
+            action: "同步文献",
+            detail: "正式文献继续放 Zotero，工作台只安排阅读和沉淀。",
+            href: "/papers",
+            icon: BookOpenText,
+            label: "文献入口",
+            source: "Zotero API",
+            title: "先接文献源头",
+            value: "待读 / 读中 / 已读",
+          },
+          {
+            action: "写实验",
+            detail: "用记录纸留下目的、观察、结论和下一步。",
+            href: "/experiments",
+            icon: FlaskConical,
+            label: "实验日志",
+            source: "eLabFTW",
+            title: "实验要能复盘",
+            value: "模板 / 状态 / 正文",
+          },
+          {
+            action: "登记结果",
+            detail: "只收核心指标、复现状态、图表路径和一句话结论。",
+            href: "/data",
+            icon: FileChartColumn,
+            label: "结果证据",
+            source: "RDM / FAIR",
+            title: "结果要能讲",
+            value: "复现 / 图表 / 素材",
+          },
+          {
+            action: "写周报",
+            detail: "把任务、实验、结果和文献整理成导师沟通稿。",
+            href: "/notes?folder=组会",
+            icon: CalendarClock,
+            label: "导师沟通",
+            source: "PhD workflow",
+            title: "每周要能汇报",
+            value: "进展 / 证据 / 下周计划",
+          },
+        ]}
+      />
+
       <section className="grid gap-4 xl:grid-cols-[0.62fr_0.38fr]">
         <Card className="workbench-card overflow-hidden">
           <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
@@ -1408,6 +1519,93 @@ function StarterProgress({
         ))}
       </div>
     </section>
+  );
+}
+
+function ResearchNeedCompass({
+  compact = false,
+  signals,
+}: {
+  compact?: boolean;
+  signals: NeedSignal[];
+}) {
+  return (
+    <section className="need-compass overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_20px_44px_rgba(27,42,56,0.055)]">
+      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr] xl:items-stretch">
+        <div className="need-compass-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <Lightbulb className="size-3.5" />
+            调研校准
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            只做研究生日常呼声最高的五件事。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            文献、实验、结果、导师沟通和写作沉淀是理工科研究生最常反复切换的工作流。
+            这里把外部工具的强项接进来，但不复制完整系统。
+          </p>
+          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+            <ResearchEvidenceLine source="Zotero" text="文献条目、集合和标签继续用专业文献库管理。" />
+            <ResearchEvidenceLine source="ELN" text="实验记录重在模板、状态、正文和可追踪上下文。" />
+            <ResearchEvidenceLine source="RDM" text="数据/结果要可追溯、可复现、能支撑结论。" />
+            <ResearchEvidenceLine source="Obsidian" text="笔记价值在链接关系、回顾和写作素材沉淀。" />
+          </div>
+        </div>
+
+        <div className={compact ? "grid gap-2 md:grid-cols-2" : "grid gap-2 lg:grid-cols-5"}>
+          {signals.map((signal, index) => {
+            const Icon = signal.icon;
+
+            return (
+              <Link
+                key={`${signal.label}-${signal.href}`}
+                href={signal.href}
+                className="need-signal-card group"
+              >
+                <span className="flex items-start justify-between gap-3">
+                  <span className="need-signal-icon">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="rounded-full border border-white/74 bg-white/70 px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+                    0{index + 1}
+                  </span>
+                </span>
+                <span className="mt-4 block">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] font-medium text-[#365a7d]">
+                      {signal.label}
+                    </span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{signal.source}</span>
+                  </span>
+                  <span className="mt-2 block text-base font-semibold leading-snug hero-title">
+                    {signal.title}
+                  </span>
+                  <span className="mt-1.5 block text-xs font-medium text-primary">
+                    {signal.value}
+                  </span>
+                  <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+                    {signal.detail}
+                  </span>
+                </span>
+                <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold text-primary">
+                  {signal.action}
+                  <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ResearchEvidenceLine({ source, text }: { source: string; text: string }) {
+  return (
+    <div className="flex gap-2 rounded-xl border border-white/64 bg-white/54 px-3 py-2">
+      <span className="shrink-0 font-mono text-[11px] font-semibold text-primary">{source}</span>
+      <span>{text}</span>
+    </div>
   );
 }
 
