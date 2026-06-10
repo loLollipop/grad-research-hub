@@ -649,6 +649,37 @@
       0 12px 28px rgba(27, 42, 56, 0.032);
   }
 
+  .feedback-loop {
+    position: relative;
+    background:
+      radial-gradient(circle at 7% 12%, rgba(95, 123, 104, 0.14), transparent 18rem),
+      radial-gradient(circle at 90% 0%, rgba(218, 203, 166, 0.2), transparent 20rem),
+      radial-gradient(circle at 62% 112%, rgba(66, 95, 126, 0.1), transparent 18rem),
+      linear-gradient(135deg, rgba(255, 254, 247, 0.93), rgba(243, 249, 246, 0.82) 50%, rgba(249, 243, 232, 0.74));
+  }
+
+  .feedback-loop::before {
+    position: absolute;
+    inset: -8rem auto auto -8rem;
+    width: 18rem;
+    height: 18rem;
+    content: "";
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(95, 123, 104, 0.13), transparent 70%);
+    pointer-events: none;
+  }
+
+  .feedback-loop-lead {
+    position: relative;
+    z-index: 1;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.75), rgba(255, 251, 240, 0.5)),
+      rgba(255, 255, 255, 0.48);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 12px 28px rgba(27, 42, 56, 0.03);
+  }
+
   .research-loop-card {
     @apply rounded-2xl border border-sidebar-border/70 bg-white/66 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_10px_24px_rgba(34,48,71,0.028)];
   }

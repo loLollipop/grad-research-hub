@@ -17,12 +17,13 @@
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import type { AdminItem, Prisma } from "@prisma/client";
+import type { AdminItem, Note, Prisma } from "@prisma/client";
 
 import {
   createMeetingFeedbackNote,
   createMeetingBriefNote,
   createAdminItem,
+  createTasksFromNoteChecklist,
   deleteAdminItem,
   setAdminStatus,
   updateAdminItem,
@@ -80,6 +81,10 @@ type AdvisorPackItem = {
   label: string;
   title: string;
   tone: "admin" | "experiment" | "paper" | "result" | "task";
+};
+
+type FeedbackLoopNote = Note & {
+  openChecklistCount: number;
 };
 
 function adminHref(filters: AdminFilters, patch: Partial<AdminFilters>) {
@@ -145,6 +150,7 @@ export default async function AdminPage({ searchParams }: Props) {
     advisorExperiments,
     advisorResults,
     advisorPapers,
+    feedbackNotes,
   ] = await Promise.all([
     prisma.adminItem.findMany({
       where,
@@ -212,6 +218,18 @@ export default async function AdminPage({ searchParams }: Props) {
       where: { readStatus: { in: ["unread", "reading"] } },
       orderBy: { updatedAt: "desc" },
       take: 3,
+    }),
+    prisma.note.findMany({
+      where: {
+        folder: "组会",
+        OR: [
+          { title: { contains: "反馈", mode: "insensitive" } },
+          { tags: { contains: "导师反馈", mode: "insensitive" } },
+          { content: { contains: "导师反馈", mode: "insensitive" } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
     }),
   ]);
 
@@ -309,6 +327,16 @@ export default async function AdminPage({ searchParams }: Props) {
     briefTaskCount > 0,
     meetingOpenCount > 0 || briefPaperCount > 0,
   ].filter(Boolean).length;
+  const feedbackLoopNotes: FeedbackLoopNote[] = feedbackNotes.map((note) => ({
+    ...note,
+    openChecklistCount: openChecklistCount(note.content),
+  }));
+  const feedbackOpenChecklistCount = feedbackLoopNotes.reduce(
+    (sum, note) => sum + note.openChecklistCount,
+    0,
+  );
+  const latestFeedbackNote = feedbackLoopNotes[0] ?? null;
+  const feedbackTaskSource = feedbackLoopNotes.find((note) => note.openChecklistCount > 0) ?? null;
 
   return (
     <div className="grid gap-5">
@@ -628,6 +656,13 @@ export default async function AdminPage({ searchParams }: Props) {
             score={advisorPrepScore}
           />
 
+          <AdvisorFeedbackLoop
+            feedbackOpenChecklistCount={feedbackOpenChecklistCount}
+            feedbackTaskSource={feedbackTaskSource}
+            latestFeedbackNote={latestFeedbackNote}
+            notes={feedbackLoopNotes}
+          />
+
           <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/74 p-3 shadow-[0_12px_30px_rgba(27,42,56,0.045)]">
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0">
@@ -828,6 +863,27 @@ function QuickAdminLink({
       <span className="text-xs text-muted-foreground">{count}</span>
     </Link>
   );
+}
+
+function openChecklistCount(content: string) {
+  return content
+    .split("\n")
+    .filter((line) => /^\s*[-*]\s+\[\s\]\s+.+/.test(line))
+    .filter((line) => !content.includes(noteTaskMarkerKey(line)))
+    .length;
+}
+
+function noteTaskMarkerKey(line: string) {
+  const title = line
+    .replace(/^\s*[-*]\s+\[\s\]\s+/, "")
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/[*_`]/g, "")
+    .trim();
+  let hash = 0;
+  for (let index = 0; index < title.length; index += 1) {
+    hash = (hash * 31 + title.charCodeAt(index)) >>> 0;
+  }
+  return `:${hash.toString(36)} -->`;
 }
 
 function AdvisorPrepItem({
@@ -1051,6 +1107,205 @@ function AdvisorFiveMinutePack({
       </div>
     </section>
   );
+}
+
+function AdvisorFeedbackLoop({
+  feedbackOpenChecklistCount,
+  feedbackTaskSource,
+  latestFeedbackNote,
+  notes,
+}: {
+  feedbackOpenChecklistCount: number;
+  feedbackTaskSource: FeedbackLoopNote | null;
+  latestFeedbackNote: FeedbackLoopNote | null;
+  notes: FeedbackLoopNote[];
+}) {
+  const latestHref = latestFeedbackNote ? `/notes?note=${latestFeedbackNote.id}` : "/notes?source=meeting";
+  const feedbackWithAction = notes.filter((note) => note.openChecklistCount > 0);
+
+  return (
+    <section className="feedback-loop overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.045)]">
+      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr]">
+        <div className="feedback-loop-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <FileCheck2 className="size-3.5" />
+            会后反馈闭环
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            导师说完之后，5 分钟内把反馈变成下一步。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            不再新建一套会议系统。反馈先进入组会笔记，再把未拆清单同步到课题任务，
+            同时提醒哪些要回填到实验、成果和文献。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">反馈笔记</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{notes.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">待拆动作</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">
+                {feedbackOpenChecklistCount}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <form action={createMeetingFeedbackNote}>
+              <input type="hidden" name="scope" value="week" />
+              <SubmitButton className="w-full justify-start">
+                <ClipboardList className="size-4" />
+                新建反馈回填
+              </SubmitButton>
+            </form>
+            <Link className={buttonVariants({ variant: "outline" })} href={latestHref}>
+              <FileText className="size-4" />
+              {latestFeedbackNote ? "打开最近反馈" : "查看组会笔记"}
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-4">
+            <FeedbackLoopTile
+              done={Boolean(latestFeedbackNote)}
+              index="01"
+              title="先写原话"
+              detail="导师认可、担心和临时判断先完整收住。"
+            />
+            <FeedbackLoopTile
+              done={feedbackOpenChecklistCount > 0}
+              index="02"
+              title="再拆动作"
+              detail="把 checklist 变成项目页能推进的待办。"
+            />
+            <FeedbackLoopTile
+              done={notes.some((note) => /实验|对照|复现|观察/.test(note.content))}
+              index="03"
+              title="回填实验"
+              detail="补观察、失败原因或下一组对照。"
+            />
+            <FeedbackLoopTile
+              done={notes.some((note) => /结果|证据|图表|文献|Zotero/i.test(note.content))}
+              index="04"
+              title="补证据/文献"
+              detail="把图表路径、复现状态或待读文献补齐。"
+            />
+          </div>
+
+          <div className="grid gap-3 xl:grid-cols-[1fr_17rem]">
+            <div className="rounded-2xl border border-white/70 bg-white/60 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold hero-title">最近反馈记录</p>
+                <span className="rounded-full border border-white/72 bg-white/70 px-2 py-0.5 text-[11px] text-muted-foreground">
+                  {feedbackWithAction.length ? `${feedbackWithAction.length} 篇有待办` : "无待拆清单"}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2">
+                {notes.length ? (
+                  notes.slice(0, 3).map((note) => (
+                    <FeedbackLoopRow key={note.id} note={note} />
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/54 p-3 text-sm text-muted-foreground">
+                    还没有导师反馈记录。会后点“新建反馈回填”，先把原话和下一步收住。
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/70 bg-white/60 p-3">
+              <p className="text-sm font-semibold hero-title">一键回到课题</p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                有待办清单时，直接拆成项目页任务；没有清单时先打开最近反馈补几条。
+              </p>
+              <div className="mt-3 grid gap-2">
+                {feedbackTaskSource ? (
+                  <form action={createTasksFromNoteChecklist}>
+                    <input type="hidden" name="id" value={feedbackTaskSource.id} />
+                    <SubmitButton className="w-full justify-start">
+                      <ListActionIcon />
+                      拆成任务
+                    </SubmitButton>
+                  </form>
+                ) : (
+                  <Link className={buttonVariants({ variant: "outline" })} href={latestHref}>
+                    <PenActionIcon />
+                    先补反馈清单
+                  </Link>
+                )}
+                <Link className={buttonVariants({ variant: "outline" })} href="/projects?status=todo">
+                  <ClipboardList className="size-4" />
+                  查看待办
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeedbackLoopTile({
+  detail,
+  done,
+  index,
+  title,
+}: {
+  detail: string;
+  done: boolean;
+  index: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+        <span
+          className={
+            done
+              ? "rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"
+              : "rounded-full border border-[#ead8ac] bg-[#fff8e8] px-2 py-0.5 text-[11px] font-medium text-[#7a5a2f]"
+          }
+        >
+          {done ? "已覆盖" : "待补"}
+        </span>
+      </div>
+      <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function FeedbackLoopRow({ note }: { note: FeedbackLoopNote }) {
+  return (
+    <Link
+      href={`/notes?note=${note.id}`}
+      className="group grid gap-3 rounded-xl border border-white/72 bg-white/66 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
+    >
+      <span className="flex size-9 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f7] text-primary">
+        <FileText className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="line-clamp-1 text-sm font-semibold hero-title">{note.title}</span>
+        <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">
+          更新 {formatDateTime(note.updatedAt)}
+        </span>
+      </span>
+      <span className="rounded-full border border-white/80 bg-white/78 px-2.5 py-1 text-xs font-medium text-primary">
+        {note.openChecklistCount ? `${note.openChecklistCount} 个动作` : "已收口"}
+      </span>
+    </Link>
+  );
+}
+
+function ListActionIcon() {
+  return <ClipboardList className="size-4" />;
+}
+
+function PenActionIcon() {
+  return <FileText className="size-4" />;
 }
 
 function AdvisorPrepTile({
