@@ -72,6 +72,16 @@ type WritingMaterialSignal = {
   tone: WritingMaterialTone;
 };
 
+type InboxTriageSignal = {
+  action: string;
+  count: number;
+  detail: string;
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  tone: "inbox" | "link" | "task" | "writing";
+};
+
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -414,6 +424,58 @@ export default async function NotesPage({ searchParams }: Props) {
     uniqueWikiLinks(note.content).some((link) => !noteTitleMap.has(normalizeTitle(link))),
   ).length;
   const inboxNoteCount = allNotes.filter((note) => !note.folder || note.folder === "Inbox").length;
+  const triageNotes = allNotes
+    .filter((note) => {
+      const checklist = openChecklistCount(note.content);
+      const links = uniqueWikiLinks(note.content);
+      const missingLinkCount = links.filter((link) => !noteTitleMap.has(normalizeTitle(link))).length;
+      return !note.folder || note.folder === "Inbox" || checklist > 0 || missingLinkCount > 0 || isWritingMaterial(note);
+    })
+    .map((note) => ({
+      note,
+      action: noteActionLabel(note, allNotes),
+      score: noteActionScore(note, allNotes),
+    }))
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 4);
+  const inboxTriageSignals: InboxTriageSignal[] = [
+    {
+      action: "清理收件箱",
+      count: inboxNoteCount,
+      detail: "临时想法、导师口头反馈和实验碎片，先补分类和标签。",
+      href: notesHref({ focus: "inbox" }),
+      icon: FolderOpen,
+      label: "待归档",
+      tone: "inbox",
+    },
+    {
+      action: "拆回任务",
+      count: notesWithTasks,
+      detail: "把笔记里的 checklist 拆到课题任务，避免待办埋在正文里。",
+      href: notesHref({ focus: "tasks" }),
+      icon: ListTodo,
+      label: "可拆任务",
+      tone: "task",
+    },
+    {
+      action: "补齐主题",
+      count: missingLinkNoteCount,
+      detail: "双链未创建会让阅读、实验和写作上下文断开。",
+      href: notesHref({ focus: "links" }),
+      icon: Link2,
+      label: "待补双链",
+      tone: "link",
+    },
+    {
+      action: "沉淀写作",
+      count: writingNoteCount,
+      detail: "把组会、阅读、实验和结果沉成周报或论文素材。",
+      href: notesHref({ focus: "writing" }),
+      icon: FileText,
+      label: "写作素材",
+      tone: "writing",
+    },
+  ];
   const sourceCounts: Record<NoteSource, number> = {
     reading: allNotes.filter((note) => noteMatchesSource(note, "reading")).length,
     experiment: allNotes.filter((note) => noteMatchesSource(note, "experiment")).length,
@@ -579,6 +641,8 @@ export default async function NotesPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      <InboxTriageBoard signals={inboxTriageSignals} triageNotes={triageNotes} />
 
       <WritingMaterialBoard currentWritingPack={currentWritingPack} signals={writingSignals} />
 
@@ -1099,6 +1163,177 @@ function WritingMaterialBoard({
       </div>
     </section>
   );
+}
+
+function InboxTriageBoard({
+  signals,
+  triageNotes,
+}: {
+  signals: InboxTriageSignal[];
+  triageNotes: Array<{ action: string; note: Note; score: number }>;
+}) {
+  const totalSignals = signals.reduce((sum, signal) => sum + signal.count, 0);
+
+  return (
+    <section className="note-triage-board overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.048)]">
+      <div className="grid gap-4 xl:grid-cols-[0.3fr_0.7fr] xl:items-stretch">
+        <div className="note-triage-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <FolderOpen className="size-3.5" />
+            收件箱清理台
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            临时笔记不要长期堆着，先决定它要去哪里。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            不复制 Obsidian 的完整知识图谱。这里只处理研究生日常最常见的四件事：
+            归档、拆任务、补双链、沉淀写作素材。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">待整理信号</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{totalSignals}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">优先笔记</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{triageNotes.length}</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {triageNotes.length ? (
+              <form action={createNoteCloseoutNote}>
+                {triageNotes.slice(0, 3).map(({ note }) => (
+                  <input key={note.id} type="hidden" name="ids" value={note.id} />
+                ))}
+                <SubmitButton className="w-fit">
+                  <FileText className="size-4" />
+                  生成清理清单
+                </SubmitButton>
+              </form>
+            ) : null}
+            <Button render={<Link href={notesHref({ focus: "inbox" })} />} variant="outline" className="bg-white/68">
+              <FolderOpen className="size-4" />
+              只看收件箱
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {signals.map((signal, index) => (
+              <InboxTriageSignalCard key={signal.label} index={index + 1} signal={signal} />
+            ))}
+          </div>
+
+          <div className="grid gap-2 rounded-2xl border border-white/70 bg-white/56 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold hero-title">今天优先处理</p>
+              <span className="rounded-full border border-white/72 bg-white/70 px-2 py-0.5 text-[11px] text-muted-foreground">
+                最多 4 篇
+              </span>
+            </div>
+            {triageNotes.length ? (
+              <div className="grid gap-2 lg:grid-cols-2">
+                {triageNotes.map(({ action, note }) => (
+                  <InboxTriageNoteRow key={note.id} action={action} note={note} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 p-3 text-sm leading-6 text-muted-foreground">
+                暂时没有需要优先清理的笔记。可以继续写新材料，或生成写作素材包。
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function InboxTriageSignalCard({
+  index,
+  signal,
+}: {
+  index: number;
+  signal: InboxTriageSignal;
+}) {
+  const Icon = signal.icon;
+  const tone = inboxTriageToneClass(signal.tone);
+
+  return (
+    <Link href={signal.href} className={cn("note-triage-signal group", tone.card)}>
+      <span className="flex items-start justify-between gap-3">
+        <span className={cn("note-triage-icon", tone.icon)}>
+          <Icon className="size-4" />
+        </span>
+        <span className="rounded-full border border-white/72 bg-white/70 px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+          {index.toString().padStart(2, "0")}
+        </span>
+      </span>
+      <span className="mt-4 block">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-base font-semibold leading-snug hero-title">{signal.label}</span>
+          <span className={cn("rounded-full border px-2 py-0.5 text-xs font-semibold", tone.pill)}>
+            {signal.count}
+          </span>
+        </span>
+        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+          {signal.detail}
+        </span>
+      </span>
+      <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold text-primary">
+        {signal.action}
+        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  );
+}
+
+function InboxTriageNoteRow({ action, note }: { action: string; note: Note }) {
+  return (
+    <Link
+      href={notesHref({ note: note.id })}
+      className="group grid gap-3 rounded-xl border border-white/72 bg-white/66 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
+    >
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f7] text-primary">
+        <NotebookPen className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="line-clamp-1 text-sm font-semibold hero-title">{note.title}</span>
+        <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">
+          {folderLabel(note.folder)} · 更新 {formatDateTime(note.updatedAt)}
+        </span>
+      </span>
+      <span className="rounded-full border border-white/80 bg-white/78 px-2.5 py-1 text-xs font-semibold text-primary">
+        {action}
+      </span>
+    </Link>
+  );
+}
+
+function inboxTriageToneClass(tone: InboxTriageSignal["tone"]) {
+  return {
+    inbox: {
+      card: "from-[#fbf8ef] to-[#f4f0e3]",
+      icon: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+      pill: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+    },
+    link: {
+      card: "from-[#f9fbff] to-[#eef5fb]",
+      icon: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+      pill: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    },
+    task: {
+      card: "from-[#fbfff8] to-[#eef7ed]",
+      icon: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+      pill: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    },
+    writing: {
+      card: "from-[#fbf9ff] to-[#f0edf8]",
+      icon: "border-[#ded6ec] bg-[#f4efff] text-[#5f4f84]",
+      pill: "border-[#ded6ec] bg-[#f4efff] text-[#5f4f84]",
+    },
+  }[tone];
 }
 
 function WritingMaterialSignalCard({
