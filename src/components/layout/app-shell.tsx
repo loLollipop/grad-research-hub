@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="workbench-surface min-h-screen text-foreground">
-      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border/80 px-4 py-4 text-sidebar-foreground shadow-[10px_0_32px_rgba(15,23,42,0.035)] md:flex md:flex-col">
+      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border/70 px-4 py-4 text-sidebar-foreground shadow-[12px_0_34px_rgba(38,45,45,0.028)] md:flex md:flex-col">
         <Link href="/" className="group flex items-center gap-3 rounded-xl px-2 py-2">
           <span className="brand-mark">
             <GraduationCap className="size-5" />
@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="block text-sm font-semibold tracking-tight text-sidebar-foreground">
               研途 Hub
             </span>
-            <span className="block text-xs text-muted-foreground">理工科研究生工作台</span>
+            <span className="block text-xs text-muted-foreground">轻量科研行动台</span>
           </span>
         </Link>
 
@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-2xl border border-sidebar-border/70 bg-white/72 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_22px_rgba(34,48,71,0.032)]">
+        <div className="mt-auto rounded-3xl border border-sidebar-border/65 bg-white/58 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_12px_24px_rgba(38,45,45,0.025)]">
           <div className="flex items-center gap-2">
             <TimerReset className="size-4 text-sidebar-primary" />
             <p className="text-xs font-semibold text-sidebar-foreground">今天只先抓三件事</p>
@@ -94,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="md:pl-[17rem]">
-        <header className="sticky top-0 z-30 border-b border-border/70 bg-white/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-border/58 bg-[#fbfaf4]/82 backdrop-blur-xl">
           <div className="flex flex-col gap-2 px-3 py-2 md:min-h-16 md:px-4 md:py-3 lg:flex-row lg:items-center lg:justify-between lg:px-7">
             <div className="flex items-center justify-between gap-3 md:hidden">
               <div className="flex items-center gap-2">
@@ -106,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <QuickCaptureBar />
-            <div className="hidden items-center gap-2 rounded-2xl border bg-white/76 px-3 py-2 text-xs text-muted-foreground shadow-sm xl:flex">
+            <div className="hidden items-center gap-2 rounded-2xl border border-border/58 bg-white/58 px-3 py-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] xl:flex">
               <CircleDot className="size-3 text-primary" />
               <span>本地数据 · Zotero / AI 在设置中心维护</span>
             </div>

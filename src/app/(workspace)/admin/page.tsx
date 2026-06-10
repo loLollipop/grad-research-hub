@@ -216,9 +216,9 @@ export default async function AdminPage({ searchParams }: Props) {
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
-                title="新增事务"
-                description="适合记录组会安排、学院材料、报销进度和硬截止。"
-                label="新增事务"
+                title="把小事从脑子里移走"
+                description="只记录会打断科研节奏的组会、材料、报销和硬截止。"
+                label="记一件小事"
                 icon={Plus}
                 wide
               >
@@ -634,8 +634,8 @@ export default async function AdminPage({ searchParams }: Props) {
           ) : (
             <EmptyState
               icon={ClipboardList}
-              title="暂无行政事务"
-              description="把组会、材料和报销先登记起来，首页会自动汇总近期事项。"
+              title="暂无轻事务"
+              description="把组会、材料和报销先收进减负栈，首页会自动汇总近期事项。"
             />
           )}
         </div>

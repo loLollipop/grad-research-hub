@@ -49,49 +49,49 @@
 }
 
 :root {
-  --background: oklch(0.984 0.006 205);
-  --foreground: oklch(0.185 0.026 236);
+  --background: oklch(0.986 0.007 96);
+  --foreground: oklch(0.205 0.026 226);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.185 0.026 236);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.185 0.026 236);
-  --primary: oklch(0.405 0.082 246);
+  --primary: oklch(0.43 0.062 220);
   --primary-foreground: oklch(0.992 0.004 216);
-  --secondary: oklch(0.944 0.014 226);
-  --secondary-foreground: oklch(0.255 0.032 238);
-  --muted: oklch(0.958 0.008 210);
-  --muted-foreground: oklch(0.455 0.022 236);
-  --accent: oklch(0.65 0.082 172);
-  --accent-foreground: oklch(0.18 0.028 232);
+  --secondary: oklch(0.949 0.014 118);
+  --secondary-foreground: oklch(0.29 0.032 214);
+  --muted: oklch(0.96 0.01 100);
+  --muted-foreground: oklch(0.455 0.024 218);
+  --accent: oklch(0.64 0.068 154);
+  --accent-foreground: oklch(0.2 0.028 220);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.883 0.012 224);
-  --input: oklch(0.878 0.012 224);
-  --ring: oklch(0.52 0.072 246);
-  --chart-1: oklch(0.46 0.086 246);
+  --border: oklch(0.885 0.014 106);
+  --input: oklch(0.878 0.014 106);
+  --ring: oklch(0.52 0.058 218);
+  --chart-1: oklch(0.48 0.068 220);
   --chart-2: oklch(0.59 0.088 172);
   --chart-3: oklch(0.68 0.086 86);
   --chart-4: oklch(0.6 0.096 34);
   --chart-5: oklch(0.55 0.074 292);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.976 0.01 218);
-  --sidebar-foreground: oklch(0.245 0.032 238);
-  --sidebar-primary: oklch(0.405 0.082 246);
+  --radius: 0.7rem;
+  --sidebar: oklch(0.972 0.012 106);
+  --sidebar-foreground: oklch(0.255 0.032 222);
+  --sidebar-primary: oklch(0.43 0.062 220);
   --sidebar-primary-foreground: oklch(0.992 0.004 216);
-  --sidebar-accent: oklch(0.926 0.018 224);
-  --sidebar-accent-foreground: oklch(0.225 0.034 238);
-  --sidebar-border: oklch(0.866 0.014 224);
-  --sidebar-ring: oklch(0.52 0.072 246);
-  --workspace-paper: #f8fbfa;
-  --workspace-paper-soft: #eef7f4;
-  --workspace-ink: #17324c;
-  --workspace-ink-soft: #2c5066;
-  --workspace-signal: #337863;
-  --workspace-signal-soft: #e5f1ec;
-  --workspace-sand: #f0e8d6;
-  --workspace-title: #17283b;
-  --workspace-copy: #52677a;
-  --workspace-chip: #eef6f5;
-  --workspace-line: rgba(85, 103, 116, 0.055);
+  --sidebar-accent: oklch(0.926 0.02 114);
+  --sidebar-accent-foreground: oklch(0.245 0.034 222);
+  --sidebar-border: oklch(0.866 0.016 108);
+  --sidebar-ring: oklch(0.52 0.058 218);
+  --workspace-paper: #fbfaf4;
+  --workspace-paper-soft: #f1f3e8;
+  --workspace-ink: #203647;
+  --workspace-ink-soft: #40596a;
+  --workspace-signal: #5f7b68;
+  --workspace-signal-soft: #eaf1e8;
+  --workspace-sand: #efe2c6;
+  --workspace-title: #203243;
+  --workspace-copy: #5d6d72;
+  --workspace-chip: #eef4eb;
+  --workspace-line: rgba(84, 94, 84, 0.038);
 }
 
 .dark {
@@ -150,23 +150,26 @@
 @layer utilities {
   .workbench-surface {
     background:
-      linear-gradient(90deg, rgba(255, 255, 255, 0.34) 0 1px, transparent 1px 100%),
-      linear-gradient(180deg, rgba(73, 93, 111, 0.028) 0 1px, transparent 1px 100%),
-      linear-gradient(135deg, rgba(241, 247, 249, 0.86) 0%, rgba(248, 252, 250, 0.92) 44%, rgba(241, 248, 244, 0.88) 100%),
-      linear-gradient(180deg, #fbfdfb 0%, #f7fbfa 48%, #f0f8f6 100%);
+      radial-gradient(circle at 12% 8%, rgba(232, 226, 203, 0.6), transparent 28rem),
+      radial-gradient(circle at 86% 12%, rgba(216, 232, 223, 0.5), transparent 26rem),
+      linear-gradient(90deg, rgba(102, 116, 104, 0.022) 0 1px, transparent 1px 100%),
+      linear-gradient(180deg, rgba(102, 116, 104, 0.018) 0 1px, transparent 1px 100%),
+      linear-gradient(180deg, #fbfaf4 0%, #f8f8f0 48%, #f1f5ee 100%);
     background-attachment: fixed;
     background-size:
-      56px 56px,
-      56px 56px,
+      auto,
+      auto,
+      72px 72px,
+      72px 72px,
       auto;
   }
 
   .workbench-card {
-    @apply border-border/65 bg-white/86 shadow-[0_1px_1px_rgba(15,23,42,0.018),0_10px_24px_rgba(34,48,71,0.034)];
+    @apply border-border/58 bg-white/82 shadow-[0_1px_1px_rgba(15,23,42,0.012),0_14px_30px_rgba(32,46,52,0.032)];
   }
 
   .workbench-column {
-    @apply rounded-2xl border border-border/60 bg-white/52 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_10px_24px_rgba(34,48,71,0.028)];
+    @apply rounded-3xl border border-border/55 bg-white/48 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.84),0_14px_30px_rgba(32,46,52,0.03)];
   }
 
   .workbench-dual-grid {
@@ -185,7 +188,8 @@
 
   .sidebar-panel {
     background:
-      linear-gradient(180deg, rgba(252, 255, 253, 0.98), rgba(246, 251, 250, 0.94) 58%, rgba(238, 248, 247, 0.96)),
+      radial-gradient(circle at 10% 0%, rgba(238, 226, 196, 0.44), transparent 17rem),
+      linear-gradient(180deg, rgba(253, 252, 246, 0.98), rgba(248, 249, 241, 0.94) 58%, rgba(239, 246, 238, 0.96)),
       var(--sidebar);
   }
 
@@ -193,7 +197,7 @@
     @apply flex size-10 items-center justify-center rounded-xl text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.12)] transition;
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 42%),
-      linear-gradient(145deg, #284d76 0%, #2f6b66 100%);
+      linear-gradient(145deg, #29475c 0%, #5d7463 100%);
   }
 
   .group:hover .brand-mark {
@@ -217,14 +221,14 @@
 
   .dashboard-hero {
     background:
-      linear-gradient(125deg, rgba(255, 255, 252, 0.94), rgba(246, 251, 250, 0.8)),
-      linear-gradient(135deg, rgba(224, 238, 246, 0.64) 0%, rgba(232, 248, 244, 0.68) 56%, rgba(245, 241, 229, 0.42) 100%);
+      linear-gradient(125deg, rgba(255, 254, 248, 0.94), rgba(248, 250, 242, 0.8)),
+      linear-gradient(135deg, rgba(230, 224, 202, 0.56) 0%, rgba(226, 239, 228, 0.66) 56%, rgba(221, 235, 235, 0.36) 100%);
   }
 
   .cockpit-hero {
     background:
-      linear-gradient(135deg, rgba(255, 255, 252, 0.9), rgba(246, 251, 250, 0.78)),
-      linear-gradient(120deg, rgba(225, 238, 246, 0.68) 0%, rgba(232, 248, 244, 0.7) 52%, rgba(245, 241, 229, 0.38) 100%);
+      linear-gradient(135deg, rgba(255, 254, 248, 0.92), rgba(248, 250, 242, 0.78)),
+      linear-gradient(120deg, rgba(230, 224, 202, 0.52) 0%, rgba(226, 239, 228, 0.66) 52%, rgba(218, 232, 234, 0.34) 100%);
   }
 
   .cockpit-panel {
@@ -282,7 +286,7 @@
 
   .action-stack {
     background:
-      linear-gradient(145deg, rgba(38, 70, 102, 0.96) 0%, rgba(47, 95, 108, 0.92) 54%, rgba(75, 125, 111, 0.9) 100%);
+      linear-gradient(145deg, rgba(36, 57, 71, 0.96) 0%, rgba(65, 89, 83, 0.93) 55%, rgba(105, 112, 82, 0.9) 100%);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.12),
       0 14px 28px rgba(42, 73, 98, 0.1);

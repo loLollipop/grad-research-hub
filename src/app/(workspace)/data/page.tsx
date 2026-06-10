@@ -240,9 +240,9 @@ export default async function DataPage({ searchParams }: Props) {
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
-                title="记录关键结果"
-                description="只填最关键的 1-3 个指标、复现状态和一句话结论。"
-                label="记录结果"
+                title="记录一条证据"
+                description="只填最关键的指标、复现状态和一句话结论，先判断能不能讲。"
+                label="记录证据"
                 icon={Plus}
                 wide
               >
@@ -272,7 +272,7 @@ export default async function DataPage({ searchParams }: Props) {
             </div>
             {brief === "empty" ? (
               <p className="mt-3 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-                当前没有可生成的结果。先记录一条关键结果，或清除筛选后再试。
+                当前没有可生成的结果。先记录一条证据，或清除筛选后再试。
               </p>
             ) : null}
           </div>
