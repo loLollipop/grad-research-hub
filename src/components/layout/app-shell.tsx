@@ -16,18 +16,18 @@ import { QuickCaptureBar } from "@/components/layout/quick-capture-bar";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/", label: "首页", icon: "home" },
-  { href: "/papers", label: "文献", icon: "papers" },
-  { href: "/experiments", label: "实验", icon: "experiments" },
-  { href: "/projects", label: "课题", icon: "projects" },
-  { href: "/notes", label: "笔记", icon: "notes" },
-  { href: "/data", label: "成果", icon: "data" },
-  { href: "/admin", label: "事务", icon: "admin" },
+  { href: "/", label: "首页", detail: "今天先做什么", icon: "home" },
+  { href: "/papers", label: "文献", detail: "Zotero 阅读栈", icon: "papers" },
+  { href: "/experiments", label: "实验", detail: "目的/观察/结论", icon: "experiments" },
+  { href: "/projects", label: "课题", detail: "任务与里程碑", icon: "projects" },
+  { href: "/notes", label: "笔记", detail: "双链与写作素材", icon: "notes" },
+  { href: "/data", label: "成果", detail: "指标/复现/图表", icon: "data" },
+  { href: "/admin", label: "事务", detail: "组会/材料/报销", icon: "admin" },
 ] as const;
 
 const utilityItems = [
-  { href: "/ai", label: "AI", icon: "ai" },
-  { href: "/settings", label: "设置", icon: "settings" },
+  { href: "/ai", label: "AI", detail: "整理草稿", icon: "ai" },
+  { href: "/settings", label: "设置", detail: "Key 与导出", icon: "settings" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {

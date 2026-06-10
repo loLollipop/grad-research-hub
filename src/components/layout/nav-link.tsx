@@ -43,11 +43,13 @@ const accents: Record<NavIcon, string> = {
 export type NavIcon = keyof typeof icons;
 
 export function NavLink({
+  detail,
   href,
   label,
   icon,
   compact = false,
 }: {
+  detail?: string;
   href: string;
   label: string;
   icon?: NavIcon;
@@ -105,7 +107,19 @@ export function NavLink({
           <Icon className="size-4" />
         </span>
       ) : null}
-      <span className="truncate">{label}</span>
+      <span className="min-w-0">
+        <span className="block truncate">{label}</span>
+        {detail ? (
+          <span
+            className={cn(
+              "mt-0.5 block truncate text-[11px] font-normal",
+              active ? "text-[#53697d]" : "text-muted-foreground/78",
+            )}
+          >
+            {detail}
+          </span>
+        ) : null}
+      </span>
       <NavPendingMark />
     </Link>
   );
