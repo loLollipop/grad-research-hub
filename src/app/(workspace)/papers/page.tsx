@@ -175,6 +175,7 @@ export default async function PapersPage({ searchParams }: Props) {
   const literatureCollectionCount = new Set(
     papers.map((paper) => paper.category?.trim()).filter((item): item is string => Boolean(item)),
   ).size;
+  const verificationPapers = prioritizeVerificationPapers(papers).slice(0, 4);
 
   return (
     <div className="grid gap-5">
@@ -383,6 +384,10 @@ export default async function PapersPage({ searchParams }: Props) {
           returnTo={returnTo}
           totalPapers={papers.length}
         />
+      ) : null}
+
+      {verificationPapers.length ? (
+        <LiteratureExperimentBridge papers={verificationPapers} />
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
@@ -702,6 +707,42 @@ function prioritizeReadingQueue(papers: Paper[]) {
 
     return right.updatedAt.getTime() - left.updatedAt.getTime();
   });
+}
+
+function prioritizeVerificationPapers(papers: Paper[]) {
+  return [...papers]
+    .map((paper) => ({ paper, score: verificationPaperScore(paper) }))
+    .filter((item) => item.score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      return right.paper.updatedAt.getTime() - left.paper.updatedAt.getTime();
+    })
+    .map((item) => item.paper);
+}
+
+function verificationPaperScore(paper: Paper) {
+  const text = `${paper.title} ${paper.abstract ?? ""} ${paper.notes ?? ""} ${paper.tags} ${paper.category}`.toLowerCase();
+  const signalScore = [
+    /method|algorithm|baseline|benchmark|dataset|code|github|reproduc|ablation|experiment/i,
+    /方法|算法|模型|基线|对照|数据集|代码|复现|消融|实验|指标|误差|精度|准确率|性能/i,
+  ].reduce((score, pattern) => score + (pattern.test(text) ? 2 : 0), 0);
+  const statusScore = paper.readStatus === "reading" ? 2 : paper.readStatus === "read" ? 1 : 0;
+  const noteScore = paper.notes?.trim() ? 1 : 0;
+
+  return signalScore + statusScore + noteScore;
+}
+
+function verificationReason(paper: Paper) {
+  const text = `${paper.title} ${paper.abstract ?? ""} ${paper.notes ?? ""} ${paper.tags} ${paper.category}`.toLowerCase();
+  const reasons = [
+    { label: "方法/算法", pattern: /method|algorithm|方法|算法|模型/i },
+    { label: "对照/基线", pattern: /baseline|benchmark|ablation|基线|对照|消融/i },
+    { label: "数据/指标", pattern: /dataset|metric|accuracy|rmse|mae|数据集|指标|准确率|精度|误差/i },
+    { label: "代码/复现", pattern: /code|github|reproduc|代码|复现/i },
+  ];
+  const matched = reasons.filter((reason) => reason.pattern.test(text)).map((reason) => reason.label);
+
+  return matched.length ? matched.slice(0, 2).join(" / ") : "可验证线索";
 }
 
 function zoteroSyncSuccessDescription({
@@ -1264,6 +1305,141 @@ function LiteratureSignalCard({
       <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
       <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function LiteratureExperimentBridge({ papers }: { papers: Paper[] }) {
+  const primary = papers[0];
+
+  return (
+    <section className="literature-experiment-bridge overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.048)]">
+      <div className="grid gap-4 xl:grid-cols-[0.32fr_0.68fr] xl:items-stretch">
+        <div className="literature-experiment-bridge-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <Beaker className="size-3.5" />
+            文献到实验桥
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            读到可复现方法时，不要让它停在文献列表里。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            Zotero 负责收藏和标签，研途 Hub 只把有方法、代码、数据、对照或指标线索的文献推到验证入口。
+            能复现就转实验；还不确定就先拆成待验证任务。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">可验证候选</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{papers.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">优先处理</p>
+              <p className="mt-1 line-clamp-1 text-base font-semibold hero-title">
+                {primary ? verificationReason(primary) : "暂无"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-3">
+            <BridgeStep
+              icon={BookOpenText}
+              index="01"
+              title="读方法"
+              detail="只抓研究问题、关键变量、对照和指标。"
+            />
+            <BridgeStep
+              icon={Beaker}
+              index="02"
+              title="转验证"
+              detail="可复现方法直接生成实验草稿。"
+            />
+            <BridgeStep
+              icon={Lightbulb}
+              index="03"
+              title="留待办"
+              detail="不确定时先拆成待验证任务。"
+            />
+          </div>
+
+          <div className="grid gap-2 lg:grid-cols-2">
+            {papers.map((paper) => (
+              <VerificationPaperCard key={paper.id} paper={paper} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BridgeStep({
+  detail,
+  icon: Icon,
+  index,
+  title,
+}: {
+  detail: string;
+  icon: LucideIcon;
+  index: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/72 bg-white/62 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex size-8 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f7] text-primary">
+          <Icon className="size-4" />
+        </span>
+        <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+      </div>
+      <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function VerificationPaperCard({ paper }: { paper: Paper }) {
+  const authors = parseTags(paper.authors).slice(0, 2).join(", ") || "作者未知";
+
+  return (
+    <div className="rounded-2xl border border-white/72 bg-white/66 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)]">
+      <div className="flex items-start justify-between gap-3">
+        <span className="rounded-full border border-[#d5e4e8] bg-[#eef6f7] px-2 py-0.5 text-[11px] font-medium text-primary">
+          {verificationReason(paper)}
+        </span>
+        <StatusBadge value={paper.readStatus} />
+      </div>
+      <h3 className="mt-3 line-clamp-2 text-sm font-semibold leading-5 hero-title">{paper.title}</h3>
+      <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+        {authors} · {paper.year ?? "年份未知"} · {paper.category || "未分类"}
+      </p>
+      <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
+        {paper.notes?.trim() || paper.abstract?.trim() || "先从摘要、方法和关键图表里找可验证点。"}
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <form action={createExperimentFromPaper}>
+          <input type="hidden" name="id" value={paper.id} />
+          <SubmitButton variant="outline" size="sm" className="w-full bg-white/74">
+            <Beaker className="size-3.5" />
+            转实验
+          </SubmitButton>
+        </form>
+        <form action={createTaskFromPaper}>
+          <input type="hidden" name="id" value={paper.id} />
+          <SubmitButton variant="outline" size="sm" className="w-full bg-white/74">
+            <Lightbulb className="size-3.5" />
+            待验证
+          </SubmitButton>
+        </form>
+        <form action={createReadingNoteFromPaper}>
+          <input type="hidden" name="id" value={paper.id} />
+          <SubmitButton variant="outline" size="sm" className="w-full bg-white/74">
+            <FileText className="size-3.5" />
+            笔记
+          </SubmitButton>
+        </form>
+      </div>
     </div>
   );
 }
