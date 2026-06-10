@@ -84,6 +84,17 @@ type OpeningAction = {
   rank: number;
 };
 
+type ResearchLane = {
+  action: string;
+  detail: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  kicker: string;
+  tone: "paper" | "experiment" | "result" | "writing";
+  title: string;
+  value: string;
+};
+
 type WorkspaceCounts = {
   papers: number;
   projects: number;
@@ -543,6 +554,50 @@ export default async function DashboardPage() {
       })),
   ]).slice(0, 3);
   const focusAction = openingActions[0];
+  const researchLanes: ResearchLane[] = [
+    {
+      action: "去阅读台",
+      detail: recentPapers[0]?.title ?? "连接 Zotero 后，只从三篇启动，不搬第二套文献库。",
+      href: "/papers",
+      icon: BookOpenText,
+      kicker: "Zotero-first",
+      tone: "paper",
+      title: "文献只推进三篇",
+      value: `${readingPapers + unreadPapers} 篇待读/读中`,
+    },
+    {
+      action: "写实验日志",
+      detail: recentExperiments[0]?.title ?? "用记录纸写目的、观察、结论和下一步。",
+      href: "/experiments",
+      icon: FlaskConical,
+      kicker: "ELN-light",
+      tone: "experiment",
+      title: "实验先收口观察",
+      value: `${runningExperiments} 个进行中`,
+    },
+    {
+      action: "看证据缺口",
+      detail: `${verifiedResults} 条已复现，${manuscriptReady} 条可写入；组会前先判断能不能讲。`,
+      href: "/data?manuscript=ready",
+      icon: FileChartColumn,
+      kicker: "RDM / FAIR",
+      tone: "result",
+      title: "结果变成可讲证据",
+      value: `${results.length} 条最近结果`,
+    },
+    {
+      action: "进笔记工作室",
+      detail: currentMeetingBrief
+        ? `周报草稿已生成，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
+        : "阅读、实验和结果最后都回到笔记，沉淀成组会、周报或论文素材。",
+      href: currentMeetingBrief ? `/notes?note=${currentMeetingBrief.id}` : "/notes",
+      icon: PenLine,
+      kicker: "Writing desk",
+      tone: "writing",
+      title: "写作素材不再散落",
+      value: `${recentNotes.length} 条最近笔记`,
+    },
+  ];
 
   return (
     <div className="grid gap-5">
@@ -787,44 +842,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="workbench-card">
-          <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="size-4 text-primary" />
-              研究闭环
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <LoopRow
-              icon={BookOpenText}
-              title="文献输入"
-              value={`${recentPapers.length} 篇最近同步`}
-              detail={recentPapers[0]?.title ?? "先连接 Zotero"}
-              href="/papers"
-            />
-            <LoopRow
-              icon={FlaskConical}
-              title="实验验证"
-              value={`${recentExperiments.length} 条最近记录`}
-              detail={recentExperiments[0]?.project?.title ?? "记录目的、方法、结果和下一步"}
-              href="/experiments"
-            />
-            <LoopRow
-              icon={FileChartColumn}
-              title="结果证据"
-              value={`${results.length} 条结果`}
-              detail={results[0]?.title ?? "把关键指标留下来"}
-              href="/data"
-            />
-            <LoopRow
-              icon={PenLine}
-              title="笔记写作"
-              value={`${recentNotes.length} 条最近笔记`}
-              detail={recentNotes[0]?.title ?? "把想法快速捕捉下来"}
-              href="/notes"
-            />
-          </CardContent>
-        </Card>
+        <ResearchLanes lanes={researchLanes} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
@@ -1800,37 +1818,84 @@ function closingToneClass(tone: ClosingItem["tone"]) {
   return classes[tone];
 }
 
-function LoopRow({
-  icon: Icon,
-  title,
-  value,
-  detail,
-  href,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  value: string;
-  detail: string;
-  href: string;
-}) {
+function ResearchLanes({ lanes }: { lanes: ResearchLane[] }) {
   return (
-    <Link
-      href={href}
-      className="grid gap-3 rounded-xl border border-border/72 bg-white/78 p-3.5 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
-    >
-      <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef3fb] text-primary">
-        <Icon className="size-4" />
-      </span>
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-medium">{title}</p>
-          <span className="text-xs text-muted-foreground">{value}</span>
+    <Card className="workbench-card overflow-hidden">
+      <CardHeader className="border-b border-border/70 bg-white/48 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="size-4 text-primary" />
+              高频研究通道
+            </CardTitle>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              不复制 Zotero、ELN、OSF 或 Obsidian，只把每天最常走的四条科研路径接顺。
+            </p>
+          </div>
+          <span className="hidden rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-[11px] text-muted-foreground sm:inline-flex">
+            少配置 · 多推进
+          </span>
         </div>
-        <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
-      </div>
-      <ArrowRight className="hidden size-4 text-muted-foreground sm:block" />
-    </Link>
+      </CardHeader>
+      <CardContent className="grid gap-2.5">
+        {lanes.map((lane) => {
+          const Icon = lane.icon;
+
+          return (
+            <Link
+              key={lane.tone}
+              href={lane.href}
+              className="research-lane-card group"
+            >
+              <span className="relative z-10 grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                <span className={laneIconClass(lane.tone)}>
+                  <Icon className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="line-clamp-1 font-semibold hero-title">{lane.title}</span>
+                    <span className={laneKickerClass(lane.tone)}>{lane.kicker}</span>
+                  </span>
+                  <span className="mt-1 block text-xs font-medium text-muted-foreground">
+                    {lane.value}
+                  </span>
+                  <span className="mt-1.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+                    {lane.detail}
+                  </span>
+                </span>
+                <span className="inline-flex w-fit items-center gap-1 rounded-full border border-white/80 bg-white/72 px-2.5 py-1 text-xs font-medium text-primary transition group-hover:border-primary/20 group-hover:bg-white">
+                  {lane.action}
+                  <ArrowRight className="size-3.5" />
+                </span>
+              </span>
+            </Link>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
+}
+
+function laneIconClass(tone: ResearchLane["tone"]) {
+  const classes = {
+    paper: "flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d8e5ee] bg-[#eef3fb] text-[#365a7d] transition group-hover:bg-[#365a7d] group-hover:text-white",
+    experiment: "flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#cfe0df] bg-[#eef7f3] text-[#2f6655] transition group-hover:bg-[#2f6655] group-hover:text-white",
+    result: "flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#eadfbf] bg-[#f7f1df] text-[#7a5a2f] transition group-hover:bg-[#7a5a2f] group-hover:text-white",
+    writing: "flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#ded5e8] bg-[#f3eef9] text-[#5d4d80] transition group-hover:bg-[#5d4d80] group-hover:text-white",
+  };
+
+  return classes[tone];
+}
+
+function laneKickerClass(tone: ResearchLane["tone"]) {
+  const classes = {
+    paper: "rounded-md border border-[#d8e5ee] bg-[#eef3fb] px-1.5 py-0.5 text-[11px] font-medium text-[#365a7d]",
+    experiment: "rounded-md border border-[#cfe0df] bg-[#eef7f3] px-1.5 py-0.5 text-[11px] font-medium text-[#2f6655]",
+    result: "rounded-md border border-[#eadfbf] bg-[#f7f1df] px-1.5 py-0.5 text-[11px] font-medium text-[#7a5a2f]",
+    writing: "rounded-md border border-[#ded5e8] bg-[#f3eef9] px-1.5 py-0.5 text-[11px] font-medium text-[#5d4d80]",
+  };
+
+  return classes[tone];
 }
 
 function ResearchTimeline({ items }: { items: TimelineItem[] }) {
