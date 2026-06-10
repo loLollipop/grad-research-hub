@@ -438,7 +438,7 @@ export default async function NotesPage({ searchParams }: Props) {
             <div className="mt-5 flex flex-wrap gap-2">
               <Button render={<Link href="/notes?mode=new" />} className="bg-primary">
                 <Plus className="size-4" />
-                新建笔记
+                写笔记
               </Button>
               <Button render={<Link href="/notes" />} variant="outline">
                 <Clock3 className="size-4" />
@@ -757,10 +757,10 @@ export default async function NotesPage({ searchParams }: Props) {
                 <FileText className="size-3.5 text-primary" />
                 {activeNote
                   ? `${folderLabel(activeNote.folder)} · 更新 ${formatDateTime(activeNote.updatedAt)}`
-                  : "新笔记 · 默认保存到收件箱"}
+                  : "写一篇能继续用的笔记 · 默认保存到收件箱"}
               </div>
               <h2 className="truncate text-lg font-semibold tracking-tight">
-                {activeNote ? activeNote.title : "写一篇新笔记"}
+                {activeNote ? activeNote.title : "先写材料，后面再整理"}
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -814,7 +814,7 @@ export default async function NotesPage({ searchParams }: Props) {
 
             <TabsContent
               value="preview"
-              className="min-h-0 flex-1 overflow-y-auto bg-[#fbfcfd] p-4 md:p-6"
+              className="min-h-0 flex-1 overflow-y-auto bg-[#f8f7ef] p-4 md:p-6"
             >
               <article className="mx-auto min-h-full max-w-4xl rounded-2xl border border-border/72 bg-white px-5 py-5 text-sm leading-7 shadow-[0_10px_28px_rgba(27,42,56,0.045)] md:px-7">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -823,7 +823,7 @@ export default async function NotesPage({ searchParams }: Props) {
               </article>
             </TabsContent>
 
-            <TabsContent value="links" className="min-h-0 flex-1 overflow-y-auto bg-[#fbfcfd] p-4 md:p-5">
+            <TabsContent value="links" className="min-h-0 flex-1 overflow-y-auto bg-[#f8f7ef] p-4 md:p-5">
               <div className="grid min-h-full gap-4 xl:grid-cols-[0.92fr_1.08fr]">
                 <div className="grid content-start gap-4">
                   <div className="rounded-2xl border border-border/72 bg-white p-5 shadow-[0_10px_24px_rgba(27,42,56,0.035)]">
@@ -1154,18 +1154,18 @@ function NoteForm({
         </Field>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col bg-[#f6f8fb] p-4">
+      <div className="flex min-h-0 flex-1 flex-col bg-[#f8f7ef] p-4">
         <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5 font-medium">
             <PenLine className="size-3.5" />
-            正文
+            写作区
           </span>
-          <span>写完后保存即可更新预览和双链</span>
+          <span>先写下材料，保存后自动更新预览和双链</span>
         </div>
         <Textarea
           name="content"
           rows={26}
-          className="field-sizing-fixed min-h-[460px] flex-1 resize-none rounded-2xl border-border/80 bg-white p-5 text-sm leading-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_28px_rgba(27,42,56,0.035)] focus-visible:ring-2 lg:min-h-0"
+          className="field-sizing-fixed min-h-[460px] flex-1 resize-none rounded-3xl border-border/70 bg-[#fffef9] p-5 text-sm leading-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_30px_rgba(42,48,38,0.035)] focus-visible:ring-2 lg:min-h-0"
           defaultValue={note?.content ?? defaultNoteContent}
         />
       </div>
@@ -1179,7 +1179,7 @@ function NoteForm({
             <ArrowRight className="size-4" />
             回到列表
           </Button>
-          <SubmitButton className="min-w-28">{note ? "保存笔记" : "创建笔记"}</SubmitButton>
+          <SubmitButton className="min-w-28">{note ? "保存笔记" : "收进笔记"}</SubmitButton>
         </div>
       </div>
     </form>

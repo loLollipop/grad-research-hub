@@ -197,9 +197,9 @@ export default async function PapersPage({ searchParams }: Props) {
                 </SubmitButton>
               </form>
               <CreateDialog
-                title="手动补录文献"
-                description="只给临时材料或还没放进 Zotero 的条目使用。"
-                label="补录文献"
+                title="临时材料补录"
+                description="只收导师转发、网页预印本或还没进 Zotero 的临时条目。"
+                label="临时材料"
                 icon={Plus}
                 wide
               >
@@ -380,15 +380,13 @@ export default async function PapersPage({ searchParams }: Props) {
               <div className="rounded-xl border border-border/70 bg-white/70 p-3 text-xs text-muted-foreground">
                 最近同步：{lastSyncedAt ? formatDate(lastSyncedAt) : "暂无"}
               </div>
-              <div className="rounded-xl border border-border/70 bg-white/70 p-3 text-xs leading-5 text-muted-foreground">
-                <p className="font-medium text-foreground">同步范围</p>
-                <p className="mt-1">
-                  {zotero.collectionKey ? `仅同步集合 ${zotero.collectionKey}` : "同步库内顶层文献"}
-                </p>
-                <p>单次最多 {zotero.syncLimit} 条，系统会自动分页读取。</p>
-                <p className="mt-1">
-                  同步完成后会提示 Zotero 当前范围总数，方便判断是否需要临时调高同步数量。
-                </p>
+              <div className="grid gap-2 rounded-xl border border-border/70 bg-white/62 p-3 text-xs leading-5 text-muted-foreground">
+                <p className="font-medium text-foreground">今天只走三步</p>
+                <div className="grid gap-2">
+                  <ReadingFlowStep index="01" title="同步 Zotero" detail="正式文献留在 Zotero，不重复维护两套库。" />
+                  <ReadingFlowStep index="02" title="只读三篇" detail="优先处理读中和待读，避免长列表压力。" />
+                  <ReadingFlowStep index="03" title="留下抓手" detail="读出问题、方法、对照或可复现实验线索。" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -476,7 +474,7 @@ export default async function PapersPage({ searchParams }: Props) {
                 className={
                   category
                     ? "flex items-center justify-between rounded-xl border border-border/72 bg-white/70 px-3 py-2 text-sm text-muted-foreground transition hover:border-primary/25 hover:bg-white"
-                    : "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef3fb] px-3 py-2 text-sm font-medium text-primary"
+                    : "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4eb] px-3 py-2 text-sm font-medium text-primary"
                 }
               >
                 <span>全部集合</span>
@@ -489,7 +487,7 @@ export default async function PapersPage({ searchParams }: Props) {
                     href={`/papers?${filterQuery({ q, status, category: item.category })}`}
                     className={
                       item.category === category
-                        ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef3fb] px-3 py-2 text-sm font-medium text-primary"
+                        ? "flex items-center justify-between rounded-xl border border-primary/25 bg-[#eef4eb] px-3 py-2 text-sm font-medium text-primary"
                         : "flex items-center justify-between soft-tile rounded-xl px-3 py-2 text-sm transition hover:border-primary/25 hover:bg-white"
                     }
                   >
@@ -858,6 +856,28 @@ function ProgressLine({ label, value, total }: { label: string; value: number; t
   );
 }
 
+function ReadingFlowStep({
+  detail,
+  index,
+  title,
+}: {
+  detail: string;
+  index: string;
+  title: string;
+}) {
+  return (
+    <div className="flex gap-2 rounded-lg border border-border/60 bg-white/64 p-2">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-[#d8e2d6] bg-[#eef4eb] font-mono text-[11px] font-semibold text-primary">
+        {index}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-semibold text-[var(--workspace-title)]">{title}</span>
+        <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{detail}</span>
+      </span>
+    </div>
+  );
+}
+
 function ReadingRadarItem({
   icon: Icon,
   label,
@@ -961,10 +981,10 @@ function ZoteroConnectionOnboarding() {
 
       <div className="flex flex-col gap-2 rounded-xl border border-[#d5e4e8] bg-white/62 px-3 py-2 text-xs leading-5 text-muted-foreground md:flex-row md:items-center md:justify-between">
         <p>
-          同步前只做一件事：接上 Zotero。临时网页、导师转发材料、还没入库的预印本才用“补录文献”。
+          同步前只做一件事：接上 Zotero。临时网页、导师转发材料、还没入库的预印本才用“临时材料”。
         </p>
         <CreateDialog
-          title="手动补录文献"
+          title="临时材料补录"
           description="只给临时材料使用，正式文献建议回到 Zotero 管理。"
           label="临时补录"
           icon={Plus}
