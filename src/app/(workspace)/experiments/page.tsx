@@ -177,7 +177,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
               </CreateDialog>
               <Link href="/data" className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border/80 bg-white/88 px-3 text-sm font-medium shadow-[0_1px_1px_rgba(15,23,42,0.04)] transition hover:border-primary/30 hover:bg-white">
                 <FileChartColumn className="size-4" />
-                记录结果
+                收一条证据
               </Link>
             </div>
           </div>
@@ -273,6 +273,20 @@ export default async function ExperimentsPage({ searchParams }: Props) {
                   papers={papers}
                 />
               ))}
+            </CardContent>
+          </Card>
+
+          <Card className="workbench-card">
+            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="size-4 text-primary" />
+                实验收口三步
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <ExperimentFlowStep index="01" title="写观察" detail="先写最新现象、失败原因或关键变化。" />
+              <ExperimentFlowStep index="02" title="判结果" detail="有指标、图表或结论时生成结果证据。" />
+              <ExperimentFlowStep index="03" title="回填正文" detail="把证据结论写回实验记录，避免上下文断开。" />
             </CardContent>
           </Card>
 
@@ -898,12 +912,12 @@ function ExperimentCard({
 
 function ExperimentResultActions({ experiment }: { experiment: ExperimentFull }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-border/72 bg-white/70 p-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#eef4f2] text-primary">
+    <div className="flex gap-3 rounded-xl border border-border/72 bg-[#fffef9]/86 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[#d8e2d6] bg-[#eef4eb] text-primary">
         <FileChartColumn className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-muted-foreground">结果记录</p>
+        <p className="text-xs font-medium text-[var(--workspace-title)]">证据回流</p>
         {experiment.results.length ? (
           <div className="mt-2 grid gap-2">
             {experiment.results.slice(0, 3).map((result) => (
@@ -932,18 +946,40 @@ function ExperimentResultActions({ experiment }: { experiment: ExperimentFull })
         ) : (
           <div className="mt-2 grid gap-2">
             <p className="text-sm text-muted-foreground">
-              暂无结果。实验完成或出现关键观察后，先生成一条结果证据草稿。
+              暂无证据。实验完成或出现关键观察后，先收一条结果证据草稿。
             </p>
             <form action={createResultFromExperiment}>
               <input type="hidden" name="id" value={experiment.id} />
               <Button type="submit" variant="outline" size="sm">
                 <FileChartColumn className="size-3.5" />
-                生成结果证据
+                收一条证据
               </Button>
             </form>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ExperimentFlowStep({
+  detail,
+  index,
+  title,
+}: {
+  detail: string;
+  index: string;
+  title: string;
+}) {
+  return (
+    <div className="flex gap-2 rounded-xl border border-border/62 bg-[#fffef9]/72 p-2.5">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[#d8e2d6] bg-[#eef4eb] font-mono text-[11px] font-semibold text-primary">
+        {index}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-[var(--workspace-title)]">{title}</span>
+        <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{detail}</span>
+      </span>
     </div>
   );
 }
