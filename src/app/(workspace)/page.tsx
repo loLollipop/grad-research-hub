@@ -106,6 +106,17 @@ type NeedSignal = {
   value: string;
 };
 
+type ResearchDaySegment = {
+  active: boolean;
+  detail: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  period: string;
+  title: string;
+  tone: "evidence" | "experiment" | "focus" | "review";
+  value: string;
+};
+
 type WorkspaceCounts = {
   papers: number;
   projects: number;
@@ -661,6 +672,51 @@ export default async function DashboardPage() {
       value: `${recentNotes.length} 条最近笔记`,
     },
   ];
+  const activeDaySlot = researchDaySlot(now);
+  const researchDaySegments: ResearchDaySegment[] = [
+    {
+      active: activeDaySlot === "morning",
+      detail: focusAction
+        ? `${focusAction.kind} · ${focusAction.detail}`
+        : "先用快速捕捉写下一条真实动作，今天就从这一件开始。",
+      href: currentDailyPlan ? `/notes?note=${currentDailyPlan.id}` : "/projects?scope=today",
+      icon: TimerReset,
+      period: "上午",
+      title: "定下今天唯一主线",
+      tone: "focus",
+      value: focusAction?.action ?? "生成今日计划",
+    },
+    {
+      active: activeDaySlot === "midday",
+      detail: recentPapers[0]?.title ?? "同步 Zotero 后，只挑 1-3 篇今天真正会读的文献。",
+      href: "/papers",
+      icon: BookOpenText,
+      period: "中午前后",
+      title: "补输入：文献/背景",
+      tone: "focus",
+      value: `${readingPapers + unreadPapers} 篇待推进`,
+    },
+    {
+      active: activeDaySlot === "afternoon",
+      detail: recentExperiments[0]?.title ?? "下午适合补实验观察、对照、失败原因和下一步。",
+      href: "/experiments",
+      icon: FlaskConical,
+      period: "下午",
+      title: "做验证：实验/结果",
+      tone: "experiment",
+      value: `${runningExperiments} 个实验`,
+    },
+    {
+      active: activeDaySlot === "evening",
+      detail: closingItems[0]?.title ?? "晚上只做轻收口：补图表路径、复现状态或明天第一步。",
+      href: closingItems[0]?.href ?? "/data",
+      icon: History,
+      period: "晚上",
+      title: "轻收口：证据/写作",
+      tone: "review",
+      value: closingItems[0]?.action ?? `${manuscriptReady} 条可写入`,
+    },
+  ];
 
   return (
     <div className="grid gap-5">
@@ -806,6 +862,8 @@ export default async function DashboardPage() {
         currentDailyPlan={currentDailyPlan}
         currentTodayMeetingBrief={currentTodayMeetingBrief}
       />
+
+      <ResearchDayRhythm segments={researchDaySegments} />
 
       <ResearchNeedCompass signals={needSignals} />
 
@@ -1373,6 +1431,91 @@ function DailyChecklistHub({
       </div>
     </section>
   );
+}
+
+function ResearchDayRhythm({ segments }: { segments: ResearchDaySegment[] }) {
+  return (
+    <section className="research-day-rhythm overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.052)]">
+      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr] xl:items-stretch">
+        <div className="research-day-rhythm-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <History className="size-3.5" />
+            科研日节奏板
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            忙的时候不要再判断先点哪个模块，按一天节奏走。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            研究生日常不是连续填表，而是早上定主线、中午补输入、下午做验证、晚上轻收口。
+            这里只把已有文献、实验、结果和笔记压成当天路线，不新增配置。
+          </p>
+          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+            <ResearchEvidenceLine source="上午" text="先看今天最该做的一件事，避免打开平台后继续选择困难。" />
+            <ResearchEvidenceLine source="下午" text="把实验观察和结果证据推进到可复盘，而不是只留下碎片。" />
+            <ResearchEvidenceLine source="晚上" text="只做轻量收口：证据路径、明日第一步和写作素材。" />
+          </div>
+        </div>
+
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          {segments.map((segment, index) => (
+            <ResearchDaySegmentCard key={segment.period} index={index + 1} segment={segment} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ResearchDaySegmentCard({
+  index,
+  segment,
+}: {
+  index: number;
+  segment: ResearchDaySegment;
+}) {
+  const Icon = segment.icon;
+
+  return (
+    <Link
+      href={segment.href}
+      className={segment.active ? "research-day-segment is-active group" : "research-day-segment group"}
+    >
+      <span className="flex items-start justify-between gap-3">
+        <span className={`research-day-icon ${researchDayToneClass(segment.tone)}`}>
+          <Icon className="size-4" />
+        </span>
+        <span className="rounded-full border border-white/74 bg-white/70 px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+          0{index}
+        </span>
+      </span>
+      <span className="mt-4 block">
+        <span className={segment.active ? "text-xs font-semibold text-primary" : "text-xs font-medium text-muted-foreground"}>
+          {segment.period}
+          {segment.active ? " · 当前" : ""}
+        </span>
+        <span className="mt-2 block text-base font-semibold leading-snug hero-title">
+          {segment.title}
+        </span>
+        <span className="mt-1.5 block text-xs font-medium text-primary">{segment.value}</span>
+        <span className="mt-2 block line-clamp-4 text-xs leading-5 text-muted-foreground">
+          {segment.detail}
+        </span>
+      </span>
+      <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold text-primary">
+        进入这一步
+        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  );
+}
+
+function researchDayToneClass(tone: ResearchDaySegment["tone"]) {
+  return {
+    evidence: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    experiment: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    focus: "border-[#d5e4e8] bg-[#eef6f4] text-primary",
+    review: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+  }[tone];
 }
 
 function ChecklistActionCard({
@@ -2302,6 +2445,15 @@ function openingDueRank(value: Date | null) {
   if (distance < 0) return -10 + distance;
   if (distance === 0) return -5;
   return Math.min(distance, 14);
+}
+
+function researchDaySlot(value: Date) {
+  const hour = value.getHours();
+
+  if (hour < 11) return "morning";
+  if (hour < 14) return "midday";
+  if (hour < 19) return "afternoon";
+  return "evening";
 }
 
 function priorityBias(priority: string) {
