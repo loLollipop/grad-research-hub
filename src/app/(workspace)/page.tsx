@@ -641,39 +641,43 @@ export default async function DashboardPage() {
           <div className="cockpit-panel grid content-start gap-3 rounded-2xl border p-3">
             <div className="flex items-center justify-between gap-3 px-1">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">研究流信号</p>
-                <h2 className="mt-1 text-base font-semibold hero-title">开工前看一眼</h2>
+                <p className="text-xs font-medium text-muted-foreground">今日行动流</p>
+                <h2 className="mt-1 text-base font-semibold hero-title">今天只走四步</h2>
               </div>
               <span className="rounded-full border border-white/70 bg-white/72 px-2.5 py-1 text-[11px] text-muted-foreground">
-                自托管
+                少判断
               </span>
             </div>
-            <CockpitRow
-              icon={FileText}
-              label={currentDailyPlan ? "今日计划" : "今日计划"}
-              value={currentDailyPlan ? "已生成" : "待生成"}
-              detail={currentDailyPlan ? `更新 ${formatDateTime(currentDailyPlan.updatedAt)}` : "一键整理今天要做的事"}
-              href={currentDailyPlan ? `/notes?note=${currentDailyPlan.id}` : "/notes?folder=日计划"}
-            />
-            <CockpitRow
+            <DailyFlowStep
+              index="01"
               icon={TimerReset}
-              label="收口提醒"
-              value={closingItems.length ? `${closingItems.length} 项` : "稳定"}
-              detail={closingItems[0]?.title ?? "没有逾期或久未更新项"}
-              href={closingItems[0]?.href ?? "/projects?scope=today"}
+              label="定下一步"
+              value={focusAction?.action ?? "先写一件事"}
+              detail={focusAction?.title ?? "用快速捕捉留下今天要推进的动作"}
+              href={focusAction?.href ?? "/projects?scope=today"}
             />
-            <CockpitRow
+            <DailyFlowStep
+              index="02"
               icon={BookOpenText}
-              label="文献队列"
-              value={`${readingPapers + unreadPapers} 篇`}
-              detail={recentPapers[0]?.title ?? "同步 Zotero 后显示"}
+              label="读/验证"
+              value={`${readingPapers + unreadPapers} 篇文献`}
+              detail={recentPapers[0]?.title ?? "同步 Zotero 后从三篇启动"}
               href="/papers"
             />
-            <CockpitRow
+            <DailyFlowStep
+              index="03"
+              icon={FlaskConical}
+              label="收口实验"
+              value={`${runningExperiments} 个进行中`}
+              detail={recentExperiments[0]?.title ?? "记录目的、观察、结论和下一步"}
+              href="/experiments"
+            />
+            <DailyFlowStep
+              index="04"
               icon={FileChartColumn}
-              label="证据素材"
-              value={`${manuscriptReady} 条`}
-              detail={`${verifiedResults} 条已复现`}
+              label="整理证据"
+              value={`${manuscriptReady} 条可写入`}
+              detail={`${verifiedResults} 条已复现，组会前先看可讲度`}
               href="/data?manuscript=ready"
             />
           </div>
@@ -1627,13 +1631,15 @@ function FocusStackItem({
   );
 }
 
-function CockpitRow({
+function DailyFlowStep({
+  index,
   icon: Icon,
   label,
   value,
   detail,
   href,
 }: {
+  index: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
@@ -1643,17 +1649,19 @@ function CockpitRow({
   return (
     <Link
       href={href}
-      className="grid gap-3 rounded-xl border border-white/72 bg-white/68 p-3 transition hover:border-primary/25 hover:bg-white/90 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+      className="group grid gap-3 rounded-xl border border-white/72 bg-white/68 p-3 transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white/90 hover:shadow-sm sm:grid-cols-[auto_1fr] sm:items-start"
     >
-      <span className="flex size-9 items-center justify-center rounded-xl border border-[#d8e5ee] bg-[#eef4fb] text-[#365a7d]">
+      <span className="flex size-10 items-center justify-center rounded-xl border border-[#d8e2d6] bg-[#eef4eb] text-primary transition group-hover:border-primary/25 group-hover:bg-[#e5efe1]">
         <Icon className="size-4" />
       </span>
       <span className="min-w-0">
-        <span className="block text-xs font-medium text-muted-foreground">{label}</span>
-        <span className="mt-1 block line-clamp-1 text-sm font-semibold hero-title">{detail}</span>
-      </span>
-      <span className="w-fit rounded-full border border-white/80 bg-white/78 px-2.5 py-1 text-xs font-medium text-[#365a7d]">
-        {value}
+        <span className="flex items-center gap-2">
+          <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+          <span className="h-px w-5 bg-border/70" />
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        </span>
+        <span className="mt-1 block line-clamp-1 text-sm font-semibold hero-title">{value}</span>
+        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</span>
       </span>
     </Link>
   );
