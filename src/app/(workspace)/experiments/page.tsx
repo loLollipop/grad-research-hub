@@ -155,6 +155,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
       experiment.status === "failed" ||
       (experiment.status === "completed" && experiment.results.length === 0),
   ).length;
+  const resultBridgeExperiments = prioritizeResultBridgeExperiments(experiments).slice(0, 4);
   const reproducibilitySignals = [
     {
       detail: staleRunningCount ? `${staleRunningCount} 个超过 7 天未更新，建议先补观察。` : "正在跑的实验先补最新观察和下一步。",
@@ -316,6 +317,10 @@ export default async function ExperimentsPage({ searchParams }: Props) {
         totalCloseoutCount={totalCloseoutCount}
         unresolvedExperimentCount={unresolvedExperimentCount}
       />
+
+      {resultBridgeExperiments.length ? (
+        <ExperimentResultBridge experiments={resultBridgeExperiments} />
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[0.28fr_0.72fr]">
         <aside className="grid content-start gap-4">
@@ -663,6 +668,150 @@ function ExperimentReproBoard({
   );
 }
 
+function ExperimentResultBridge({ experiments }: { experiments: ExperimentFull[] }) {
+  const primary = experiments[0];
+
+  return (
+    <section className="experiment-result-bridge overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.048)]">
+      <div className="grid gap-4 xl:grid-cols-[0.32fr_0.68fr] xl:items-stretch">
+        <div className="experiment-result-bridge-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <FileChartColumn className="size-3.5" />
+            实验到成果桥
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            有观察或指标时，先收一条证据，不要等论文才整理。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            RDM/FAIR 强调结果要可追溯、可复用。这里不做完整数据仓库，只把完成、失败、
+            久未更新但可能有观察的实验推到成果证据入口。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">候选实验</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{experiments.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">最优先</p>
+              <p className="mt-1 line-clamp-1 text-base font-semibold hero-title">
+                {primary ? resultBridgeReason(primary) : "暂无"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-3">
+            <ResultBridgeStep
+              icon={Microscope}
+              index="01"
+              title="先定观察"
+              detail="把关键现象、失败原因或指标说清楚。"
+            />
+            <ResultBridgeStep
+              icon={FileChartColumn}
+              index="02"
+              title="登记证据"
+              detail="生成结果草稿，补指标、图表路径和复现状态。"
+            />
+            <ResultBridgeStep
+              icon={FileText}
+              index="03"
+              title="回填正文"
+              detail="把结果结论写回实验记录，后续组会能直接讲。"
+            />
+          </div>
+
+          <div className="grid gap-2 lg:grid-cols-2">
+            {experiments.map((experiment) => (
+              <ResultBridgeExperimentCard key={experiment.id} experiment={experiment} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ResultBridgeStep({
+  detail,
+  icon: Icon,
+  index,
+  title,
+}: {
+  detail: string;
+  icon: React.ComponentType<{ className?: string }>;
+  index: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/72 bg-white/62 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex size-8 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f7] text-primary">
+          <Icon className="size-4" />
+        </span>
+        <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+      </div>
+      <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function ResultBridgeExperimentCard({ experiment }: { experiment: ExperimentFull }) {
+  const reason = resultBridgeReason(experiment);
+
+  return (
+    <div className="rounded-2xl border border-white/72 bg-white/66 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)]">
+      <div className="flex items-start justify-between gap-3">
+        <span className="rounded-full border border-[#d5e4e8] bg-[#eef6f7] px-2 py-0.5 text-[11px] font-medium text-primary">
+          {reason}
+        </span>
+        <StatusBadge value={experiment.status} />
+      </div>
+      <h3 className="mt-3 line-clamp-2 text-sm font-semibold leading-5 hero-title">
+        {experiment.title}
+      </h3>
+      <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+        {experiment.project?.title ?? "未关联项目"} · 结果 {experiment.results.length} 条 · 更新 {formatDateTime(experiment.updatedAt)}
+      </p>
+      <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
+        {experiment.content || "先从目的、观察和结论里收一条可讲证据。"}
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <form action={createResultFromExperiment}>
+          <input type="hidden" name="id" value={experiment.id} />
+          <SubmitButton variant="outline" size="sm" className="w-full bg-white/74">
+            <FileChartColumn className="size-3.5" />
+            收证据
+          </SubmitButton>
+        </form>
+        <form action={createExperimentReviewNote}>
+          <input type="hidden" name="id" value={experiment.id} />
+          <SubmitButton variant="outline" size="sm" className="w-full bg-white/74">
+            <FileText className="size-3.5" />
+            复盘
+          </SubmitButton>
+        </form>
+        {experiment.status === "failed" ? (
+          <form action={createExperimentReviewTask}>
+            <input type="hidden" name="id" value={experiment.id} />
+            <SubmitButton variant="outline" size="sm" className="w-full bg-white/74">
+              <ClipboardList className="size-3.5" />
+              任务
+            </SubmitButton>
+          </form>
+        ) : (
+          <Link className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-border/80 bg-white/74 px-2.5 text-[0.8rem] font-medium text-primary transition hover:border-primary/28 hover:bg-white" href="/data">
+            <FileChartColumn className="size-3.5" />
+            成果
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ExperimentReproSignal({
   detail,
   href,
@@ -778,6 +927,44 @@ function prioritizeExperimentCloseout(experiments: ExperimentFull[]) {
 
     return left.updatedAt.getTime() - right.updatedAt.getTime();
   });
+}
+
+function prioritizeResultBridgeExperiments(experiments: ExperimentFull[]) {
+  return [...experiments]
+    .map((experiment) => ({ experiment, score: resultBridgeScore(experiment) }))
+    .filter((item) => item.score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      return right.experiment.updatedAt.getTime() - left.experiment.updatedAt.getTime();
+    })
+    .map((item) => item.experiment);
+}
+
+function resultBridgeScore(experiment: ExperimentFull) {
+  const text = `${experiment.title} ${experiment.content} ${experiment.tags}`.toLowerCase();
+  const evidenceSignals = /结果|指标|图|曲线|准确率|精度|提升|下降|现象|观察|结论|失败|异常|result|metric|accuracy|figure|curve|observation|failed/i.test(text)
+    ? 2
+    : 0;
+  const statusScore = experiment.status === "completed" ? 3 : experiment.status === "failed" ? 2 : experiment.status === "running" ? 1 : 0;
+  const resultGapScore = experiment.results.length === 0 ? 2 : 0;
+
+  return evidenceSignals + statusScore + resultGapScore;
+}
+
+function resultBridgeReason(experiment: ExperimentFull) {
+  if (experiment.status === "completed" && experiment.results.length === 0) {
+    return "完成缺证据";
+  }
+
+  if (experiment.status === "failed") {
+    return "失败可讲";
+  }
+
+  if (experiment.results.length === 0) {
+    return "观察待收";
+  }
+
+  return "已有证据";
 }
 
 function experimentCloseoutRank(experiment: ExperimentFull) {

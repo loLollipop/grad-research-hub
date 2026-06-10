@@ -521,6 +521,37 @@
       0 18px 36px rgba(27, 42, 56, 0.052);
   }
 
+  .experiment-result-bridge {
+    position: relative;
+    background:
+      radial-gradient(circle at 8% 12%, rgba(66, 95, 126, 0.12), transparent 18rem),
+      radial-gradient(circle at 90% 0%, rgba(95, 123, 104, 0.14), transparent 20rem),
+      radial-gradient(circle at 58% 112%, rgba(218, 203, 166, 0.22), transparent 18rem),
+      linear-gradient(135deg, rgba(255, 254, 247, 0.94), rgba(242, 248, 247, 0.84) 50%, rgba(246, 241, 229, 0.76));
+  }
+
+  .experiment-result-bridge::before {
+    position: absolute;
+    inset: -8rem auto auto -8rem;
+    width: 18rem;
+    height: 18rem;
+    content: "";
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(66, 95, 126, 0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  .experiment-result-bridge-lead {
+    position: relative;
+    z-index: 1;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(255, 251, 240, 0.5)),
+      rgba(255, 255, 255, 0.46);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 12px 28px rgba(27, 42, 56, 0.032);
+  }
+
   .figure-pack {
     position: relative;
     background:
