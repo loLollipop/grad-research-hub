@@ -416,8 +416,8 @@ export default async function NotesPage({ searchParams }: Props) {
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col gap-5">
-      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-5 shadow-[0_18px_48px_rgba(27,42,56,0.07)] md:px-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_24rem] xl:items-stretch">
+      <section className="cockpit-hero overflow-hidden rounded-2xl border border-border/65 px-5 py-4 shadow-[0_18px_48px_rgba(27,42,56,0.06)] md:px-6">
+        <div className="grid gap-4 xl:grid-cols-[1fr_22rem] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="research-eyebrow">
@@ -428,21 +428,23 @@ export default async function NotesPage({ searchParams }: Props) {
                 阅读 · 实验 · 组会 · 论文素材
               </span>
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              笔记页只做一件事：把碎片变成可继续推进的材料。
+            <h1 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.35rem]">
+              先写材料，再整理关系。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              这里承接 Zotero 阅读、实验复盘、结果证据和组会/周报草稿。左侧快速找材料，
-              右侧专心写作，需要写论文或周报时一键把可用素材收成草稿包。
+              这里不做复杂知识库维护，只承接 Zotero 阅读、实验复盘、结果证据和组会草稿。
+              左侧找材料，右侧长时间写；需要汇报或论文时再收成素材包。
             </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Button render={<Link href="/notes?mode=new" />} className="bg-primary">
+            <div className="mt-4 flex flex-wrap gap-2">
+              {activeNote ? (
+                <Button render={<Link href={`#note-${activeNote.id}`} />} className="bg-primary">
+                  <PenLine className="size-4" />
+                  继续当前笔记
+                </Button>
+              ) : null}
+              <Button render={<Link href="/notes?mode=new" />} variant={activeNote ? "outline" : "default"}>
                 <Plus className="size-4" />
-                写笔记
-              </Button>
-              <Button render={<Link href="/notes" />} variant="outline">
-                <Clock3 className="size-4" />
-                最近更新
+                写新笔记
               </Button>
               {currentWritingPack ? (
                 <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentWritingPack.id}`}>
@@ -460,7 +462,7 @@ export default async function NotesPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="flex min-h-64 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_18px_36px_rgba(22,34,53,0.16)]">
+          <div className="flex min-h-52 flex-col justify-between rounded-2xl action-stack p-4 text-white shadow-[0_16px_32px_rgba(22,34,53,0.14)]">
             <div>
               <div className="flex items-center justify-between gap-2">
                 <p className="flex items-center gap-2 text-xs font-medium text-white/68">
@@ -483,7 +485,7 @@ export default async function NotesPage({ searchParams }: Props) {
                   </form>
                 ) : null}
               </div>
-              <div className="mt-4 grid gap-2.5">
+              <div className="mt-3 grid gap-2">
                 {noteStack.length ? (
                   noteStack.map(({ note, action }, index) => (
                     <NoteStackItem
@@ -502,7 +504,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 )}
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+            <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/10 pt-3 text-center">
               <div>
                 <p className="text-lg font-semibold tracking-tight">{notesWithTasks}</p>
                 <p className="mt-0.5 text-[11px] text-white/54">可拆任务</p>
@@ -520,9 +522,9 @@ export default async function NotesPage({ searchParams }: Props) {
         </div>
       </section>
 
-      <section className="grid flex-1 gap-4 lg:h-[calc(100vh-222px)] lg:min-h-[720px] lg:grid-cols-[330px_minmax(0,1fr)]">
+      <section className="grid flex-1 gap-4 lg:h-[calc(100dvh-19rem)] lg:min-h-[760px] lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="workbench-card flex min-h-[560px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0">
-          <div className="border-b border-border/75 bg-[linear-gradient(135deg,rgba(240,247,247,0.94),rgba(255,250,238,0.78))] p-3.5">
+          <div className="border-b border-border/75 bg-[linear-gradient(135deg,rgba(240,247,247,0.92),rgba(255,250,238,0.72))] p-3.5">
             <div className="flex items-start gap-3">
               <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/82 text-primary shadow-sm">
                 <FileText className="size-4" />
@@ -540,10 +542,10 @@ export default async function NotesPage({ searchParams }: Props) {
             </div>
           </div>
           <QuickNoteCapture />
-          <div className="border-b border-border/75 bg-white/72 p-3.5">
+          <div className="border-b border-border/75 bg-white/70 p-3.5">
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="size-4 text-primary" />
-              沉淀雷达
+              整理视角
             </div>
             <div className="grid gap-2">
               <NoteRadarItem
@@ -584,11 +586,11 @@ export default async function NotesPage({ searchParams }: Props) {
               />
             </div>
           </div>
-          <div className="border-b border-border/75 bg-white/62 p-3.5">
+          <div className="border-b border-border/75 bg-white/60 p-3.5">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <BookOpenText className="size-4 text-primary" />
-                来源快捷筛选
+                材料来源
               </div>
               {source ? (
                 <Link
@@ -613,7 +615,7 @@ export default async function NotesPage({ searchParams }: Props) {
               ))}
             </div>
           </div>
-          <div className="border-b border-border/75 bg-white/62 p-3.5">
+          <div className="border-b border-border/75 bg-white/60 p-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Search className="size-4 text-primary" />
@@ -705,7 +707,7 @@ export default async function NotesPage({ searchParams }: Props) {
                         href={notesHref({ focus, folder, note: note.id, q, source })}
                         className={cn(
                           "rounded-xl border border-border/75 bg-white/72 px-3 py-2.5 text-sm transition hover:border-primary/25 hover:bg-white",
-                          selected && "border-primary/35 bg-primary/9 shadow-[0_8px_20px_rgba(37,99,235,0.08)]",
+                          selected && "border-[#b8d7cf] bg-[#eef8f5] shadow-[0_8px_20px_rgba(45,97,84,0.08)]",
                         )}
                       >
                         <span className="flex items-start justify-between gap-2">
@@ -747,11 +749,11 @@ export default async function NotesPage({ searchParams }: Props) {
 
         <section
           id={activeNote ? `note-${activeNote.id}` : "new-note"}
-          className="workbench-card flex min-h-[690px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0"
+          className="workbench-card flex min-h-[720px] flex-col overflow-hidden rounded-2xl border bg-[#fffefa] py-0 lg:min-h-0"
         >
           <CaptureNotice kind={captured} />
 
-          <div className="grid gap-3 border-b border-border/75 bg-white/66 px-4 py-3.5 md:grid-cols-[1fr_auto] md:items-start">
+          <div className="grid gap-3 border-b border-border/75 bg-[linear-gradient(135deg,rgba(255,254,249,0.95),rgba(248,250,242,0.82))] px-4 py-3.5 md:grid-cols-[1fr_auto] md:items-start">
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <FileText className="size-3.5 text-primary" />
@@ -791,7 +793,7 @@ export default async function NotesPage({ searchParams }: Props) {
           </div>
 
           <Tabs defaultValue="edit" className="flex min-h-0 flex-1 flex-col gap-0">
-            <div className="flex flex-col gap-2 border-b border-border/75 bg-white px-4 py-2.5 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-2 border-b border-border/75 bg-[#fffefa] px-4 py-2.5 md:flex-row md:items-center md:justify-between">
               <TabsList className="h-8 bg-muted/70">
                 <TabsTrigger value="edit">编辑</TabsTrigger>
                 <TabsTrigger value="preview">预览</TabsTrigger>
@@ -989,12 +991,24 @@ function NoteStackItem({
 
 function QuickNoteCapture() {
   return (
-    <div className="border-b border-border/75 bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(239,247,247,0.72))] p-3.5">
-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <PenLine className="size-4 text-primary" />
-        快速摘记
-      </div>
-      <form action={createNote} className="grid gap-2.5">
+    <details className="group border-b border-border/75 bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(239,247,247,0.68))] p-3.5">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/72 px-3 py-2.5 transition hover:bg-white [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[#d5e4e8] bg-[#eef6f4] text-primary">
+            <PenLine className="size-3.5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">30 秒摘一句</span>
+            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+              灵感、导师原话、实验现象先收住
+            </span>
+          </span>
+        </span>
+        <span className="rounded-full border bg-white px-2 py-0.5 text-[11px] font-medium text-primary">
+          展开
+        </span>
+      </summary>
+      <form action={createNote} className="mt-3 grid gap-2.5">
         <Input
           name="title"
           required
@@ -1017,7 +1031,7 @@ function QuickNoteCapture() {
           <SubmitButton className="w-fit">收进笔记</SubmitButton>
         </div>
       </form>
-    </div>
+    </details>
   );
 }
 
@@ -1129,48 +1143,52 @@ function NoteForm({
   defaultFolder: string;
 }) {
   return (
-    <form action={action} className="flex h-full min-h-[580px] flex-col lg:min-h-0">
+    <form action={action} className="flex h-full min-h-[620px] flex-col lg:min-h-0">
       {note ? <input type="hidden" name="id" value={note.id} /> : null}
-      <div className="grid gap-3 border-b border-border/75 bg-white px-4 py-4 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
+      <div className="grid gap-3 border-b border-border/75 bg-[#fffefa] px-4 py-4 lg:grid-cols-[minmax(0,1fr)_170px_210px]">
         <Field label="标题">
           <Input
             name="title"
             required
             placeholder="例如：组会记录、论文摘录、实验复盘"
             defaultValue={note?.title ?? ""}
-            className="h-10 text-base font-medium"
+            className="h-11 border-[#d8ded5] bg-white/86 text-base font-semibold"
           />
         </Field>
         <Field label="分类">
-          <Input name="folder" defaultValue={note?.folder ?? defaultFolder} className="h-10" />
+          <Input
+            name="folder"
+            defaultValue={note?.folder ?? defaultFolder}
+            className="h-11 border-[#d8ded5] bg-white/86"
+          />
         </Field>
         <Field label="标签">
           <Input
             name="tags"
             placeholder="组会, 阅读, 想法"
             defaultValue={parseTags(note?.tags).join(", ")}
-            className="h-10"
+            className="h-11 border-[#d8ded5] bg-white/86"
           />
         </Field>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col bg-[#f8f7ef] p-4">
+      <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,#f8f6ec,#f6f4e9)] p-4">
         <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5 font-medium">
             <PenLine className="size-3.5" />
-            写作区
+            暖纸写作区
           </span>
           <span>先写下材料，保存后自动更新预览和双链</span>
         </div>
         <Textarea
           name="content"
           rows={26}
-          className="field-sizing-fixed min-h-[460px] flex-1 resize-none rounded-3xl border-border/70 bg-[#fffef9] p-5 text-sm leading-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_30px_rgba(42,48,38,0.035)] focus-visible:ring-2 lg:min-h-0"
+          className="field-sizing-fixed h-full min-h-[520px] flex-1 resize-none rounded-3xl border-[#d8ded5] bg-[#fffef8] p-5 text-sm leading-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_30px_rgba(42,48,38,0.035)] focus-visible:ring-2 lg:min-h-0"
           defaultValue={note?.content ?? defaultNoteContent}
         />
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border/75 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-2 border-t border-border/75 bg-[#fffefa] px-4 py-3 md:flex-row md:items-center md:justify-between">
         <p className="text-xs text-muted-foreground">
           临时想法可以先放收件箱，后面再整理分类和双链。
         </p>
