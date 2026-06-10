@@ -60,6 +60,17 @@ type Props = {
 
 type NoteFocus = "inbox" | "links" | "tasks" | "writing";
 type NoteSource = "reading" | "experiment" | "meeting" | "result" | "writing";
+type WritingMaterialTone = "reading" | "experiment" | "result" | "meeting" | "writing";
+
+type WritingMaterialSignal = {
+  action: string;
+  count: number;
+  detail: string;
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  tone: WritingMaterialTone;
+};
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -410,6 +421,53 @@ export default async function NotesPage({ searchParams }: Props) {
     result: allNotes.filter((note) => noteMatchesSource(note, "result")).length,
     writing: allNotes.filter((note) => noteMatchesSource(note, "writing")).length,
   };
+  const writingSignals: WritingMaterialSignal[] = [
+    {
+      action: "筛选阅读摘录",
+      count: sourceCounts.reading,
+      detail: "Zotero 阅读、论文摘录和 related work 线索。",
+      href: notesHref({ source: "reading" }),
+      icon: BookOpenText,
+      label: "阅读材料",
+      tone: "reading",
+    },
+    {
+      action: "查看实验复盘",
+      count: sourceCounts.experiment,
+      detail: "实验目的、观察、失败原因和下一步验证。",
+      href: notesHref({ source: "experiment" }),
+      icon: Beaker,
+      label: "实验复盘",
+      tone: "experiment",
+    },
+    {
+      action: "收束结果证据",
+      count: sourceCounts.result,
+      detail: "指标、图表路径、复现状态和可讲结论。",
+      href: notesHref({ source: "result" }),
+      icon: BarChart3,
+      label: "结果证据",
+      tone: "result",
+    },
+    {
+      action: "回看组会反馈",
+      count: sourceCounts.meeting,
+      detail: "导师判断、组会问题和周报口径。",
+      href: notesHref({ source: "meeting" }),
+      icon: MessageSquareText,
+      label: "组会反馈",
+      tone: "meeting",
+    },
+    {
+      action: currentWritingPack ? "打开素材包" : "筛选写作草稿",
+      count: sourceCounts.writing,
+      detail: "周报、论文段落、提纲和本周写作素材包。",
+      href: currentWritingPack ? notesHref({ note: currentWritingPack.id }) : notesHref({ source: "writing" }),
+      icon: PenLine,
+      label: "写作草稿",
+      tone: "writing",
+    },
+  ];
   const listLabel = source
     ? `${noteFocusLabel(focus)} · ${noteSourceLabel(source)}`
     : noteFocusLabel(focus);
@@ -521,6 +579,8 @@ export default async function NotesPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      <WritingMaterialBoard currentWritingPack={currentWritingPack} signals={writingSignals} />
 
       <section className="grid flex-1 gap-4 lg:h-[calc(100dvh-19rem)] lg:min-h-[760px] lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="workbench-card flex min-h-[560px] flex-col overflow-hidden rounded-2xl border bg-white/95 py-0 lg:min-h-0">
@@ -966,6 +1026,148 @@ export default async function NotesPage({ searchParams }: Props) {
       </section>
     </div>
   );
+}
+
+function WritingMaterialBoard({
+  currentWritingPack,
+  signals,
+}: {
+  currentWritingPack: { id: string; updatedAt: Date } | null;
+  signals: WritingMaterialSignal[];
+}) {
+  const totalMaterials = signals.reduce((sum, signal) => sum + signal.count, 0);
+  const strongestSignal = signals.reduce((current, signal) =>
+    signal.count > current.count ? signal : current,
+  );
+
+  return (
+    <section className="writing-board overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.052)]">
+      <div className="grid gap-4 xl:grid-cols-[0.31fr_0.69fr] xl:items-stretch">
+        <div className="writing-board-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <FileText className="size-3.5" />
+            写作材料板
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            写周报、组会和论文前，先把材料收成一桌。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            不复制 Obsidian 的完整知识库，也不让你手动翻五个页面。阅读、实验、结果和导师反馈会按来源收束，
+            需要时生成一篇可继续编辑的素材包。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">当前可用材料</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{totalMaterials}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">最厚来源</p>
+              <p className="mt-1 truncate text-base font-semibold hero-title">
+                {strongestSignal.count ? strongestSignal.label : "先沉淀一条材料"}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {strongestSignal.count ? `${strongestSignal.count} 条` : "从阅读或实验开始"}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {currentWritingPack ? (
+              <Button render={<Link href={notesHref({ note: currentWritingPack.id })} />} className="bg-primary">
+                <FileText className="size-4" />
+                打开本周素材包
+              </Button>
+            ) : (
+              <form action={createWritingPackNote}>
+                <SubmitButton>
+                  <FileText className="size-4" />
+                  生成素材包
+                </SubmitButton>
+              </form>
+            )}
+            <Button render={<Link href={notesHref({ focus: "writing" })} />} variant="outline" className="bg-white/68">
+              <PenLine className="size-4" />
+              只看写作素材
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+          {signals.map((signal, index) => (
+            <WritingMaterialSignalCard key={signal.label} index={index + 1} signal={signal} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WritingMaterialSignalCard({
+  index,
+  signal,
+}: {
+  index: number;
+  signal: WritingMaterialSignal;
+}) {
+  const Icon = signal.icon;
+  const tone = writingMaterialToneClass(signal.tone);
+
+  return (
+    <Link href={signal.href} className={cn("writing-signal-card group", tone.card)}>
+      <span className="flex items-start justify-between gap-3">
+        <span className={cn("writing-signal-icon", tone.icon)}>
+          <Icon className="size-4" />
+        </span>
+        <span className="rounded-full border border-white/72 bg-white/70 px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+          {index.toString().padStart(2, "0")}
+        </span>
+      </span>
+      <span className="mt-4 block">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-base font-semibold leading-snug hero-title">{signal.label}</span>
+          <span className={cn("rounded-full border px-2 py-0.5 text-xs font-semibold", tone.pill)}>
+            {signal.count}
+          </span>
+        </span>
+        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+          {signal.detail}
+        </span>
+      </span>
+      <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold text-primary">
+        {signal.action}
+        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  );
+}
+
+function writingMaterialToneClass(tone: WritingMaterialTone) {
+  return {
+    reading: {
+      card: "from-[#f9fbff] to-[#eef5fb]",
+      icon: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+      pill: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    },
+    experiment: {
+      card: "from-[#fbfff8] to-[#eef7ed]",
+      icon: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+      pill: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    },
+    result: {
+      card: "from-[#fffdf6] to-[#f8f1df]",
+      icon: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+      pill: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+    },
+    meeting: {
+      card: "from-[#fffafa] to-[#f6eeee]",
+      icon: "border-[#ead5d5] bg-[#fff1ee] text-[#7a4b42]",
+      pill: "border-[#ead5d5] bg-[#fff1ee] text-[#7a4b42]",
+    },
+    writing: {
+      card: "from-[#fbf9ff] to-[#f0edf8]",
+      icon: "border-[#ded6ec] bg-[#f4efff] text-[#5f4f84]",
+      pill: "border-[#ded6ec] bg-[#f4efff] text-[#5f4f84]",
+    },
+  }[tone];
 }
 
 function NoteStackItem({
