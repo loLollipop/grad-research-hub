@@ -117,6 +117,18 @@ type ResearchDaySegment = {
   value: string;
 };
 
+type StartupStep = {
+  action: string;
+  detail: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  index: string;
+  source: string;
+  title: string;
+  tone: "capture" | "evidence" | "focus" | "reading";
+  value: string;
+};
+
 type WorkspaceCounts = {
   papers: number;
   projects: number;
@@ -576,6 +588,54 @@ export default async function DashboardPage() {
       })),
   ]).slice(0, 3);
   const focusAction = openingActions[0];
+  const startupSteps: StartupStep[] = [
+    {
+      action: currentDailyPlan ? "打开计划" : "生成计划",
+      detail: focusAction
+        ? `${focusAction.kind} · ${focusAction.detail}`
+        : "从一句话快速捕捉开始，先接住今天真正要推进的事。",
+      href: currentDailyPlan ? `/notes?note=${currentDailyPlan.id}` : "/projects?scope=today",
+      icon: TimerReset,
+      index: "01",
+      source: "Daily plan",
+      title: "先定唯一主线",
+      tone: "focus",
+      value: focusAction?.action ?? "先写一件事",
+    },
+    {
+      action: "去阅读台",
+      detail: recentPapers[0]?.title ?? "Zotero 继续做文献库，这里只把今天要读的 1-3 篇推到前面。",
+      href: "/papers",
+      icon: BookOpenText,
+      index: "02",
+      source: "Zotero API",
+      title: "补输入，不搬库",
+      tone: "reading",
+      value: `${readingPapers + unreadPapers} 篇待读/读中`,
+    },
+    {
+      action: "收实验",
+      detail: recentExperiments[0]?.title ?? "实验只补目的、观察、结论和下一步，避免变成参数仓库。",
+      href: "/experiments",
+      icon: FlaskConical,
+      index: "03",
+      source: "ELN-light",
+      title: "把观察落地",
+      tone: "capture",
+      value: `${runningExperiments} 个进行中`,
+    },
+    {
+      action: "补证据",
+      detail: closingItems[0]?.title ?? "组会或写作前，先确认复现、图表路径、数据来源和一句话结论。",
+      href: closingItems[0]?.href ?? "/data",
+      icon: FileChartColumn,
+      index: "04",
+      source: "RDM / FAIR",
+      title: "形成可讲证据",
+      tone: "evidence",
+      value: closingItems[0]?.action ?? `${manuscriptReady} 条可写入`,
+    },
+  ];
   const researchLanes: ResearchLane[] = [
     {
       action: "去阅读台",
@@ -856,6 +916,8 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      <StartupRoutinePanel steps={startupSteps} />
 
       <DailyChecklistHub
         candidates={dailyChecklistCandidates}
@@ -1431,6 +1493,83 @@ function DailyChecklistHub({
       </div>
     </section>
   );
+}
+
+function StartupRoutinePanel({ steps }: { steps: StartupStep[] }) {
+  return (
+    <section className="startup-routine overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.05)]">
+      <div className="grid gap-4 xl:grid-cols-[0.3fr_0.7fr] xl:items-stretch">
+        <div className="startup-routine-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <TimerReset className="size-3.5" />
+            开机 10 分钟
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            忙的时候，首页只负责把你带进下一步。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            调研后保留 Zotero、ELN、OSF/项目组织和 FAIR/RDM 的强项，不复制它们。
+            研途 Hub 只做一个轻量启动流程：定主线、补输入、收观察、成证据。
+          </p>
+          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+            <ResearchEvidenceLine source="少判断" text="打开后先看一条主线，不在文献/实验/课题之间来回切。" />
+            <ResearchEvidenceLine source="少录入" text="每一步只补会改变今天行动的信息，不维护配置墙。" />
+            <ResearchEvidenceLine source="可复盘" text="最后都回到证据、笔记和导师沟通材料。" />
+          </div>
+        </div>
+
+        <div className="startup-routine-grid">
+          {steps.map((step) => (
+            <StartupStepCard key={step.index} step={step} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StartupStepCard({ step }: { step: StartupStep }) {
+  const Icon = step.icon;
+
+  return (
+    <Link href={step.href} className={`startup-step-card ${startupStepToneClass(step.tone)} group`}>
+      <span className="flex items-start justify-between gap-3">
+        <span className="startup-step-icon">
+          <Icon className="size-4" />
+        </span>
+        <span className="rounded-full border border-white/74 bg-white/72 px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+          {step.index}
+        </span>
+      </span>
+      <span className="mt-4 block">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          {step.source}
+        </span>
+        <span className="mt-2 block text-base font-semibold leading-snug hero-title">
+          {step.title}
+        </span>
+        <span className="mt-1.5 block line-clamp-1 text-xs font-semibold text-primary">
+          {step.value}
+        </span>
+        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+          {step.detail}
+        </span>
+      </span>
+      <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold text-primary">
+        {step.action}
+        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+      </span>
+    </Link>
+  );
+}
+
+function startupStepToneClass(tone: StartupStep["tone"]) {
+  return {
+    capture: "startup-step-capture",
+    evidence: "startup-step-evidence",
+    focus: "startup-step-focus",
+    reading: "startup-step-reading",
+  }[tone];
 }
 
 function ResearchDayRhythm({ segments }: { segments: ResearchDaySegment[] }) {

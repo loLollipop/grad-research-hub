@@ -340,6 +340,73 @@
     @apply relative z-10 flex min-h-64 flex-col rounded-2xl border border-white/72 bg-white/62 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_30px_rgba(27,42,56,0.034)] transition;
   }
 
+  .startup-routine {
+    position: relative;
+    background:
+      radial-gradient(circle at 6% 10%, rgba(54, 90, 125, 0.1), transparent 18rem),
+      radial-gradient(circle at 92% 8%, rgba(95, 123, 104, 0.12), transparent 20rem),
+      radial-gradient(circle at 54% 110%, rgba(218, 203, 166, 0.18), transparent 18rem),
+      linear-gradient(135deg, rgba(255, 254, 247, 0.95), rgba(246, 250, 247, 0.86) 46%, rgba(239, 246, 247, 0.76));
+  }
+
+  .startup-routine::before {
+    position: absolute;
+    inset: -9rem auto auto -8rem;
+    width: 19rem;
+    height: 19rem;
+    content: "";
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(54, 90, 125, 0.11), transparent 70%);
+    pointer-events: none;
+  }
+
+  .startup-routine-lead {
+    position: relative;
+    z-index: 1;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(255, 251, 240, 0.48)),
+      rgba(255, 255, 255, 0.44);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 12px 28px rgba(27, 42, 56, 0.03);
+  }
+
+  .startup-routine-grid {
+    @apply relative z-10 grid gap-2 md:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .startup-step-card {
+    @apply flex min-h-64 flex-col rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_30px_rgba(27,42,56,0.034)] transition;
+  }
+
+  .startup-step-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 18px 34px rgba(27, 42, 56, 0.05);
+  }
+
+  .startup-step-icon {
+    @apply flex size-10 shrink-0 items-center justify-center rounded-xl border bg-white/58 transition;
+  }
+
+  .startup-step-focus .startup-step-icon {
+    @apply border-[#d5e4e8] bg-[#eef6f4] text-primary;
+  }
+
+  .startup-step-reading .startup-step-icon {
+    @apply border-[#d8e5ee] bg-[#eef3fb] text-[#365a7d];
+  }
+
+  .startup-step-capture .startup-step-icon {
+    @apply border-[#cfe0df] bg-[#eef7f3] text-[#2f6655];
+  }
+
+  .startup-step-evidence .startup-step-icon {
+    @apply border-[#eadfbf] bg-[#f7f1df] text-[#7a5a2f];
+  }
+
   .need-signal-card:hover {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.82);

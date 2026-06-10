@@ -970,3 +970,12 @@
 - 功能边界：不新增表、不做自动数据分析、不替代成果页；继续复用 `createResultFromExperiment`、`createExperimentReviewNote`、`createExperimentReviewTask`。
 - UI 调整：在复现与收口板后增加低疲劳纸面桥接区，展示“先定观察、登记证据、回填正文”三步和最多 4 条候选实验。
 - 产品价值：实验记录不再只停留在日志层，关键观察能立即流向成果页，形成组会、周报和论文可用的结果证据。
+
+## 第一百四十三轮落地：开机 10 分钟流程
+
+- 调研依据：Zotero 官方强调文献可通过 collections/tags 组织，eLabFTW 的核心是实验条目、模板和状态，OSF 项目强调 components/wiki/files 组织研究上下文，FAIR/RDM 强调数据和流程应可查找、可访问、可互操作、可复用。研途 Hub 不应复制这些系统，而应解决研究生每天打开工作台时“先干什么”的切换成本。
+- 参考来源：[Zotero Web API](https://www.zotero.org/support/dev/web_api/v3/)、[eLabFTW Documentation](https://doc.elabftw.net/)、[OSF Projects](https://help.osf.io/article/353-welcome-to-projects)、[FAIR Guiding Principles](https://www.nature.com/articles/sdata201618)。
+- 本轮计划：首页新增“开机 10 分钟”流程，按“定唯一主线 -> 补文献输入 -> 收实验观察 -> 形成可讲证据”组织 4 个行动卡。
+- 功能边界：不新增数据库表、不新增配置、不做日历/提醒系统、不替代 Zotero/ELN/OSF/Obsidian；只重排已有任务、文献、实验、结果和笔记入口。
+- UI 调整：新增 `startup-routine` 低疲劳纸面区域，用更柔和的分层、细边框、来源标签和 4 张行动卡替代后台式模块堆叠。
+- 产品价值：忙碌用户每天打开首页后不需要先判断进入哪个导航页，而是按 10 分钟启动流程进入当天最短路径。
