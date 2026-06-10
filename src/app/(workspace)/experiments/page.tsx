@@ -163,9 +163,9 @@ export default async function ExperimentsPage({ searchParams }: Props) {
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
-                title="新建实验"
-                description="写清楚实验目的、关键方法、观察结果和下一步。"
-                label="新建实验"
+                title="记录一次实验"
+                description="先写目的、关键观察和下一步；参数和附件不用现在补全。"
+                label="记录实验"
                 icon={Plus}
                 wide
               >
