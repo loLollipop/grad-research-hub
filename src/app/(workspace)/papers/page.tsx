@@ -904,16 +904,16 @@ function ReadingRadarItem({
 function ZoteroConnectionOnboarding() {
   const steps = [
     {
-      title: "先在 Zotero 新建只读 Key",
-      detail: "只勾选读取文献库权限。PDF 和附件仍留在 Zotero，不会上传到研途 Hub。",
+      title: "建只读 Key",
+      detail: "只勾选读取权限。PDF、附件和正式引用仍留在 Zotero。",
     },
     {
-      title: "在设置中心填 Library ID",
-      detail: "个人库填 userID；群组库填 group ID，并把类型切到“群组”。",
+      title: "填 Library ID",
+      detail: "个人库填 userID；群组库填 group ID，库类型选“群组”。",
     },
     {
-      title: "回到文献页同步一次",
-      detail: "同步后这里会自动出现三篇启动队列，先读 3 篇，不被长列表拖住。",
+      title: "同步后只读三篇",
+      detail: "同步后自动生成三篇启动队列，先读 3 篇，不被长列表拖住。",
     },
   ];
 
@@ -960,7 +960,9 @@ function ZoteroConnectionOnboarding() {
       </div>
 
       <div className="flex flex-col gap-2 rounded-xl border border-[#d5e4e8] bg-white/62 px-3 py-2 text-xs leading-5 text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p>临时网页、导师转发材料、还没入库的预印本，才适合用“补录文献”。</p>
+        <p>
+          同步前只做一件事：接上 Zotero。临时网页、导师转发材料、还没入库的预印本才用“补录文献”。
+        </p>
         <CreateDialog
           title="手动补录文献"
           description="只给临时材料使用，正式文献建议回到 Zotero 管理。"
