@@ -291,7 +291,6 @@ export default async function DashboardPage() {
   const doing = taskCounts.find((item) => item.status === "doing")?._count ?? 0;
   const done = taskCounts.find((item) => item.status === "done")?._count ?? 0;
   const totalTasks = todo + doing + done;
-  const openTasks = todo + doing;
   const completion = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
   const runningExperiments = recentExperiments.filter(
     (experiment) => experiment.status === "running",
@@ -684,13 +683,6 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <ResearchRhythm
-        next={focusAction?.title ?? focusItem?.title ?? "先建立第一条任务"}
-        paper={`${readingPapers + unreadPapers} 篇待处理`}
-        experiment={`${runningExperiments} 个进行中`}
-        evidence={`${manuscriptReady} 条可写入`}
-      />
-
       <DailyChecklistHub
         candidates={dailyChecklistCandidates}
         currentDailyPlan={currentDailyPlan}
@@ -730,37 +722,6 @@ export default async function DashboardPage() {
             查看组会笔记
           </Link>
         </div>
-      </section>
-
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <ResearchSignal
-          icon={ClipboardList}
-          label="待推进"
-          value={`${openTasks} 个`}
-          detail={totalTasks ? `完成度 ${completion}%` : "还没有任务"}
-          href="/projects"
-        />
-        <ResearchSignal
-          icon={FlaskConical}
-          label="实验节奏"
-          value={`${runningExperiments} 个进行中`}
-          detail={recentExperiments[0]?.title ?? "先记录一次实验"}
-          href="/experiments"
-        />
-        <ResearchSignal
-          icon={BookOpenText}
-          label="文献队列"
-          value={`${readingPapers + unreadPapers} 篇待处理`}
-          detail={recentPapers[0]?.title ?? "同步 Zotero 后显示"}
-          href="/papers"
-        />
-        <ResearchSignal
-          icon={FileChartColumn}
-          label="成果证据"
-          value={`${manuscriptReady} 条可写入`}
-          detail={`${verifiedResults} 条已复现`}
-          href="/data"
-        />
       </section>
 
       <ClosingRadar items={closingItems} />
@@ -1101,6 +1062,19 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
         />
       </section>
 
+      <DailyChecklistHub
+        candidates={{
+          experiments: [],
+          notes: [],
+          papers: [],
+          results: [],
+          tasks: [],
+        }}
+        currentDailyPlan={null}
+        currentTodayMeetingBrief={null}
+        mode="intro"
+      />
+
       <section className="grid gap-4 xl:grid-cols-[0.62fr_0.38fr]">
         <Card className="workbench-card overflow-hidden">
           <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
@@ -1146,6 +1120,7 @@ function DailyChecklistHub({
   candidates,
   currentDailyPlan,
   currentTodayMeetingBrief,
+  mode = "active",
 }: {
   candidates: {
     experiments: ChecklistCandidate[];
@@ -1156,7 +1131,10 @@ function DailyChecklistHub({
   };
   currentDailyPlan: GuideNoteSummary | null;
   currentTodayMeetingBrief: GuideNoteSummary | null;
+  mode?: "active" | "intro";
 }) {
+  const intro = mode === "intro";
+
   return (
     <section className="rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(241,247,249,0.8))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.036)]">
       <div className="grid gap-3 xl:grid-cols-[0.33fr_0.67fr] xl:items-stretch">
@@ -1164,10 +1142,12 @@ function DailyChecklistHub({
           <div>
             <p className="flex items-center gap-2 text-sm font-semibold hero-title">
               <Sparkles className="size-4 text-primary" />
-              3 分钟自动整理
+              {intro ? "开箱后会自动整理" : "3 分钟自动整理"}
             </p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              不翻长列表。每天只生成会用到的计划、导师沟通单和跨模块收口清单。
+              {intro
+                ? "先写一条真实记录。等文献、课题、实验或结果进入工作台后，这里会变成一排可生成的日计划、阅读计划和证据清单。"
+                : "不翻长列表。每天只生成会用到的计划、导师沟通单和跨模块收口清单。"}
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
@@ -1212,7 +1192,7 @@ function DailyChecklistHub({
             action={createProjectProgressNote}
             buttonText="生成三项"
             detail="课题下一步"
-            emptyText="先加任务"
+            emptyText={intro ? "等任务进入" : "先加任务"}
             href="/projects?scope=today"
             icon={FolderKanban}
             ids={candidates.tasks}
@@ -1223,7 +1203,7 @@ function DailyChecklistHub({
             action={createReadingPlanNote}
             buttonText="生成三篇"
             detail="Zotero 阅读"
-            emptyText="先同步文献"
+            emptyText={intro ? "等文献进入" : "先同步文献"}
             href="/papers"
             icon={BookOpenText}
             ids={candidates.papers}
@@ -1234,7 +1214,7 @@ function DailyChecklistHub({
             action={createExperimentCloseoutNote}
             buttonText="生成收口"
             detail="实验观察/结论"
-            emptyText="先记录实验"
+            emptyText={intro ? "等实验进入" : "先记录实验"}
             href="/experiments"
             icon={FlaskConical}
             ids={candidates.experiments}
@@ -1244,7 +1224,7 @@ function DailyChecklistHub({
             action={createResultCloseoutNote}
             buttonText="生成证据"
             detail="复现/图表素材"
-            emptyText="先登记结果"
+            emptyText={intro ? "等结果进入" : "先登记结果"}
             href="/data"
             icon={FileChartColumn}
             ids={candidates.results}
@@ -1254,7 +1234,7 @@ function DailyChecklistHub({
             action={createNoteCloseoutNote}
             buttonText="生成沉淀"
             detail="笔记转写作"
-            emptyText="先写笔记"
+            emptyText={intro ? "等笔记进入" : "先写笔记"}
             href="/notes"
             icon={PenLine}
             ids={candidates.notes}
@@ -1753,37 +1733,6 @@ function ResearchRhythm({
         })}
       </div>
     </section>
-  );
-}
-
-function ResearchSignal({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  href,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  detail: string;
-  href: string;
-}) {
-  return (
-    <Link href={href} className="group block">
-      <Card className="signal-card h-full transition hover:border-primary/25 hover:bg-white">
-        <CardContent className="flex h-full items-start gap-3 py-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d8e5ee] bg-[#eef4fb] text-[#365a7d] transition group-hover:bg-primary group-hover:text-primary-foreground">
-            <Icon className="size-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className="mt-1 line-clamp-1 text-lg font-semibold tracking-tight">{value}</p>
-            <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
   );
 }
 
