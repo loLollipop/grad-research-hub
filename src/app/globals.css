@@ -181,16 +181,21 @@
 
   .sidebar-panel {
     background:
-      radial-gradient(circle at 10% 0%, rgba(238, 226, 196, 0.44), transparent 17rem),
-      linear-gradient(180deg, rgba(253, 252, 246, 0.98), rgba(248, 249, 241, 0.94) 58%, rgba(239, 246, 238, 0.96)),
+      radial-gradient(circle at 8% 0%, rgba(220, 235, 229, 0.72), transparent 18rem),
+      radial-gradient(circle at 92% 12%, rgba(229, 220, 244, 0.34), transparent 16rem),
+      linear-gradient(180deg, rgba(253, 252, 246, 0.96), rgba(248, 250, 242, 0.9) 58%, rgba(239, 247, 241, 0.94)),
       var(--sidebar);
   }
 
+  .sidebar-brand {
+    @apply flex items-center gap-3 rounded-2xl border border-white/64 bg-white/48 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_12px_28px_rgba(38,45,45,0.026)] transition hover:bg-white/66;
+  }
+
   .brand-mark {
-    @apply flex size-10 items-center justify-center rounded-xl text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.12)] transition;
+    @apply flex size-10 items-center justify-center rounded-2xl text-sidebar-primary-foreground shadow-[0_8px_18px_rgba(30,70,130,0.12)] transition;
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 42%),
-      linear-gradient(145deg, #29475c 0%, #5d7463 100%);
+      linear-gradient(145deg, #29475c 0%, #5d7463 62%, #6d6a8f 100%);
   }
 
   .group:hover .brand-mark {
@@ -307,16 +312,24 @@
     @apply rounded-2xl border border-sidebar-border/70 bg-white/66 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_10px_24px_rgba(34,48,71,0.028)];
   }
 
+  .sidebar-flow-card {
+    @apply rounded-3xl border border-white/68 bg-white/46 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_30px_rgba(34,48,71,0.026)];
+  }
+
   .research-loop-rail {
-    @apply rounded-xl border border-sidebar-border/60 bg-[#f8fbf8]/78 p-2;
+    @apply rounded-2xl border border-sidebar-border/54 bg-[#f8fbf8]/62 p-1.5;
   }
 
   .research-loop-step {
-    @apply flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-sidebar-foreground;
+    @apply flex items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-sidebar-foreground transition hover:bg-white/64;
   }
 
   .research-loop-step-icon {
-    @apply flex size-7 shrink-0 items-center justify-center rounded-md border border-[#d5e4e8] bg-[#eef6f7] text-sidebar-primary;
+    @apply flex size-8 shrink-0 items-center justify-center rounded-xl border border-[#d5e4e8] bg-[#eef6f7] text-sidebar-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.78)];
+  }
+
+  .sidebar-focus-card {
+    @apply rounded-3xl border border-white/64 bg-white/46 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_12px_24px_rgba(38,45,45,0.024)];
   }
 
   .ink-tile {

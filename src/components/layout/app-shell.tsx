@@ -16,18 +16,18 @@ import { QuickCaptureBar } from "@/components/layout/quick-capture-bar";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/", label: "首页", detail: "今天先做什么", icon: "home" },
-  { href: "/papers", label: "文献", detail: "Zotero 阅读栈", icon: "papers" },
-  { href: "/experiments", label: "实验", detail: "目的/观察/结论", icon: "experiments" },
-  { href: "/projects", label: "课题", detail: "任务与里程碑", icon: "projects" },
-  { href: "/notes", label: "笔记", detail: "双链与写作素材", icon: "notes" },
-  { href: "/data", label: "成果", detail: "指标/复现/图表", icon: "data" },
-  { href: "/admin", label: "事务", detail: "组会/材料/报销", icon: "admin" },
+  { href: "/", label: "首页", detail: "今天先走哪步", icon: "home" },
+  { href: "/papers", label: "文献", detail: "同步后只读三篇", icon: "papers" },
+  { href: "/experiments", label: "实验", detail: "记录纸与观察", icon: "experiments" },
+  { href: "/projects", label: "课题", detail: "阶段和下一步", icon: "projects" },
+  { href: "/notes", label: "笔记", detail: "写作素材桌", icon: "notes" },
+  { href: "/data", label: "成果", detail: "结果可讲度", icon: "data" },
+  { href: "/admin", label: "事务", detail: "小事别占脑子", icon: "admin" },
 ] as const;
 
 const utilityItems = [
-  { href: "/ai", label: "AI", detail: "整理草稿", icon: "ai" },
-  { href: "/settings", label: "设置", detail: "Key 与导出", icon: "settings" },
+  { href: "/ai", label: "AI", detail: "组会/复盘草稿", icon: "ai" },
+  { href: "/settings", label: "设置", detail: "连接中心", icon: "settings" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,8 +35,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="workbench-surface min-h-screen text-foreground">
-      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[17rem] border-r border-sidebar-border/70 px-4 py-4 text-sidebar-foreground shadow-[12px_0_34px_rgba(38,45,45,0.028)] md:flex md:flex-col">
-        <Link href="/" className="group flex items-center gap-3 rounded-xl px-2 py-2">
+      <aside className="sidebar-panel fixed inset-y-0 left-0 hidden w-[18rem] border-r border-sidebar-border/62 px-3.5 py-4 text-sidebar-foreground shadow-[14px_0_38px_rgba(38,45,45,0.026)] md:flex md:flex-col">
+        <Link href="/" className="sidebar-brand group">
           <span className="brand-mark">
             <GraduationCap className="size-5" />
           </span>
@@ -46,25 +46,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <span className="block text-xs text-muted-foreground">轻量科研行动台</span>
           </span>
+          <span className="ml-auto rounded-full border border-white/70 bg-white/62 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            self-host
+          </span>
         </Link>
 
-        <div className="research-loop-card mt-4">
-          <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/65 bg-white/86 px-2.5 py-2 text-xs text-muted-foreground">
-            <Command className="size-3.5 text-sidebar-primary" />
-            <span className="truncate">一句话进入研究流</span>
+        <div className="sidebar-flow-card mt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-xs font-semibold text-sidebar-foreground">
+                <Command className="size-3.5 text-sidebar-primary" />
+                今天的研究流
+              </p>
+              <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+                从文献输入到写作输出，不需要先维护一套大系统。
+              </p>
+            </div>
+            <span className="rounded-full border border-sidebar-border/70 bg-white/62 px-2 py-0.5 text-[10px] text-muted-foreground">
+              4 steps
+            </span>
           </div>
           <div className="research-loop-rail mt-3">
-            <FlowHint icon={BookOpenText} label="文献" detail="Zotero 队列" />
-            <FlowHint icon={FlaskConical} label="实验" detail="目的/观察" />
-            <FlowHint icon={FileChartColumn} label="成果" detail="证据/复现" />
-            <FlowHint icon={CheckCircle2} label="写作" detail="周报/论文" />
+            <FlowHint index="01" icon={BookOpenText} label="文献输入" detail="Zotero 队列" />
+            <FlowHint index="02" icon={FlaskConical} label="实验验证" detail="目的/观察" />
+            <FlowHint index="03" icon={FileChartColumn} label="结果证据" detail="复现/图表" />
+            <FlowHint index="04" icon={CheckCircle2} label="写作输出" detail="周报/论文" />
           </div>
         </div>
 
-        <Separator className="my-4 bg-sidebar-border/80" />
-        <p className="mb-2 flex items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/75">
+        <Separator className="my-3.5 bg-sidebar-border/70" />
+        <p className="mb-2 flex items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/72">
           <Layers3 className="size-3" />
-          研究闭环
+          工作区
         </p>
         <nav className="grid gap-1.5">
           {navItems.map((item) => (
@@ -78,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-3xl border border-sidebar-border/65 bg-white/58 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_12px_24px_rgba(38,45,45,0.025)]">
+        <div className="sidebar-focus-card mt-auto">
           <div className="flex items-center gap-2">
             <TimerReset className="size-4 text-sidebar-primary" />
             <p className="text-xs font-semibold text-sidebar-foreground">今天只先抓三件事</p>
@@ -93,8 +106,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="md:pl-[17rem]">
-        <header className="sticky top-0 z-30 border-b border-border/58 bg-[#fbfaf4]/82 backdrop-blur-xl">
+      <div className="md:pl-[18rem]">
+        <header className="sticky top-0 z-30 border-b border-border/52 bg-[#fbfaf4]/74 backdrop-blur-xl">
           <div className="flex flex-col gap-2 px-3 py-2 md:min-h-16 md:px-4 md:py-3 lg:flex-row lg:items-center lg:justify-between lg:px-7">
             <div className="flex items-center justify-between gap-3 md:hidden">
               <div className="flex items-center gap-2">
@@ -106,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <QuickCaptureBar />
-            <div className="hidden items-center gap-2 rounded-2xl border border-border/58 bg-white/58 px-3 py-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] xl:flex">
+            <div className="hidden items-center gap-2 rounded-2xl border border-border/54 bg-white/50 px-3 py-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] xl:flex">
               <CircleDot className="size-3 text-primary" />
               <span>本地数据 · Zotero / AI 在设置中心维护</span>
             </div>
@@ -126,10 +139,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function FlowHint({
+  index,
   icon: Icon,
   label,
   detail,
 }: {
+  index: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   detail: string;
@@ -140,7 +155,12 @@ function FlowHint({
         <span className="research-loop-step-icon">
           <Icon className="size-3.5" />
         </span>
-        <span className="truncate">{label}</span>
+        <span className="min-w-0">
+          <span className="block truncate">{label}</span>
+          <span className="mt-0.5 block font-mono text-[10px] font-semibold text-muted-foreground/62">
+            {index}
+          </span>
+        </span>
       </span>
       <span className="ml-auto truncate text-[11px] font-normal text-muted-foreground">{detail}</span>
     </div>

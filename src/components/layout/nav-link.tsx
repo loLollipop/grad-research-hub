@@ -85,22 +85,22 @@ export function NavLink({
       prefetch={true}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex min-h-10 items-center gap-2.5 overflow-hidden rounded-xl border px-2.5 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+        "group relative flex min-h-10 items-center gap-2.5 overflow-hidden rounded-2xl border px-2.5 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
         active
-          ? "border-[#314b5a]/22 bg-[linear-gradient(135deg,rgba(248,248,238,0.96),rgba(235,243,235,0.9))] font-semibold text-[#203647] shadow-[0_8px_18px_rgba(45,62,72,0.046)]"
-          : "border-transparent text-muted-foreground hover:border-sidebar-border/80 hover:bg-white/70 hover:text-sidebar-foreground active:bg-white/80",
+          ? "border-[#314b5a]/18 bg-[linear-gradient(135deg,rgba(49,75,90,0.96),rgba(58,91,81,0.92))] font-semibold text-white shadow-[0_12px_26px_rgba(45,62,72,0.11)]"
+          : "border-transparent text-muted-foreground hover:border-white/68 hover:bg-white/58 hover:text-sidebar-foreground active:bg-white/78",
       )}
     >
       {active ? (
-        <span className="absolute inset-y-1 left-0 w-1 rounded-r-full bg-[linear-gradient(180deg,var(--sidebar-primary),var(--workspace-signal))]" />
+        <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-white/70" />
       ) : null}
       {Icon ? (
         <span
           className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-md border transition",
+            "flex size-7 shrink-0 items-center justify-center rounded-xl border transition",
             active
-              ? "border-[#314b5a]/24 bg-[#314b5a] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"
-              : "border-sidebar-border/60 bg-white/54 group-hover:bg-white/80",
+              ? "border-white/20 bg-white/14 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"
+              : "border-sidebar-border/58 bg-white/46 group-hover:bg-white/80",
             !active && accent,
           )}
         >
@@ -113,7 +113,7 @@ export function NavLink({
           <span
             className={cn(
               "mt-0.5 block truncate text-[11px] font-normal",
-              active ? "text-[#53697d]" : "text-muted-foreground/78",
+              active ? "text-white/68" : "text-muted-foreground/78",
             )}
           >
             {detail}
