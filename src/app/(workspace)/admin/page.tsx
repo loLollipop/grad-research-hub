@@ -66,6 +66,22 @@ type AdminFilters = {
   scope?: string;
 };
 
+type MeetingBriefSummary = {
+  id: string;
+  updatedAt: Date;
+};
+
+type AdvisorPackItem = {
+  action: string;
+  detail: string;
+  href: string;
+  icon: LucideIcon;
+  id: string;
+  label: string;
+  title: string;
+  tone: "admin" | "experiment" | "paper" | "result" | "task";
+};
+
 function adminHref(filters: AdminFilters, patch: Partial<AdminFilters>) {
   const merged = { ...filters, ...patch };
   const query = new URLSearchParams();
@@ -125,6 +141,10 @@ export default async function AdminPage({ searchParams }: Props) {
     briefTaskCount,
     briefResultCount,
     briefPaperCount,
+    advisorTasks,
+    advisorExperiments,
+    advisorResults,
+    advisorPapers,
   ] = await Promise.all([
     prisma.adminItem.findMany({
       where,
@@ -165,6 +185,34 @@ export default async function AdminPage({ searchParams }: Props) {
     prisma.paper.count({
       where: { readStatus: { in: ["unread", "reading"] } },
     }),
+    prisma.task.findMany({
+      where: {
+        status: { not: "done" },
+        OR: [{ priority: "high" }, { dueDate: { lt: meetingBriefPeriod.endExclusive } }],
+      },
+      orderBy: [{ dueDate: "asc" }, { updatedAt: "desc" }],
+      take: 3,
+      include: { milestone: { include: { project: true } } },
+    }),
+    prisma.experiment.findMany({
+      where: { status: { in: ["running", "failed"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 3,
+      include: { project: true },
+    }),
+    prisma.result.findMany({
+      where: {
+        OR: [{ artifactPath: { not: null } }, { config: { contains: "\"manuscriptReady\":true" } }],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 3,
+      include: { experiment: true, dataset: true },
+    }),
+    prisma.paper.findMany({
+      where: { readStatus: { in: ["unread", "reading"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 3,
+    }),
   ]);
 
   const allItemsCount = statusCounts.reduce((sum, item) => sum + item._count, 0);
@@ -192,6 +240,75 @@ export default async function AdminPage({ searchParams }: Props) {
     const distance = daysUntil(item.dueDate);
     return distance !== null && distance >= 0 && distance <= 7;
   }).length;
+  const advisorPackItems: AdvisorPackItem[] = [
+    ...advisorTasks.map((task) => ({
+      action: "讲下一步",
+      detail: `${task.milestone?.project.title ?? task.milestone?.title ?? "独立任务"} · ${dueText(task.dueDate)}`,
+      href: "/projects?scope=today",
+      icon: ClipboardList,
+      id: `task-${task.id}`,
+      label: "任务",
+      title: task.title,
+      tone: "task" as const,
+    })),
+    ...advisorExperiments.map((experiment) => ({
+      action: experiment.status === "failed" ? "讲失败原因" : "讲观察结论",
+      detail: `${experiment.project?.title ?? "未关联课题"} · 更新 ${formatDate(experiment.updatedAt)}`,
+      href: "/experiments",
+      icon: FileCheck2,
+      id: `experiment-${experiment.id}`,
+      label: "实验",
+      title: experiment.title,
+      tone: "experiment" as const,
+    })),
+    ...advisorResults.map((result) => ({
+      action: "讲证据",
+      detail: `${result.experiment?.title ?? result.dataset?.name ?? "未关联来源"} · 更新 ${formatDate(result.updatedAt)}`,
+      href: "/data?manuscript=ready",
+      icon: Sparkles,
+      id: `result-${result.id}`,
+      label: "结果",
+      title: result.title,
+      tone: "result" as const,
+    })),
+    ...advisorPapers.map((paper) => ({
+      action: "讲输入",
+      detail: `${paper.year ?? "年份未知"} · ${paper.category || "未分类"}`,
+      href: `/papers?status=${paper.readStatus}`,
+      icon: FileText,
+      id: `paper-${paper.id}`,
+      label: "文献",
+      title: paper.title,
+      tone: "paper" as const,
+    })),
+    ...adminStack.map((item) => ({
+      action: adminActionLabel(item),
+      detail: `${itemTypes.find((type) => type.value === item.type)?.label ?? "事务"} · ${dueText(item.dueDate)}`,
+      href: "/admin",
+      icon: UsersRound,
+      id: `admin-${item.id}`,
+      label: "事务",
+      title: item.title,
+      tone: "admin" as const,
+    })),
+  ].slice(0, 8);
+  const advisorQuestions = [
+    briefResultCount
+      ? "哪些结果今天可以讲，哪些还缺复现或图表？"
+      : "如果还没有可讲结果，今天先汇报哪个实验进展？",
+    briefTaskCount
+      ? "高优先级任务是否需要导师帮忙判断顺序？"
+      : "下周最小计划是否足够具体、可验收？",
+    briefPaperCount
+      ? "待读/读中文献里有没有值得转成实验的线索？"
+      : "是否需要补一篇相关工作或 baseline 文献？",
+  ];
+  const advisorPrepScore = [
+    Boolean(currentTodayMeetingBrief || currentMeetingBrief),
+    briefResultCount > 0,
+    briefTaskCount > 0,
+    meetingOpenCount > 0 || briefPaperCount > 0,
+  ].filter(Boolean).length;
 
   return (
     <div className="grid gap-5">
@@ -502,6 +619,15 @@ export default async function AdminPage({ searchParams }: Props) {
         <div className="workbench-column stretch-panel gap-3">
           <CaptureNotice kind={captured} />
 
+          <AdvisorFiveMinutePack
+            currentMeetingBrief={currentMeetingBrief}
+            currentTodayMeetingBrief={currentTodayMeetingBrief}
+            items={advisorPackItems}
+            periodLabel={meetingBriefPeriod.shortLabel}
+            questions={advisorQuestions}
+            score={advisorPrepScore}
+          />
+
           <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/74 p-3 shadow-[0_12px_30px_rgba(27,42,56,0.045)]">
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0">
@@ -531,62 +657,6 @@ export default async function AdminPage({ searchParams }: Props) {
               />
             )}
           </section>
-
-          <div className="grid gap-3 rounded-2xl border border-[#d8e3e7] bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(239,245,249,0.82))] p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#173042]">
-                {currentTodayMeetingBrief
-                  ? "今日导师沟通单已经准备好"
-                  : currentMeetingBrief
-                    ? "本周组会/周报草稿已经准备好"
-                    : "组会/导师周报准备"}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                {currentTodayMeetingBrief
-                  ? `覆盖今天，最近更新 ${formatDateTime(currentTodayMeetingBrief.updatedAt)}。适合临时碰导师、当天组会或发一段简短进展。`
-                  : currentMeetingBrief
-                    ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
-                    : "自动把近期任务、事务、实验、结果和待读文献汇成可编辑草稿，先写结论，再删减细节。"}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              {currentTodayMeetingBrief ? (
-                <Link className={buttonVariants({ variant: "default" })} href={`/notes?note=${currentTodayMeetingBrief.id}`}>
-                  <FileText className="size-4" />
-                  打开今日沟通单
-                </Link>
-              ) : (
-                <form action={createMeetingBriefNote}>
-                  <input type="hidden" name="scope" value="today" />
-                  <SubmitButton variant="default" className="w-fit">
-                    <FileText className="size-4" />
-                    生成今日沟通单
-                  </SubmitButton>
-                </form>
-              )}
-              {currentMeetingBrief ? (
-                <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentMeetingBrief.id}`}>
-                  <FileText className="size-4" />
-                  周报草稿
-                </Link>
-              ) : (
-                <form action={createMeetingBriefNote}>
-                  <input type="hidden" name="scope" value="week" />
-                  <SubmitButton variant="outline" className="w-fit">
-                    <FileText className="size-4" />
-                    生成周报草稿
-                  </SubmitButton>
-                </form>
-              )}
-              <form action={createMeetingFeedbackNote}>
-                <input type="hidden" name="scope" value="week" />
-                <SubmitButton variant="outline" className="w-fit">
-                  <ClipboardList className="size-4" />
-                  回填导师反馈
-                </SubmitButton>
-              </form>
-            </div>
-          </div>
 
           <form className="grid gap-2 rounded-2xl border border-border/72 bg-white/88 p-3 shadow-[0_12px_28px_rgba(27,42,56,0.045)] md:grid-cols-[1fr_150px_150px_auto]">
             <div className="relative">
@@ -838,6 +908,217 @@ function AdminReliefRadarItem({
       </span>
     </Link>
   );
+}
+
+function AdvisorFiveMinutePack({
+  currentMeetingBrief,
+  currentTodayMeetingBrief,
+  items,
+  periodLabel,
+  questions,
+  score,
+}: {
+  currentMeetingBrief: MeetingBriefSummary | null;
+  currentTodayMeetingBrief: MeetingBriefSummary | null;
+  items: AdvisorPackItem[];
+  periodLabel: string;
+  questions: string[];
+  score: number;
+}) {
+  const briefHref = currentTodayMeetingBrief
+    ? `/notes?note=${currentTodayMeetingBrief.id}`
+    : currentMeetingBrief
+      ? `/notes?note=${currentMeetingBrief.id}`
+      : null;
+
+  return (
+    <section className="advisor-pack overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.055)]">
+      <div className="grid gap-4 xl:grid-cols-[0.38fr_0.62fr]">
+        <div className="advisor-pack-lead rounded-2xl border border-white/70 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <span className="research-eyebrow">
+              <UsersRound className="size-3.5" />
+              会前 5 分钟
+            </span>
+            <span className="rounded-full border border-white/72 bg-white/68 px-2.5 py-1 text-xs font-medium text-primary">
+              准备度 {score}/4
+            </span>
+          </div>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            先把能讲的内容收成一页，再去见导师。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            这里不是事务后台。它把近期任务、实验、结果、文献和小事压缩成会前沟通包，
+            让你先讲结论、证据和需要导师判断的问题。
+          </p>
+
+          <div className="mt-4 grid gap-2">
+            {briefHref ? (
+              <Link className={buttonVariants({ variant: "default" })} href={briefHref}>
+                <FileText className="size-4" />
+                {currentTodayMeetingBrief ? "打开今日沟通单" : "继续周报草稿"}
+              </Link>
+            ) : (
+              <form action={createMeetingBriefNote}>
+                <input type="hidden" name="scope" value="today" />
+                <SubmitButton variant="default" className="w-full justify-start">
+                  <FileText className="size-4" />
+                  生成今日沟通单
+                </SubmitButton>
+              </form>
+            )}
+            <div className="grid gap-2 sm:grid-cols-2">
+              {currentMeetingBrief ? (
+                <Link className={buttonVariants({ variant: "outline" })} href={`/notes?note=${currentMeetingBrief.id}`}>
+                  <FileText className="size-4" />
+                  周报草稿
+                </Link>
+              ) : (
+                <form action={createMeetingBriefNote}>
+                  <input type="hidden" name="scope" value="week" />
+                  <SubmitButton variant="outline" className="w-full justify-start bg-white/74">
+                    <FileText className="size-4" />
+                    生成周报
+                  </SubmitButton>
+                </form>
+              )}
+              <form action={createMeetingFeedbackNote}>
+                <input type="hidden" name="scope" value="week" />
+                <SubmitButton variant="outline" className="w-full justify-start bg-white/74">
+                  <ClipboardList className="size-4" />
+                  回填反馈
+                </SubmitButton>
+              </form>
+            </div>
+          </div>
+
+          <p className="mt-3 rounded-xl border border-white/68 bg-white/52 px-3 py-2 text-xs leading-5 text-muted-foreground">
+            {currentTodayMeetingBrief
+              ? `今日沟通单已生成，更新 ${formatDateTime(currentTodayMeetingBrief.updatedAt)}。`
+              : currentMeetingBrief
+                ? `已有 ${periodLabel} 周报草稿，更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
+                : "还没有草稿时，先生成今日沟通单，比从空白文档开始更快。"}
+          </p>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 lg:grid-cols-4">
+            <AdvisorPrepTile index="01" title="一句话进展" detail="本周做了什么，先压成一句能讲的话。" done={score >= 1} />
+            <AdvisorPrepTile index="02" title="关键证据" detail="有图表、指标、复现或实验观察再展开。" done={score >= 2} />
+            <AdvisorPrepTile index="03" title="下周动作" detail="只讲 1-3 个可验收下一步。" done={score >= 3} />
+            <AdvisorPrepTile index="04" title="导师判断" detail="把需要拍板的问题提前列出来。" done={score >= 4} />
+          </div>
+
+          <div className="grid gap-3 xl:grid-cols-[1fr_16rem]">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold hero-title">可直接汇报的线索</p>
+                <span className="rounded-full border border-white/72 bg-white/70 px-2 py-0.5 text-[11px] text-muted-foreground">
+                  {items.length ? `${items.length} 条` : "暂无"}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2">
+                {items.length ? (
+                  items.map((item) => <AdvisorPackRow key={item.id} item={item} />)
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/54 p-3 text-sm text-muted-foreground">
+                    暂时没有可自动整理的线索。先记录一个任务、实验、结果或组会提醒。
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-sm font-semibold hero-title">会前要问清楚</p>
+              <div className="mt-3 grid gap-2">
+                {questions.map((question, index) => (
+                  <div key={question} className="rounded-xl border border-white/72 bg-white/64 px-3 py-2">
+                    <p className="font-mono text-[11px] font-semibold text-primary">Q{index + 1}</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{question}</p>
+                  </div>
+                ))}
+              </div>
+              <Link
+                href="/notes?folder=组会"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary"
+              >
+                看组会笔记
+                <FileText className="size-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AdvisorPrepTile({
+  detail,
+  done,
+  index,
+  title,
+}: {
+  detail: string;
+  done: boolean;
+  index: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/70 bg-white/56 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
+        <span
+          className={
+            done
+              ? "rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"
+              : "rounded-full border border-[#ead8ac] bg-[#fff8e8] px-2 py-0.5 text-[11px] font-medium text-[#7a5a2f]"
+          }
+        >
+          {done ? "有材料" : "待补"}
+        </span>
+      </div>
+      <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function AdvisorPackRow({ item }: { item: AdvisorPackItem }) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      className="group grid gap-3 rounded-xl border border-white/72 bg-white/64 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center"
+    >
+      <span className={`flex size-9 items-center justify-center rounded-xl border ${advisorPackToneClass(item.tone)}`}>
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="rounded-md border border-[#d8e5ee] bg-[#eef4fb] px-1.5 py-0.5 text-[11px] font-medium text-[#365a7d]">
+            {item.label}
+          </span>
+          <span className="line-clamp-1 text-sm font-semibold hero-title">{item.title}</span>
+        </span>
+        <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">{item.detail}</span>
+      </span>
+      <span className="text-xs font-semibold text-primary">{item.action}</span>
+    </Link>
+  );
+}
+
+function advisorPackToneClass(tone: AdvisorPackItem["tone"]) {
+  const classes = {
+    admin: "border-[#ead8ac] bg-[#fff8e8] text-[#7a5a2f]",
+    experiment: "border-[#cfe0df] bg-[#eef7f3] text-[#2f6655]",
+    paper: "border-[#d8e5ee] bg-[#eef3fb] text-[#365a7d]",
+    result: "border-[#eadfbf] bg-[#f7f1df] text-[#7a5a2f]",
+    task: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
+  };
+
+  return classes[tone];
 }
 
 function AdminReliefCard({ item, index }: { item: AdminItem; index: number }) {
