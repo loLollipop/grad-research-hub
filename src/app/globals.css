@@ -479,6 +479,47 @@
       0 18px 36px rgba(27, 42, 56, 0.052);
   }
 
+  .project-delivery {
+    position: relative;
+    background:
+      radial-gradient(circle at 8% 12%, rgba(95, 123, 104, 0.14), transparent 18rem),
+      radial-gradient(circle at 90% 2%, rgba(66, 95, 126, 0.12), transparent 20rem),
+      radial-gradient(circle at 58% 112%, rgba(218, 203, 166, 0.21), transparent 18rem),
+      linear-gradient(135deg, rgba(255, 254, 247, 0.94), rgba(243, 249, 246, 0.84) 50%, rgba(239, 245, 248, 0.76));
+  }
+
+  .project-delivery::before {
+    position: absolute;
+    inset: -8rem auto auto -8rem;
+    width: 18rem;
+    height: 18rem;
+    content: "";
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(95, 123, 104, 0.13), transparent 70%);
+    pointer-events: none;
+  }
+
+  .project-delivery-lead {
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(255, 251, 240, 0.5)),
+      rgba(255, 255, 255, 0.46);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 12px 28px rgba(27, 42, 56, 0.032);
+  }
+
+  .project-delivery-card {
+    @apply relative z-10 rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
+  }
+
+  .project-delivery-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 18px 36px rgba(27, 42, 56, 0.052);
+  }
+
   .writing-board {
     position: relative;
     background:

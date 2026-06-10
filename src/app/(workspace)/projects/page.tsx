@@ -17,6 +17,7 @@ import {
   TimerReset,
   Trash2,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import type { Milestone, Prisma, Project, Task } from "@prisma/client";
 
@@ -87,6 +88,15 @@ type MilestoneFull = Milestone & {
 
 type TaskFull = Task & {
   milestone: (Milestone & { project: Project }) | null;
+};
+
+type ProjectDeliverySignal = {
+  detail: string;
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  tone: "active" | "done" | "gap" | "risk";
+  value: string;
 };
 
 const taskColumns = [
@@ -243,6 +253,48 @@ export default async function ProjectsPage({ searchParams }: Props) {
   const highOpenTasks = quickOpenTasks.filter((task) => task.priority === "high");
   const doingTasks = quickOpenTasks.filter((task) => task.status === "doing");
   const experimentCandidateTasks = quickOpenTasks.filter(isExperimentCandidateTask);
+  const deliveryMilestones = milestones.filter((milestone) => milestone.status !== "completed");
+  const completedMilestoneCount = milestones.filter((milestone) => milestone.status === "completed").length;
+  const milestoneWithoutTasksCount = deliveryMilestones.filter((milestone) => milestone.tasks.length === 0).length;
+  const dueMilestoneCount = deliveryMilestones.filter((milestone) => {
+    const distance = daysUntil(milestone.dueDate);
+    return distance !== null && distance <= 7;
+  }).length;
+  const deliveryQueue = [...deliveryMilestones].sort(milestoneDeliveryRank).slice(0, 3);
+  const deliverySignals: ProjectDeliverySignal[] = [
+    {
+      detail: "正在推进的课题主线，先保证它们有可验收阶段。",
+      href: "/projects",
+      icon: FolderKanban,
+      label: "活跃课题",
+      tone: "active",
+      value: `${activeProjects.length} 个`,
+    },
+    {
+      detail: "7 天内到期或已经逾期的阶段，优先明确最小交付物。",
+      href: projectsHref(currentFilters, { scope: "week", status: undefined, priority: undefined }),
+      icon: Clock3,
+      label: "临近阶段",
+      tone: dueMilestoneCount ? "risk" : "active",
+      value: `${dueMilestoneCount} 个`,
+    },
+    {
+      detail: "有阶段但没有下一步动作，容易变成空路线图。",
+      href: "/projects",
+      icon: AlertCircle,
+      label: "缺行动",
+      tone: milestoneWithoutTasksCount ? "gap" : "done",
+      value: `${milestoneWithoutTasksCount} 个`,
+    },
+    {
+      detail: "已收口的阶段，可进入组会、周报或论文进展。",
+      href: "/projects?status=done",
+      icon: CheckCircle2,
+      label: "已验收",
+      tone: "done",
+      value: `${completedMilestoneCount} 个`,
+    },
+  ];
 
   return (
     <div className="grid gap-5">
@@ -331,6 +383,14 @@ export default async function ProjectsPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      <ProjectDeliveryBoard
+        deliveryQueue={deliveryQueue}
+        milestones={milestones}
+        returnTo={returnTo}
+        signals={deliverySignals}
+        totalOpenMilestoneCount={deliveryMilestones.length}
+      />
 
       {projectStack.length ? (
         <section className="grid gap-3 rounded-2xl border border-border/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(240,247,247,0.78))] p-3 shadow-[0_10px_24px_rgba(27,42,56,0.032)]">
@@ -758,6 +818,193 @@ function TaskBulkNotice({
       </CardContent>
     </Card>
   );
+}
+
+function ProjectDeliveryBoard({
+  deliveryQueue,
+  milestones,
+  returnTo,
+  signals,
+  totalOpenMilestoneCount,
+}: {
+  deliveryQueue: MilestoneFull[];
+  milestones: MilestoneFull[];
+  returnTo: string;
+  signals: ProjectDeliverySignal[];
+  totalOpenMilestoneCount: number;
+}) {
+  const openActionCount = deliveryQueue.reduce(
+    (sum, milestone) => sum + milestone.tasks.filter((task) => task.status !== "done").length,
+    0,
+  );
+
+  return (
+    <section className="project-delivery overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.052)]">
+      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr] xl:items-stretch">
+        <div className="project-delivery-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <Flag className="size-3.5" />
+            课题交付板
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            不做完整项目管理，只把课题压成可验收的阶段。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            参考 OSF components 的阶段拆分思路，但个人工作台只保留“阶段、交付物、下一步”。
+            先判断哪个阶段该验收，再把任务转成实验或推进笔记。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">未验收阶段</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{totalOpenMilestoneCount}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">队列内动作</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{openActionCount}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2">
+            <form action={createProjectProgressNote}>
+              <input type="hidden" name="returnTo" value={returnTo} />
+              {deliveryQueue
+                .flatMap((milestone) => milestone.tasks)
+                .filter((task) => task.status !== "done")
+                .slice(0, 12)
+                .map((task) => (
+                  <input key={task.id} type="hidden" name="ids" value={task.id} />
+                ))}
+              <SubmitButton className="w-full" disabled={!openActionCount}>
+                <ListChecks className="size-4" />
+                收成阶段推进清单
+              </SubmitButton>
+            </form>
+            <p className="rounded-xl border border-white/68 bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
+              阶段只管验收标准；复杂甘特图、成员和审批不放进这里，避免又变成一套后台。
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {signals.map((signal) => (
+              <ProjectDeliverySignalCard key={signal.label} {...signal} />
+            ))}
+          </div>
+
+          <div className="grid gap-2 rounded-2xl border border-white/72 bg-white/60 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] lg:grid-cols-3">
+            {deliveryQueue.length ? (
+              deliveryQueue.map((milestone, index) => {
+                const openTasks = milestone.tasks.filter((task) => task.status !== "done");
+                const nextTask = openTasks.sort(taskRank)[0];
+
+                return (
+                  <div key={milestone.id} className="rounded-xl border border-white/74 bg-white/66 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-mono text-[11px] font-semibold text-primary">
+                        0{index + 1}
+                      </span>
+                      <span className="rounded-full border border-[#d5e4e8] bg-[#eef6f4] px-2 py-0.5 text-[11px] font-medium text-primary">
+                        {milestoneStatusLabel(milestone.status)}
+                      </span>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-sm font-semibold hero-title">{milestone.title}</p>
+                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                      {milestone.project.title} · {dueText(milestone.dueDate)}
+                    </p>
+                    <div className="mt-3 grid gap-2 text-xs leading-5 text-muted-foreground">
+                      <div className="rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-2">
+                        <p className="font-medium text-[var(--workspace-title)]">
+                          {openTasks.length ? `还有 ${openTasks.length} 个动作` : "这个阶段可以准备验收"}
+                        </p>
+                        <p className="mt-1 line-clamp-2">
+                          {nextTask?.title ?? "补一条验收结论，或把阶段状态改为完成。"}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {nextTask ? (
+                          <>
+                            <TaskMoveForm task={nextTask} compact />
+                            <CreateExperimentFromTaskButton task={nextTask} compact />
+                          </>
+                        ) : (
+                          <CreateDialog
+                            title="给阶段加一个动作"
+                            label="补动作"
+                            icon={Plus}
+                            wide
+                          >
+                            <TaskForm
+                              action={createTask}
+                              milestones={milestones}
+                              defaultMilestoneId={milestone.id}
+                            />
+                          </CreateDialog>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#d5e4e8] bg-white/58 p-4 text-sm leading-6 text-muted-foreground lg:col-span-3">
+                暂时没有未验收阶段。可以先建一个课题阶段，再写 1-3 条下一步动作。
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectDeliverySignalCard({
+  detail,
+  href,
+  icon: Icon,
+  label,
+  tone,
+  value,
+}: ProjectDeliverySignal) {
+  return (
+    <Link href={href} className="project-delivery-card group">
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${projectDeliveryToneClass(tone)}`}>
+        <Icon className="size-4" />
+      </span>
+      <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </Link>
+  );
+}
+
+function projectDeliveryToneClass(tone: ProjectDeliverySignal["tone"]) {
+  return {
+    active: "border-[#d5e4e8] bg-[#eef6f4] text-primary",
+    done: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    gap: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    risk: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+  }[tone];
+}
+
+function milestoneDeliveryRank(left: MilestoneFull, right: MilestoneFull) {
+  const leftDue = daysUntil(left.dueDate);
+  const rightDue = daysUntil(right.dueDate);
+  const leftOpenTasks = left.tasks.filter((task) => task.status !== "done").length;
+  const rightOpenTasks = right.tasks.filter((task) => task.status !== "done").length;
+  const leftRank = (leftDue ?? 999) * 10 + (leftOpenTasks ? 0 : 4);
+  const rightRank = (rightDue ?? 999) * 10 + (rightOpenTasks ? 0 : 4);
+
+  return leftRank - rightRank || right.updatedAt.getTime() - left.updatedAt.getTime();
+}
+
+function milestoneStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    completed: "已完成",
+    planned: "计划中",
+    running: "进行中",
+  };
+
+  return labels[value] ?? value;
 }
 
 function ProjectStackItem({
