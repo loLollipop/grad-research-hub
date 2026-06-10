@@ -165,7 +165,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
               <CreateDialog
                 title="记录一次实验"
                 description="先写目的、关键观察和下一步；参数和附件不用现在补全。"
-                label="记录实验"
+                label="选记录纸开写"
                 icon={Plus}
                 wide
               >
@@ -175,10 +175,17 @@ export default async function ExperimentsPage({ searchParams }: Props) {
                   papers={papers}
                 />
               </CreateDialog>
-              <Link href="/data" className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border/80 bg-white/88 px-3 text-sm font-medium shadow-[0_1px_1px_rgba(15,23,42,0.04)] transition hover:border-primary/30 hover:bg-white">
-                <FileChartColumn className="size-4" />
-                收一条证据
-              </Link>
+              {experimentStack.length ? (
+                <form action={createExperimentCloseoutNote}>
+                  {experimentStack.map((experiment) => (
+                    <input key={experiment.id} type="hidden" name="ids" value={experiment.id} />
+                  ))}
+                  <SubmitButton variant="outline">
+                    <ClipboardList className="size-4" />
+                    生成三项收口
+                  </SubmitButton>
+                </form>
+              ) : null}
             </div>
           </div>
 
@@ -259,7 +266,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Beaker className="size-4 text-primary" />
-                实验模板
+                记录纸入口
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
@@ -461,16 +468,21 @@ function TemplateHint({
   papers: Paper[];
 }) {
   return (
-    <div className="soft-tile rounded-xl p-3">
-      <div className="flex items-start justify-between gap-3">
+    <div className="rounded-xl border border-[#d5e4e8] bg-[#fffef9]/82 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] transition hover:border-primary/25 hover:bg-white">
+      <div className="grid gap-3">
         <div className="min-w-0">
-          <p className="font-medium">{title}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+          <div className="flex items-center gap-2">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-[#d8e2d6] bg-[#eef4eb] text-primary">
+              <FileText className="size-3.5" />
+            </span>
+            <p className="font-medium text-[var(--workspace-title)]">{title}</p>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">{detail}</p>
         </div>
         <CreateDialog
-          title={`新建${title}`}
-          description="已预选模板，只需要补标题、项目和实验正文。"
-          label="使用"
+          title={`用「${title}」记录一次实验`}
+          description="已预选记录纸结构。只补标题、项目和正文里真正有用的观察。"
+          label="用这张记录纸"
           icon={Plus}
           wide
         >

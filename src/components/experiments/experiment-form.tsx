@@ -58,7 +58,7 @@ export function ExperimentForm({
               />
             </Field>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              先写清目的、观察、结论和下一步；参数细节放正文里即可。
+              像写实验纸一样先留下目的、观察、结论和下一步；参数细节放正文里即可。
             </p>
           </div>
         </div>
@@ -147,7 +147,7 @@ export function ExperimentForm({
             实验记录纸
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Markdown 正文保留自由写法，模板只负责给你一个开头。
+            Markdown 正文保留自由写法，模板只负责给你一张可复盘的记录纸。
           </p>
         </div>
         <Textarea
@@ -164,9 +164,9 @@ export function ExperimentForm({
 
       <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-white/72 p-3 md:flex-row md:items-center md:justify-between">
         <p className="text-xs leading-5 text-muted-foreground">
-          保存后可从实验卡片继续生成复盘笔记、失败复盘任务或回填成果。
+          保存后可从实验卡片继续生成复盘笔记、失败复盘任务或收一条结果证据。
         </p>
-        <SubmitButton>{experiment ? "保存实验" : "创建实验"}</SubmitButton>
+        <SubmitButton>{experiment ? "保存实验日志" : "保存到实验日志"}</SubmitButton>
       </div>
     </form>
   );
