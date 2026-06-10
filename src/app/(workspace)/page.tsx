@@ -1127,11 +1127,10 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
               暂时不用做
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
-            <p>不用先导入全部 PDF。</p>
-            <p>不用把所有旧实验搬进来。</p>
-            <p>不用配置一堆不常用字段。</p>
-            <p>等真实使用一周后，再决定要不要扩展功能。</p>
+          <CardContent className="grid gap-2">
+            <DoNotDoRow title="不搬旧资料" detail="PDF、历史实验和旧表格先留在原处，今天只处理当前研究流。" />
+            <DoNotDoRow title="不堆配置项" detail="Zotero、AI 和访问密码按需设置，数据库和端口留给部署文件。" />
+            <DoNotDoRow title="不追求一次完美" detail="先真实使用一周，再决定要不要补迁移、图谱或高级集成。" />
           </CardContent>
         </Card>
       </section>
@@ -1569,6 +1568,20 @@ function ChecklistRow({ title, detail }: { title: string; detail: string }) {
       <span>
         <span className="block font-medium">{title}</span>
         <span className="mt-1 block text-sm leading-6 text-muted-foreground">{detail}</span>
+      </span>
+    </div>
+  );
+}
+
+function DoNotDoRow({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="flex gap-3 rounded-xl border border-dashed border-[#d9e3dc] bg-white/60 p-3">
+      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#f7f1df] text-[#7a5a2f]">
+        <CircleCheck className="size-4" />
+      </span>
+      <span>
+        <span className="block text-sm font-medium hero-title">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
       </span>
     </div>
   );
