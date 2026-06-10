@@ -167,6 +167,14 @@ export default async function PapersPage({ searchParams }: Props) {
   ).length;
   const visibleNotedCount = papers.filter((paper) => paper.notes?.trim()).length;
   const readingRadarStatus = visibleReadingCount ? "reading" : visibleUnreadCount ? "unread" : undefined;
+  const literatureMatrixPapers = papers.slice(0, 12);
+  const readingClosurePapers = papers
+    .filter((paper) => ["reading", "read"].includes(paper.readStatus) && !paper.notes?.trim())
+    .slice(0, 16);
+  const literatureContextCount = papers.filter((paper) => paper.notes?.trim() || paper.abstract?.trim()).length;
+  const literatureCollectionCount = new Set(
+    papers.map((paper) => paper.category?.trim()).filter((item): item is string => Boolean(item)),
+  ).size;
 
   return (
     <div className="grid gap-5">
@@ -363,6 +371,17 @@ export default async function PapersPage({ searchParams }: Props) {
           tone="error"
           title="没有需要收口的阅读"
           description="当前列表里没有读中/已读但缺少笔记的文献。可以先标记阅读状态，或清除筛选后再试。"
+        />
+      ) : null}
+
+      {papers.length ? (
+        <LiteratureSynthesisBoard
+          closurePapers={readingClosurePapers}
+          collectionCount={literatureCollectionCount}
+          contextCount={literatureContextCount}
+          matrixPapers={literatureMatrixPapers}
+          returnTo={returnTo}
+          totalPapers={papers.length}
         />
       ) : null}
 
@@ -1069,6 +1088,183 @@ function ZoteroConnectionOnboarding() {
         </CreateDialog>
       </div>
     </section>
+  );
+}
+
+function LiteratureSynthesisBoard({
+  closurePapers,
+  collectionCount,
+  contextCount,
+  matrixPapers,
+  returnTo,
+  totalPapers,
+}: {
+  closurePapers: Paper[];
+  collectionCount: number;
+  contextCount: number;
+  matrixPapers: Paper[];
+  returnTo: string;
+  totalPapers: number;
+}) {
+  const signals = [
+    {
+      label: "当前范围",
+      value: `${totalPapers} 篇`,
+      detail: collectionCount ? `${collectionCount} 个 Zotero 集合/分类` : "还没有集合分类",
+      icon: LibraryBig,
+      tone: "paper" as const,
+    },
+    {
+      label: "可对比",
+      value: `${matrixPapers.length} 篇`,
+      detail: "进入综述矩阵，不自动补事实",
+      icon: BookOpenText,
+      tone: "matrix" as const,
+    },
+    {
+      label: "待收口",
+      value: `${closurePapers.length} 篇`,
+      detail: "读中/已读但还缺阅读笔记",
+      icon: NotebookPen,
+      tone: "closure" as const,
+    },
+    {
+      label: "有上下文",
+      value: `${contextCount} 篇`,
+      detail: "已有摘要或阅读备注，可进入写作",
+      icon: FileText,
+      tone: "context" as const,
+    },
+  ];
+
+  return (
+    <section className="literature-synthesis overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.052)]">
+      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr] xl:items-stretch">
+        <div className="literature-synthesis-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <BookOpenText className="size-3.5" />
+            综述合成台
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            不再从一长串文献里硬写 related work。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            Zotero 管条目，研途 Hub 只把当前筛选范围压缩成两种写作前动作：先补读后抓手，
+            再生成可人工填写的综述矩阵。
+          </p>
+          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+            <ResearchProofLine source="Zotero" text="文献条目、集合和标签仍以 Zotero 为源头。" />
+            <ResearchProofLine source="Obsidian" text="阅读笔记要能回到写作材料和双链上下文。" />
+            <ResearchProofLine source="OSF/ELN" text="综述线索要能继续流向课题阶段和实验复现。" />
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {signals.map((signal) => (
+              <LiteratureSignalCard key={signal.label} {...signal} />
+            ))}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+                    <NotebookPen className="size-4 text-primary" />
+                    先补读后抓手
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    已读/读中却没留下笔记的文献，最容易在组会和综述前丢失价值。
+                  </p>
+                </div>
+                <span className="rounded-full border border-[#ead9ad] bg-[#fff8e7] px-2 py-0.5 text-xs font-semibold text-[#765a23]">
+                  {closurePapers.length}
+                </span>
+              </div>
+              <form action={createReadingClosureNote} className="mt-3">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {closurePapers.map((paper) => (
+                  <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                ))}
+                <SubmitButton variant="outline" className="w-full bg-white/72" disabled={!closurePapers.length}>
+                  <NotebookPen className="size-3.5" />
+                  生成阅读收口清单
+                </SubmitButton>
+              </form>
+            </div>
+
+            <div className="rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-sm font-semibold hero-title">
+                    <BookOpenText className="size-4 text-primary" />
+                    再生成综述矩阵
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    只生成结构化表格，问题、方法、数据和可复用点仍由你核对填写。
+                  </p>
+                </div>
+                <span className="rounded-full border border-[#d3e2ee] bg-[#eef6fb] px-2 py-0.5 text-xs font-semibold text-[#365a7d]">
+                  {matrixPapers.length}
+                </span>
+              </div>
+              <form action={createLiteratureMatrixNote} className="mt-3">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                {matrixPapers.map((paper) => (
+                  <input key={paper.id} type="hidden" name="ids" value={paper.id} />
+                ))}
+                <SubmitButton variant="outline" className="w-full bg-white/72" disabled={!matrixPapers.length}>
+                  <FileText className="size-3.5" />
+                  生成综述矩阵
+                </SubmitButton>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ResearchProofLine({ source, text }: { source: string; text: string }) {
+  return (
+    <div className="flex gap-2 rounded-xl border border-white/64 bg-white/54 px-3 py-2">
+      <span className="shrink-0 font-mono text-[11px] font-semibold text-primary">{source}</span>
+      <span>{text}</span>
+    </div>
+  );
+}
+
+function LiteratureSignalCard({
+  detail,
+  icon: Icon,
+  label,
+  tone,
+  value,
+}: {
+  detail: string;
+  icon: LucideIcon;
+  label: string;
+  tone: "closure" | "context" | "matrix" | "paper";
+  value: string;
+}) {
+  const toneClass = {
+    closure: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+    context: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    matrix: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    paper: "border-[#d5e4e8] bg-[#eef6f4] text-primary",
+  }[tone];
+
+  return (
+    <div className="literature-signal-card">
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
+        <Icon className="size-4" />
+      </span>
+      <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </div>
   );
 }
 
