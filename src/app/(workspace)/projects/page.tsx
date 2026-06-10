@@ -267,25 +267,25 @@ export default async function ProjectsPage({ searchParams }: Props) {
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
-                title="新建项目"
+                title="建立一个课题"
                 description="只写课题名、当前状态和一句话目标，细节后面再补。"
-                label="新建项目"
+                label="建课题"
                 icon={Plus}
               >
                 <ProjectForm action={createProject} />
               </CreateDialog>
               <CreateDialog
-                title="新建里程碑"
-                description="把大课题切成可以验收的阶段。"
-                label="新建里程碑"
+                title="拆一个阶段"
+                description="把大课题切成可以验收的小阶段，不做甘特图。"
+                label="拆阶段"
                 icon={Flag}
               >
                 <MilestoneForm action={createMilestone} projects={projects} />
               </CreateDialog>
               <CreateDialog
-                title="新建任务"
-                description="只记录下一步动作，不要把任务写成论文摘要。"
-                label="新建任务"
+                title="记下一步动作"
+                description="只记录今天或本周能推进的动作，不要写成论文摘要。"
+                label="记下一步"
                 icon={ListTodo}
                 wide
               >
