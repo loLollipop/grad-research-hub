@@ -17,6 +17,8 @@ export function CreateDialog({
   icon: Icon,
   children,
   wide = false,
+  triggerVariant = "outline",
+  triggerClassName = "bg-white/84",
 }: {
   title: string;
   description?: string;
@@ -24,10 +26,12 @@ export function CreateDialog({
   icon?: ComponentType<{ className?: string }>;
   children: ReactNode;
   wide?: boolean;
+  triggerVariant?: "default" | "outline" | "secondary" | "ghost" | "destructive" | "link";
+  triggerClassName?: string;
 }) {
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" className="bg-white/84" />}>
+      <DialogTrigger render={<Button variant={triggerVariant} className={triggerClassName} />}>
         {Icon ? <Icon className="size-4" /> : null}
         {label}
       </DialogTrigger>

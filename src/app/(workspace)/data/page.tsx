@@ -236,11 +236,11 @@ export default async function DataPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              成果页只回答一件事：这条结果能不能支撑结论。
+              先判断能不能讲，再决定要不要写。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              不把这里做成数据仓库，只保留关键指标、复现状态、图表路径和一句话结论。
-              结果先变成可信证据，再进入周报、组会和论文素材。
+              这里不是数据仓库，只收核心指标、复现状态、图表路径和一句话结论。
+              先把结果变成可信证据，再收进组会、周报和论文素材。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
@@ -249,6 +249,8 @@ export default async function DataPage({ searchParams }: Props) {
                 label="记录证据"
                 icon={Plus}
                 wide
+                triggerVariant="default"
+                triggerClassName="shadow-[0_10px_22px_rgba(47,72,88,0.16)]"
               >
                 <ResultForm
                   action={createResult}
@@ -257,10 +259,11 @@ export default async function DataPage({ searchParams }: Props) {
                 />
               </CreateDialog>
               <CreateDialog
-                title="补充数据集"
+                title="补充数据来源"
                 description="只有当结果需要固定数据来源或版本时，再补这一步。"
-                label="补充数据集"
+                label="补数据来源"
                 icon={Database}
+                triggerClassName="bg-white/64 text-muted-foreground"
               >
                 <DatasetForm action={createDataset} />
               </CreateDialog>
@@ -270,7 +273,7 @@ export default async function DataPage({ searchParams }: Props) {
                 ))}
                 <Button type="submit" variant="outline" disabled={!filteredResults.length}>
                   <ClipboardList className="size-4" />
-                  生成汇报清单
+                  收成汇报清单
                 </Button>
               </form>
             </div>
@@ -413,54 +416,11 @@ export default async function DataPage({ searchParams }: Props) {
           <Card className="workbench-card">
             <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
               <CardTitle className="flex items-center gap-2">
-                <Target className="size-4 text-primary" />
-                证据雷达
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <ResultEvidenceRadarItem
-                icon={AlertCircle}
-                label="待判断"
-                value={`${unknownCount} 条`}
-                detail="先决定这条结果是否值得复现或汇报"
-                href={dataHref(currentFilters, { reproducibility: "unknown", manuscript: undefined })}
-                tone={unknownCount ? "warm" : "quiet"}
-              />
-              <ResultEvidenceRadarItem
-                icon={RotateCcw}
-                label="复现实验"
-                value={`${evidenceTodoBaseCount} 条`}
-                detail="把待复现和复现中的结果先收成可信证据"
-                href={dataHref(currentFilters, { reproducibility: "todo", manuscript: undefined })}
-                tone={evidenceTodoBaseCount ? "blue" : "quiet"}
-              />
-              <ResultEvidenceRadarItem
-                icon={FileChartColumn}
-                label="待补素材"
-                value={`${notReadyBaseCount} 条`}
-                detail="缺图表路径或写作标记，汇报前容易找不到"
-                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: "not-ready" })}
-                tone={notReadyBaseCount ? "warm" : "quiet"}
-              />
-              <ResultEvidenceRadarItem
-                icon={CheckCircle2}
-                label="可写入"
-                value={`${manuscriptBaseCount} 条`}
-                detail="已经能进入组会、周报或论文素材池"
-                href={dataHref(currentFilters, { reproducibility: undefined, manuscript: "ready" })}
-                tone={manuscriptBaseCount ? "green" : "quiet"}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="workbench-card">
-            <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
-              <CardTitle className="flex items-center gap-2">
                 <Search className="size-4 text-primary" />
-                快捷视图
+                筛选捷径
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-2">
+            <CardContent className="grid grid-cols-2 gap-2">
               <QuickDataLink
                 label="全部结果"
                 count={quickBaseResults.length}
@@ -635,7 +595,7 @@ export default async function DataPage({ searchParams }: Props) {
               defaultValue={datasetId ?? ""}
               className="h-9 rounded-lg border bg-background px-2 text-sm"
             >
-              <option value="">全部数据集</option>
+              <option value="">全部来源</option>
               {datasets.map((dataset) => (
                 <option key={dataset.id} value={dataset.id}>
                   {dataset.name}
@@ -733,9 +693,9 @@ export default async function DataPage({ searchParams }: Props) {
 
           <Tabs defaultValue="results" className="grid gap-3">
             <TabsList className="w-fit">
-              <TabsTrigger value="results">关键结果</TabsTrigger>
+              <TabsTrigger value="results">结果证据</TabsTrigger>
               <TabsTrigger value="manuscript">论文素材</TabsTrigger>
-              <TabsTrigger value="datasets">数据集</TabsTrigger>
+              <TabsTrigger value="datasets">数据来源</TabsTrigger>
             </TabsList>
             <TabsContent value="results" className="grid gap-3">
               {filteredResults.length ? (
@@ -750,10 +710,10 @@ export default async function DataPage({ searchParams }: Props) {
               ) : (
                 <EmptyState
                   icon={FileChartColumn}
-                  title={activeFilterCount ? "没有匹配的关键结果" : "暂无关键结果"}
+                  title={activeFilterCount ? "没有匹配的结果证据" : "暂无结果证据"}
                   description={
                     activeFilterCount
-                      ? "试着清除筛选，或换一个复现状态、实验、数据集再看。"
+                      ? "试着清除筛选，或换一个复现状态、实验、数据来源再看。"
                       : "从最近一次实验开始，记录结论、核心指标和下一步即可。"
                   }
                 />
@@ -778,8 +738,8 @@ export default async function DataPage({ searchParams }: Props) {
               ) : (
                 <EmptyState
                   icon={Database}
-                  title="暂无数据集"
-                  description="只有当结果需要固定数据来源或版本时，再补充数据集信息。"
+                  title="暂无数据来源"
+                  description="只有当结果需要固定数据来源或版本时，再补充来源信息。"
                 />
               )}
             </TabsContent>
@@ -889,7 +849,7 @@ function QuickResultCapture() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2">
             <p className="text-xs leading-5 text-muted-foreground">
-              先收住证据，关联实验和数据集之后再补。
+              先收住证据，关联实验和数据来源之后再补。
             </p>
             <SubmitButton className="w-fit">加入证据台</SubmitButton>
           </div>
@@ -1021,49 +981,6 @@ function EvidenceGapCard({
   );
 }
 
-function ResultEvidenceRadarItem({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  href,
-  tone = "blue",
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  detail: string;
-  href: string;
-  tone?: "blue" | "warm" | "green" | "quiet";
-}) {
-  const toneClass = {
-    blue: "border-[#d5e4e8] bg-[#eef6f7] text-primary",
-    warm: "border-[#edd8a5] bg-[#fff7df] text-[#7a5a2f]",
-    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    quiet: "border-border/70 bg-white/72 text-muted-foreground",
-  }[tone];
-
-  return (
-    <Link
-      href={href}
-      className="group grid gap-3 rounded-xl border border-border/70 bg-white/72 p-3 transition hover:border-primary/25 hover:bg-white sm:grid-cols-[auto_1fr_auto] sm:items-center xl:grid-cols-[auto_1fr]"
-    >
-      <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
-        <Icon className="size-4" />
-      </span>
-      <span className="min-w-0">
-        <span className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium">{label}</span>
-          <span className="text-xs font-medium text-primary">{value}</span>
-        </span>
-        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
-          {detail}
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 function EvidenceCloseoutCard({
   result,
   index,
@@ -1147,7 +1064,7 @@ function ResultCard({
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {result.experiment?.title ?? "未关联实验"} ·{" "}
-              {result.dataset?.name ?? "未关联数据集"} · 更新 {formatDateTime(result.updatedAt)}
+              {result.dataset?.name ?? "未关联来源"} · 更新 {formatDateTime(result.updatedAt)}
             </p>
           </div>
           <MetricPills metrics={metrics} />
@@ -1387,7 +1304,7 @@ function DatasetCard({ dataset }: { dataset: Dataset }) {
               复现清单
             </Button>
           </form>
-          <CreateDialog title="编辑数据集" label="编辑" icon={Edit3}>
+          <CreateDialog title="编辑数据来源" label="编辑" icon={Edit3}>
             <DatasetForm action={updateDataset} dataset={dataset} />
           </CreateDialog>
           <form action={deleteDataset}>
@@ -1606,13 +1523,13 @@ function ResultForm({
             ))}
           </select>
         </Field>
-        <Field label="数据集">
+        <Field label="数据来源">
           <select
             name="datasetId"
             defaultValue={result?.datasetId ?? ""}
             className="h-9 min-w-0 rounded-lg border border-[#d4e0e5] bg-white/90 px-2 text-sm outline-none transition focus:border-primary/40 focus:ring-3 focus:ring-ring/18"
           >
-            <option value="">暂不固定数据集</option>
+            <option value="">暂不固定来源</option>
             {datasets.map((dataset) => (
               <option key={dataset.id} value={dataset.id}>
                 {dataset.name}
