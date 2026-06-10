@@ -101,6 +101,15 @@ type DataFilters = {
   dataset?: string;
 };
 
+type FigureEvidenceSignal = {
+  detail: string;
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  tone: "evidence" | "figure" | "repro" | "writing";
+  value: string;
+};
+
 function dataHref(filters: DataFilters, patch: Partial<DataFilters>) {
   const merged = { ...filters, ...patch };
   const query = new URLSearchParams();
@@ -220,6 +229,57 @@ export default async function DataPage({ searchParams }: Props) {
   }).length;
   const selectedExperimentTitle = experiments.find((experiment) => experiment.id === experimentId)?.title;
   const selectedDatasetName = datasets.find((dataset) => dataset.id === datasetId)?.name;
+  const figurePathCount = quickBaseResults.filter((result) => Boolean(result.artifactPath)).length;
+  const missingFigurePathCount = quickBaseResults.filter((result) => !result.artifactPath).length;
+  const missingReproCount = quickBaseResults.filter(
+    (result) => parseResultConfig(result.config).reproducibility !== "verified",
+  ).length;
+  const missingWritingFlagCount = quickBaseResults.filter((result) => {
+    const config = parseResultConfig(result.config);
+    return Boolean(result.artifactPath) && !config.manuscriptReady;
+  }).length;
+  const figurePackResults = [...quickBaseResults]
+    .filter((result) => result.artifactPath || parseResultConfig(result.config).manuscriptReady)
+    .sort(
+      (left, right) =>
+        figurePackRank(left) - figurePackRank(right) ||
+        right.updatedAt.getTime() - left.updatedAt.getTime(),
+    )
+    .slice(0, 3);
+  const figureSignals: FigureEvidenceSignal[] = [
+    {
+      detail: "已复现，并且有图表路径或写作标记。",
+      href: dataHref(currentFilters, { reproducibility: "verified", manuscript: "ready" }),
+      icon: CheckCircle2,
+      label: "可直接讲",
+      tone: "evidence",
+      value: `${speakableCount} 条`,
+    },
+    {
+      detail: "缺图表、表格、结果文件或输出目录路径。",
+      href: dataHref(currentFilters, { reproducibility: undefined, manuscript: "not-ready" }),
+      icon: Link2,
+      label: "缺图表路径",
+      tone: "figure",
+      value: `${missingFigurePathCount} 条`,
+    },
+    {
+      detail: "未复现或还在复现中，先补对照和日志。",
+      href: dataHref(currentFilters, { reproducibility: "todo", manuscript: undefined }),
+      icon: RotateCcw,
+      label: "待补可信度",
+      tone: "repro",
+      value: `${missingReproCount} 条`,
+    },
+    {
+      detail: "已有路径但还没确认能写进组会/周报/论文。",
+      href: dataHref(currentFilters, { reproducibility: undefined, manuscript: "ready" }),
+      icon: FileText,
+      label: "待写作标记",
+      tone: "writing",
+      value: `${missingWritingFlagCount} 条`,
+    },
+  ];
 
   return (
     <div className="grid gap-5">
@@ -330,6 +390,14 @@ export default async function DataPage({ searchParams }: Props) {
       </section>
 
       <CaptureNotice kind={captured} />
+
+      <FigureEvidencePack
+        evidenceQueue={evidenceQueue}
+        figurePathCount={figurePathCount}
+        figureResults={figurePackResults}
+        reportResults={filteredResults.slice(0, 12)}
+        signals={figureSignals}
+      />
 
       <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
         <aside className="grid content-start gap-4">
@@ -748,6 +816,172 @@ export default async function DataPage({ searchParams }: Props) {
       </section>
     </div>
   );
+}
+
+function FigureEvidencePack({
+  evidenceQueue,
+  figurePathCount,
+  figureResults,
+  reportResults,
+  signals,
+}: {
+  evidenceQueue: ResultFull[];
+  figurePathCount: number;
+  figureResults: ResultFull[];
+  reportResults: ResultFull[];
+  signals: FigureEvidenceSignal[];
+}) {
+  return (
+    <section className="figure-pack overflow-hidden rounded-3xl border border-border/60 p-4 shadow-[0_18px_42px_rgba(27,42,56,0.052)]">
+      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr] xl:items-stretch">
+        <div className="figure-pack-lead rounded-2xl border border-white/70 p-4">
+          <span className="research-eyebrow">
+            <FileChartColumn className="size-3.5" />
+            图表证据包
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
+            结果要能讲、能追溯，也能直接进入图表和论文。
+          </h2>
+          <p className="mt-3 text-sm leading-6 hero-copy">
+            不做完整数据平台，只把图表路径、复现状态和一句话结论收口。
+            组会前先生成清单，缺路径或缺复现的结果马上变成待补任务。
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">已有图表路径</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{figurePathCount}</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/58 p-3">
+              <p className="text-xs text-muted-foreground">当前清单候选</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{reportResults.length}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2">
+            <form action={createResultBriefNote}>
+              {reportResults.map((result) => (
+                <input key={result.id} type="hidden" name="ids" value={result.id} />
+              ))}
+              <SubmitButton className="w-full" disabled={!reportResults.length}>
+                <ClipboardList className="size-4" />
+                收成图表清单
+              </SubmitButton>
+            </form>
+            {evidenceQueue.length ? (
+              <form action={createResultCloseoutNote}>
+                {evidenceQueue.map((result) => (
+                  <input key={result.id} type="hidden" name="ids" value={result.id} />
+                ))}
+                <SubmitButton variant="outline" className="w-full bg-white/72">
+                  <FileCheck2 className="size-4" />
+                  补证据缺口
+                </SubmitButton>
+              </form>
+            ) : (
+              <p className="rounded-xl border border-white/68 bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                暂时没有明显证据缺口。下一步可以把可讲结果整理成写作素材。
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {signals.map((signal) => (
+              <FigureEvidenceSignalCard key={signal.label} {...signal} />
+            ))}
+          </div>
+
+          <div className="grid gap-2 rounded-2xl border border-white/72 bg-white/60 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] lg:grid-cols-3">
+            {figureResults.length ? (
+              figureResults.map((result, index) => {
+                const config = parseResultConfig(result.config);
+
+                return (
+                  <div key={result.id} className="rounded-xl border border-white/74 bg-white/66 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-mono text-[11px] font-semibold text-primary">
+                        0{index + 1}
+                      </span>
+                      <ReproducibilityBadge result={result} />
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-sm font-semibold hero-title">{result.title}</p>
+                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                      {result.experiment?.title ?? result.dataset?.name ?? "未关联来源"}
+                    </p>
+                    <div className="mt-3 grid gap-2 text-xs leading-5 text-muted-foreground">
+                      <div className="flex items-start gap-2 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-2">
+                        <Link2 className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                        <span className="line-clamp-2 break-all">
+                          {result.artifactPath ?? "缺图表、表格或结果目录路径"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-lg border border-[#d5e4e8] bg-white/72 px-2.5 py-2">
+                        <FileText className="size-3.5 shrink-0 text-primary" />
+                        <span>
+                          {config.manuscriptReady ? "已标记为写作素材" : "还没确认能写进论文或组会"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex justify-end border-t border-border/60 pt-3">
+                      <CreateWritingNoteFromResultButton result={result} />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#d5e4e8] bg-white/58 p-4 text-sm leading-6 text-muted-foreground lg:col-span-3">
+                先记录一条有图表路径、结果文件路径，或已标记写作素材的结果，这里会自动形成图表候选。
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FigureEvidenceSignalCard({
+  detail,
+  href,
+  icon: Icon,
+  label,
+  tone,
+  value,
+}: FigureEvidenceSignal) {
+  return (
+    <Link href={href} className="figure-signal-card group">
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${figureSignalToneClass(tone)}`}>
+        <Icon className="size-4" />
+      </span>
+      <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+    </Link>
+  );
+}
+
+function figureSignalToneClass(tone: FigureEvidenceSignal["tone"]) {
+  return {
+    evidence: "border-[#d5e8d6] bg-[#eef8ed] text-[#3f6c4d]",
+    figure: "border-[#d3e2ee] bg-[#eef6fb] text-[#365a7d]",
+    repro: "border-[#ead9ad] bg-[#fff8e7] text-[#765a23]",
+    writing: "border-[#d9d4ea] bg-[#f3f1fb] text-[#5a4b83]",
+  }[tone];
+}
+
+function figurePackRank(result: ResultFull) {
+  const config = parseResultConfig(result.config);
+  const reproducibility = config.reproducibility ?? "unknown";
+  const reproducibilityRank: Record<string, number> = {
+    verified: 0,
+    reproducing: 1,
+    todo: 2,
+    unknown: 3,
+  };
+  const figureBonus = result.artifactPath ? -0.4 : 0;
+  const writingBonus = config.manuscriptReady ? -0.2 : 0;
+
+  return (reproducibilityRank[reproducibility] ?? 3) + figureBonus + writingBonus;
 }
 
 function ResultStackItem({
