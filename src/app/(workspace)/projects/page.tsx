@@ -267,40 +267,26 @@ export default async function ProjectsPage({ searchParams }: Props) {
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
-                title="建立一个课题"
-                description="只写课题名、当前状态和一句话目标，细节后面再补。"
-                label="建课题"
-                icon={Plus}
-              >
-                <ProjectForm action={createProject} />
-              </CreateDialog>
-              <CreateDialog
-                title="拆一个阶段"
-                description="把大课题切成可以验收的小阶段，不做甘特图。"
-                label="拆阶段"
-                icon={Flag}
-              >
-                <MilestoneForm action={createMilestone} projects={projects} />
-              </CreateDialog>
-              <CreateDialog
                 title="记下一步动作"
                 description="只记录今天或本周能推进的动作，不要写成论文摘要。"
-                label="记下一步"
+                label="先记下一步"
                 icon={ListTodo}
                 wide
               >
                 <TaskForm action={createTask} milestones={milestones} />
               </CreateDialog>
-              <form action={createProjectProgressNote}>
-                <input type="hidden" name="returnTo" value={returnTo} />
-                {tasks.slice(0, 12).map((task) => (
-                  <input key={task.id} type="hidden" name="ids" value={task.id} />
-                ))}
-                <SubmitButton variant="outline" disabled={!tasks.length}>
-                  <ListChecks className="size-4" />
-                  生成推进笔记
-                </SubmitButton>
-              </form>
+              {projectStack.length ? (
+                <form action={createProjectProgressNote}>
+                  <input type="hidden" name="returnTo" value={returnTo} />
+                  {projectStack.map((task) => (
+                    <input key={task.id} type="hidden" name="ids" value={task.id} />
+                  ))}
+                  <SubmitButton variant="outline">
+                    <ListChecks className="size-4" />
+                    生成三项清单
+                  </SubmitButton>
+                </form>
+              ) : null}
             </div>
           </div>
 
@@ -390,6 +376,8 @@ export default async function ProjectsPage({ searchParams }: Props) {
 
       <section className="grid gap-4 xl:grid-cols-[0.36fr_0.64fr]">
         <aside className="grid content-start gap-4">
+          <ProjectStructureEntry projects={projects} />
+
           <QuickTaskCapture milestones={milestones} />
 
           <Card className="workbench-card">
@@ -1190,13 +1178,49 @@ function isExperimentCandidateTask(task: Task) {
   );
 }
 
+function ProjectStructureEntry({ projects }: { projects: Project[] }) {
+  return (
+    <Card className="workbench-card">
+      <CardHeader className="border-b border-border/70 bg-white/52 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <Route className="size-4 text-primary" />
+          课题结构
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        <p className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3 text-xs leading-5 text-muted-foreground">
+          结构不用每天维护。需要开新方向时建课题，需要验收节点时拆阶段；平时先记下一步动作。
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+          <CreateDialog
+            title="建立一个课题"
+            description="只写课题名、当前状态和一句话目标，细节后面再补。"
+            label="建课题"
+            icon={Plus}
+          >
+            <ProjectForm action={createProject} />
+          </CreateDialog>
+          <CreateDialog
+            title="拆一个阶段"
+            description="把大课题切成可以验收的小阶段，不做甘特图。"
+            label="拆阶段"
+            icon={Flag}
+          >
+            <MilestoneForm action={createMilestone} projects={projects} />
+          </CreateDialog>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function QuickTaskCapture({ milestones }: { milestones: MilestoneFull[] }) {
   return (
     <Card className="workbench-card border-primary/12 bg-[linear-gradient(135deg,rgba(239,247,247,0.94),rgba(255,250,238,0.76))]">
       <CardHeader className="border-b border-white/70 bg-white/38 pb-4">
         <CardTitle className="flex items-center gap-2">
           <ListTodo className="size-4 text-primary" />
-          30 秒加任务
+          30 秒记下一步
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -1250,7 +1274,7 @@ function QuickTaskCapture({ milestones }: { milestones: MilestoneFull[] }) {
             <p className="text-xs leading-5 text-muted-foreground">
               只收下一步；复杂上下文后面再补。
             </p>
-            <SubmitButton className="w-fit">加入队列</SubmitButton>
+            <SubmitButton className="w-fit">收进推进栈</SubmitButton>
           </div>
         </form>
       </CardContent>
@@ -1802,9 +1826,9 @@ function TaskForm({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
         <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
           <FileText className="size-3.5 shrink-0" />
-          保存后可转实验、生成推进笔记，或进入今日队列继续推进。
+          保存后可转实验、生成推进笔记，或进入今日推进栈继续处理。
         </p>
-        <SubmitButton>{task ? "保存行动" : "加入队列"}</SubmitButton>
+        <SubmitButton>{task ? "保存行动" : "收进推进栈"}</SubmitButton>
       </div>
     </form>
   );
