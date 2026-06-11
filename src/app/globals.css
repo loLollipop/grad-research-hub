@@ -161,6 +161,10 @@
     @apply border-border/54 bg-white/78 shadow-[0_1px_1px_rgba(15,23,42,0.01),0_16px_34px_rgba(32,46,52,0.028)];
   }
 
+  .workbench-card [data-slot="card-header"] {
+    @apply gap-0.5;
+  }
+
   .workbench-column {
     @apply rounded-3xl border border-border/55 bg-white/48 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.84),0_14px_30px_rgba(32,46,52,0.03)];
   }
@@ -285,12 +289,17 @@
   }
 
   .action-stack {
+    min-height: 13rem;
     background:
       radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.13), transparent 16rem),
       linear-gradient(145deg, rgba(34, 53, 68, 0.96) 0%, rgba(62, 91, 83, 0.94) 58%, rgba(88, 100, 121, 0.9) 100%);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.12),
       0 14px 28px rgba(42, 73, 98, 0.1);
+  }
+
+  .action-stack[class] {
+    min-height: 13rem;
   }
 
   .research-lane-card {
@@ -337,7 +346,7 @@
   }
 
   .need-signal-card {
-    @apply relative z-10 flex min-h-64 flex-col rounded-2xl border border-white/72 bg-white/62 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_30px_rgba(27,42,56,0.034)] transition;
+    @apply relative z-10 flex min-h-52 flex-col rounded-2xl border border-white/72 bg-white/62 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_30px_rgba(27,42,56,0.034)] transition;
   }
 
   .startup-routine {
@@ -376,7 +385,7 @@
   }
 
   .startup-step-card {
-    @apply flex min-h-64 flex-col rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_30px_rgba(27,42,56,0.034)] transition;
+    @apply flex min-h-52 flex-col rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_30px_rgba(27,42,56,0.034)] transition;
   }
 
   .startup-step-card:hover {
@@ -453,7 +462,7 @@
   }
 
   .research-day-segment {
-    @apply relative z-10 flex min-h-64 flex-col rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
+    @apply relative z-10 flex min-h-52 flex-col rounded-2xl border border-white/72 bg-white/64 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
   }
 
   .research-day-segment.is-active {
@@ -692,7 +701,7 @@
   }
 
   .dataset-health-signal {
-    @apply relative z-10 flex min-h-56 flex-col rounded-2xl border border-white/72 bg-gradient-to-br p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
+    @apply relative z-10 flex min-h-48 flex-col rounded-2xl border border-white/72 bg-gradient-to-br p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
   }
 
   .dataset-health-signal:hover {
@@ -782,7 +791,7 @@
   }
 
   .writing-signal-card {
-    @apply relative z-10 flex min-h-56 flex-col rounded-2xl border border-white/72 bg-gradient-to-br p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
+    @apply relative z-10 flex min-h-48 flex-col rounded-2xl border border-white/72 bg-gradient-to-br p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
   }
 
   .writing-signal-card:hover {
@@ -833,7 +842,7 @@
   }
 
   .note-triage-signal {
-    @apply relative z-10 flex min-h-56 flex-col rounded-2xl border border-white/72 bg-gradient-to-br p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
+    @apply relative z-10 flex min-h-48 flex-col rounded-2xl border border-white/72 bg-gradient-to-br p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_rgba(27,42,56,0.032)] transition;
   }
 
   .note-triage-signal:hover {
@@ -1047,6 +1056,24 @@
 
   .hero-copy {
     color: var(--workspace-copy);
+    display: -webkit-box;
+    max-width: 62ch;
+    overflow: hidden;
+    text-wrap: pretty;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .need-signal-card p.text-muted-foreground,
+  .startup-step-card p.text-muted-foreground,
+  .research-day-segment p.text-muted-foreground,
+  .dataset-health-signal p.text-muted-foreground,
+  .writing-signal-card p.text-muted-foreground,
+  .note-triage-signal p.text-muted-foreground {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .workspace-page {

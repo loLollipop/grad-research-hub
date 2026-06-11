@@ -90,7 +90,7 @@ export function QuickCaptureBar() {
               }
             }}
             aria-describedby={helpId}
-            placeholder="把脑子里的事先丢进来：周五组会准备图表、补一组对照实验……"
+            placeholder="快速捕捉：组会图表、补对照实验……"
             className="h-10 rounded-xl border-transparent bg-white/0 pl-4 pr-24 text-sm shadow-none placeholder:text-muted-foreground/72 focus-visible:bg-white/88 md:h-11"
           />
           <div className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-1 text-[11px] text-muted-foreground sm:flex">
@@ -114,12 +114,9 @@ export function QuickCaptureBar() {
         >
           <Lightbulb className="size-3 text-primary" />
           <span className="font-medium text-primary">收进：{target.label}</span>
-          <span className="hidden sm:inline">· {target.detail}</span>
-          <span className="hidden border-l border-border/70 pl-1.5 xl:inline">
-            Ctrl/Cmd+K 聚焦，Ctrl/Cmd+Enter 提交，Esc 清空
-          </span>
+          <span className="hidden sm:inline">· Ctrl/Cmd+Enter 提交</span>
         </div>
-        <div className="hidden min-w-0 flex-1 gap-1.5 overflow-x-auto lg:flex">
+        <div className="hidden min-w-0 flex-1 gap-1.5 overflow-x-auto xl:flex">
           {quickCaptureTypeChips.map((chip) => {
             const Icon = typeIcons[chip.label];
             const chipActive = hasContent && target.label === chip.label;

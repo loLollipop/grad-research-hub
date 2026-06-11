@@ -552,8 +552,7 @@ export default async function NotesPage({ searchParams }: Props) {
               先写材料，再整理关系。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              这里不做复杂知识库维护，只承接 Zotero 阅读、实验复盘、结果证据和组会草稿。
-              左侧找材料，右侧长时间写；需要汇报或论文时再收成素材包。
+              左侧找材料，右侧专心写。
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {activeNote ? (

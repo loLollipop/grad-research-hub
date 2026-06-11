@@ -314,8 +314,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
               项目页只回答一个问题：下一步推进什么。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              课题可以很复杂，但每天推进不该复杂。这里把项目压成路线图、里程碑和任务队列，
-              少填字段，多看状态，让你打开后直接进入行动。
+              少填字段，多看下一步。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog

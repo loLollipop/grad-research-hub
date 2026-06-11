@@ -798,8 +798,8 @@ export default async function DashboardPage() {
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               {focusAction
-                ? `${focusAction.kind} · ${focusAction.detail}。建议动作：${focusAction.action}。先完成这一件，再去对应模块细看。`
-                : "当前还没有可排序的任务、事务、实验、结果或文献。先用快速捕捉写下一件真实要做的事，首页就会开始帮你收口。"}
+                ? `${focusAction.kind} · ${focusAction.action}`
+                : "先用快速捕捉写下一件真实要做的事。"}
             </p>
             <div className="mt-5 flex flex-wrap gap-2.5">
               {currentDailyPlan ? (

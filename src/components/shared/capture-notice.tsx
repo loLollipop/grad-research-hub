@@ -14,14 +14,11 @@ export function CaptureNotice({ kind }: { kind?: string }) {
   if (!kind) return null;
 
   return (
-    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/92 px-4 py-3 text-sm text-emerald-900">
-      <div className="flex items-start gap-3">
-        <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50/92 px-3 py-2 text-xs text-emerald-900">
+      <div className="flex items-center gap-2">
+        <CheckCircle2 className="size-4 shrink-0" />
         <div className="min-w-0">
-          <p className="font-medium">快速捕捉已收好</p>
-          <p className="mt-1 leading-6">
-            已创建{labels[kind] ?? "记录"}，后续可以在当前页面继续补全细节。
-          </p>
+          <p className="font-medium">已收进{labels[kind] ?? "记录"}</p>
         </div>
       </div>
     </div>

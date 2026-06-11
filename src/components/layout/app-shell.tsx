@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="block text-sm font-semibold tracking-tight text-sidebar-foreground">
               研途 Hub
             </span>
-            <span className="block text-xs text-muted-foreground">轻量科研行动台</span>
+            <span className="block text-xs text-muted-foreground">科研行动台</span>
           </span>
           <span className="ml-auto rounded-full border border-white/70 bg-white/62 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
             self-host
@@ -56,14 +56,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-xs font-semibold text-sidebar-foreground">
                 <Command className="size-3.5 text-sidebar-primary" />
-                今天的研究流
-              </p>
-              <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-                从文献输入到写作输出，不需要先维护一套大系统。
+                研究流
               </p>
             </div>
             <span className="rounded-full border border-sidebar-border/70 bg-white/62 px-2 py-0.5 text-[10px] text-muted-foreground">
-              4 steps
+              4 步
             </span>
           </div>
           <div className="research-loop-rail mt-3">
@@ -94,14 +91,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-focus-card mt-auto">
           <div className="flex items-center gap-2">
             <TimerReset className="size-4 text-sidebar-primary" />
-            <p className="text-xs font-semibold text-sidebar-foreground">今天只先抓三件事</p>
+            <p className="text-xs font-semibold text-sidebar-foreground">今天只抓三件事</p>
           </div>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            推进一个关键任务，留下一条实验证据，把下一步写回笔记。
-          </p>
           <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
             <CircleDot className="size-3 text-sidebar-primary" />
-            <span>记录越轻，复盘越稳</span>
+            <span>任务 · 证据 · 下一步</span>
           </div>
         </div>
       </aside>
@@ -121,7 +115,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <QuickCaptureBar />
             <div className="hidden items-center gap-2 rounded-2xl border border-border/54 bg-white/50 px-3 py-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] xl:flex">
               <CircleDot className="size-3 text-primary" />
-              <span>本地数据 · Zotero / AI 在设置中心维护</span>
+              <span>本地数据 · 设置中心</span>
             </div>
             <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-0.5 md:hidden">
               {mobileItems.map((item) => (

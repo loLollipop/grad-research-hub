@@ -371,8 +371,7 @@ export default async function DataPage({ searchParams }: Props) {
               先判断能不能讲，再决定要不要写。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              这里不是数据仓库，只收核心指标、复现状态、图表路径和一句话结论。
-              先把结果变成可信证据，再收进组会、周报和论文素材。
+              指标、复现、图表、结论四件事够用。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog
@@ -478,8 +477,8 @@ export default async function DataPage({ searchParams }: Props) {
         traceableDatasetCount={traceableDatasetCount}
       />
 
-      <section className="grid gap-4 xl:grid-cols-[0.35fr_0.65fr]">
-        <aside className="grid content-start gap-4">
+      <section className="grid gap-4 xl:grid-cols-[minmax(20rem,0.35fr)_minmax(0,0.65fr)]">
+        <aside className="grid min-w-0 content-start gap-4">
           <QuickResultCapture />
 
           <Card className="workbench-card overflow-hidden">
@@ -622,7 +621,7 @@ export default async function DataPage({ searchParams }: Props) {
           </Card>
         </aside>
 
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4">
           <section className="grid gap-3 rounded-2xl border border-border/65 bg-white/74 p-3 shadow-[0_12px_30px_rgba(27,42,56,0.045)]">
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0">

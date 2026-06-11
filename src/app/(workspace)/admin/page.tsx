@@ -443,8 +443,7 @@ export default async function AdminPage({ searchParams }: Props) {
               先准备导师要看的内容，再处理那些会打断科研的小事。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              把组会、周报、材料截止和报销进度收在一起。这里优先告诉你今天要收口什么，
-              周报草稿会自动带上任务、实验、结果和待读文献。
+              组会、周报、材料和报销，只留今天要处理的。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog

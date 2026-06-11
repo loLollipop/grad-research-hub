@@ -195,8 +195,7 @@ export default async function PapersPage({ searchParams }: Props) {
               文献不用重复录，重点放在读到哪一步。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              Zotero 继续作为文献库，研途 Hub 只接管阅读状态、筛选队列、标签和读后笔记。
-              需要临时材料时再补录，避免把管理文献变成新的负担。
+              同步 Zotero，先读三篇，读完留抓手。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {zotero.ready ? (

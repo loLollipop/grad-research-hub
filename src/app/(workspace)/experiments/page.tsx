@@ -209,8 +209,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
               每次实验只留下能复盘的东西。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              不把实验记录做成参数仓库。这里更像一个轻量 ELN：用模板帮你写清楚目的、
-              方法、观察、结论和下一步，再把项目、文献和结果连起来。
+              写目的、观察、结论和下一步，够复盘就行。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <CreateDialog

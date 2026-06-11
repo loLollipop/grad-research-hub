@@ -148,10 +148,10 @@ export default async function SettingsPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              设置页只放会经常改的连接，不把部署细节塞给用户。
+              常改的连接放这里。
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
-              AI Key、Zotero、访问密码和数据导出在这里处理；数据库、端口、加密密钥等底层部署项继续放在服务器和高级信息里。
+              AI、Zotero、访问密码和备份。
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <a className={buttonVariants({ variant: "default" })} href="/api/export" download>
