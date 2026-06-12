@@ -440,7 +440,7 @@ export default async function AdminPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              先准备导师要看的内容，再处理那些会打断科研的小事。
+              组会事务台
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               组会、周报、材料和报销，只留今天要处理的。
@@ -1086,7 +1086,7 @@ function AdvisorFiveMinutePack({
             </span>
           </div>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            先把能讲的内容收成一页，再去见导师。
+            导师沟通单
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             这里不是事务后台。它把近期任务、实验、结果、文献和小事压缩成会前沟通包，
@@ -1195,7 +1195,7 @@ function AdvisorQuestionQueue({ questions }: { questions: AdvisorQuestionItem[] 
             导师问题队列
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            会前别只堆材料，先把要问的问题压到 3 个以内。
+            导师问题
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             任务、实验、结果、文献和事务里最耗时间的是不确定点。这里把它们收成问题队列，
@@ -1309,7 +1309,7 @@ function AdvisorFeedbackLoop({
             会后反馈闭环
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            导师说完之后，5 分钟内把反馈变成下一步。
+            反馈闭环
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             不再新建一套会议系统。反馈先进入组会笔记，再把未拆清单同步到课题任务，

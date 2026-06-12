@@ -1134,7 +1134,7 @@ function FirstRunDashboard({ guideNote }: { guideNote: GuideNoteSummary | null }
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              先别配置一堆东西，从三件小事开始。
+              10 分钟上手
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               研途 Hub 的第一天不需要完整迁移资料。先连接 Zotero 或手动补一篇文献，
@@ -1501,13 +1501,13 @@ function StartupRoutinePanel({ steps }: { steps: StartupStep[] }) {
             开机 10 分钟
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            忙的时候，首页只负责把你带进下一步。
+            今日启动
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             调研后保留 Zotero、ELN、OSF/项目组织和 FAIR/RDM 的强项，不复制它们。
             研途 Hub 只做一个轻量启动流程：定主线、补输入、收观察、成证据。
           </p>
-          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+          <div className="sr-only">
             <ResearchEvidenceLine source="少判断" text="打开后先看一条主线，不在文献/实验/课题之间来回切。" />
             <ResearchEvidenceLine source="少录入" text="每一步只补会改变今天行动的信息，不维护配置墙。" />
             <ResearchEvidenceLine source="可复盘" text="最后都回到证据、笔记和导师沟通材料。" />
@@ -1578,13 +1578,13 @@ function ResearchDayRhythm({ segments }: { segments: ResearchDaySegment[] }) {
             科研日节奏板
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            忙的时候不要再判断先点哪个模块，按一天节奏走。
+            今日节奏
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             研究生日常不是连续填表，而是早上定主线、中午补输入、下午做验证、晚上轻收口。
             这里只把已有文献、实验、结果和笔记压成当天路线，不新增配置。
           </p>
-          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+          <div className="sr-only">
             <ResearchEvidenceLine source="上午" text="先看今天最该做的一件事，避免打开平台后继续选择困难。" />
             <ResearchEvidenceLine source="下午" text="把实验观察和结果证据推进到可复盘，而不是只留下碎片。" />
             <ResearchEvidenceLine source="晚上" text="只做轻量收口：证据路径、明日第一步和写作素材。" />
@@ -1813,13 +1813,13 @@ function ResearchNeedCompass({
             调研校准
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            只做研究生日常呼声最高的五件事。
+            五个入口
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             文献、实验、结果、导师沟通和写作沉淀是理工科研究生最常反复切换的工作流。
             这里把外部工具的强项接进来，但不复制完整系统。
           </p>
-          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+          <div className="sr-only">
             <ResearchEvidenceLine source="Zotero" text="文献条目、集合和标签继续用专业文献库管理。" />
             <ResearchEvidenceLine source="ELN" text="实验记录重在模板、状态、正文和可追踪上下文。" />
             <ResearchEvidenceLine source="RDM" text="数据/结果要可追溯、可复现、能支撑结论。" />

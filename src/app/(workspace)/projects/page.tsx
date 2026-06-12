@@ -311,7 +311,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              项目页只回答一个问题：下一步推进什么。
+              下一步看板
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               少填字段，多看下一步。
@@ -843,7 +843,7 @@ function ProjectDeliveryBoard({
             课题交付板
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            不做完整项目管理，只把课题压成可验收的阶段。
+            阶段验收
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             参考 OSF components 的阶段拆分思路，但个人工作台只保留“阶段、交付物、下一步”。

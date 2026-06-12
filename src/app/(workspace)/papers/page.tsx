@@ -192,7 +192,7 @@ export default async function PapersPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              文献不用重复录，重点放在读到哪一步。
+              Zotero 阅读台
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               同步 Zotero，先读三篇，读完留抓手。
@@ -1178,13 +1178,13 @@ function LiteratureSynthesisBoard({
             综述合成台
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            不再从一长串文献里硬写 related work。
+            综述素材
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             Zotero 管条目，研途 Hub 只把当前筛选范围压缩成两种写作前动作：先补读后抓手，
             再生成可人工填写的综述矩阵。
           </p>
-          <div className="mt-4 grid gap-2 text-xs leading-5 text-muted-foreground">
+          <div className="sr-only">
             <ResearchProofLine source="Zotero" text="文献条目、集合和标签仍以 Zotero 为源头。" />
             <ResearchProofLine source="Obsidian" text="阅读笔记要能回到写作材料和双链上下文。" />
             <ResearchProofLine source="OSF/ELN" text="综述线索要能继续流向课题阶段和实验复现。" />
@@ -1312,7 +1312,7 @@ function LiteratureExperimentBridge({ papers }: { papers: Paper[] }) {
             文献到实验桥
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            读到可复现方法时，不要让它停在文献列表里。
+            方法验证
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             Zotero 负责收藏和标签，研途 Hub 只把有方法、代码、数据、对照或指标线索的文献推到验证入口。

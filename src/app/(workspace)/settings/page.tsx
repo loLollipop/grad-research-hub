@@ -148,7 +148,7 @@ export default async function SettingsPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              常改的连接放这里。
+              连接中心
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               AI、Zotero、访问密码和备份。

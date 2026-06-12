@@ -368,7 +368,7 @@ export default async function DataPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              先判断能不能讲，再决定要不要写。
+              结果证据台
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               指标、复现、图表、结论四件事够用。
@@ -918,7 +918,7 @@ function FigureEvidencePack({
             图表证据包
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            结果要能讲、能追溯，也能直接进入图表和论文。
+            图表清单
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             不做完整数据平台，只把图表路径、复现状态和一句话结论收口。
@@ -1082,7 +1082,7 @@ function DatasetHealthBoard({
             数据来源体检台
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            别做完整数据仓库，只保证以后能找回、复现和解释来源。
+            数据来源
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             研究数据最常见的断点是路径、版本、来源和结果关联缺失。这里把缺口前置，

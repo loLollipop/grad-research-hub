@@ -549,7 +549,7 @@ export default async function NotesPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.35rem]">
-              先写材料，再整理关系。
+              笔记工作室
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               左侧找材料，右侧专心写。
@@ -1096,7 +1096,7 @@ function WritingMaterialBoard({
             写作材料板
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            写周报、组会和论文前，先把材料收成一桌。
+            写作素材
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             不复制 Obsidian 的完整知识库，也不让你手动翻五个页面。阅读、实验、结果和导师反馈会按来源收束，
@@ -1166,7 +1166,7 @@ function InboxTriageBoard({
             收件箱清理台
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            临时笔记不要长期堆着，先决定它要去哪里。
+            收件箱清理
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             不复制 Obsidian 的完整知识图谱。这里只处理研究生日常最常见的四件事：

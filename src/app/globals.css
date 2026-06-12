@@ -1059,6 +1059,25 @@
     @apply sr-only;
   }
 
+  .sidebar-flow-card,
+  .sidebar-focus-card {
+    @apply sr-only;
+  }
+
+  .need-compass-lead > .mt-4.grid.gap-2.text-xs,
+  .startup-routine-lead > .mt-4.grid.gap-2.text-xs,
+  .research-day-rhythm-lead > .mt-4.grid.gap-2.text-xs,
+  .literature-synthesis-lead > .mt-4.grid.gap-2.text-xs,
+  .literature-experiment-bridge-lead > .mt-4.grid.gap-2.text-xs,
+  .experiment-repro-lead > .mt-4.grid.gap-2.text-xs,
+  .experiment-result-bridge-lead > .mt-4.grid.gap-2.text-xs,
+  .figure-pack-lead > .mt-4.grid.gap-2.text-xs,
+  .dataset-health-lead > .mt-4.grid.gap-2.text-xs,
+  .note-triage-lead > .mt-4.grid.gap-2.text-xs,
+  .feedback-loop-lead > .mt-4.grid.gap-2.text-xs {
+    @apply sr-only;
+  }
+
   .explain-muted {
     @apply sr-only;
   }

@@ -206,7 +206,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              每次实验只留下能复盘的东西。
+              实验记录台
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               写目的、观察、结论和下一步，够复盘就行。
@@ -586,7 +586,7 @@ function ExperimentReproBoard({
             复现与收口板
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            实验不是写完就算完，要能复盘、复现、回填证据。
+            复现收口
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             参考 ELN 的模板、状态和正文思路，但这里只保留个人研究最常用的四个判断：
@@ -672,7 +672,7 @@ function ExperimentResultBridge({ experiments }: { experiments: ExperimentFull[]
             实验到成果桥
           </span>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight hero-title">
-            有观察或指标时，先收一条证据，不要等论文才整理。
+            成果入口
           </h2>
           <p className="mt-3 text-sm leading-6 hero-copy">
             RDM/FAIR 强调结果要可追溯、可复用。这里不做完整数据仓库，只把完成、失败、

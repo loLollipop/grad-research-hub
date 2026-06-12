@@ -150,7 +150,7 @@ export default async function AiPage() {
               </span>
             </div>
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight hero-title md:text-[2.55rem]">
-              AI 页只做一件事：把研究材料变成可检查的草稿。
+              AI 草稿台
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 hero-copy">
               粘贴材料，生成草稿，再人工核对。
