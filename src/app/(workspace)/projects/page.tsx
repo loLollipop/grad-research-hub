@@ -800,7 +800,7 @@ function TaskBulkNotice({
             <p className={tone === "success" ? "font-medium text-emerald-950" : "font-medium text-rose-950"}>
               {title}
             </p>
-            <p className={tone === "success" ? "mt-1 text-emerald-900/80" : "mt-1 text-rose-900/80"}>
+            <p className="sr-only">
               {description}
             </p>
           </div>
@@ -939,8 +939,8 @@ function ProjectDeliveryBoard({
                 );
               })
             ) : (
-              <div className="rounded-xl border border-dashed border-[#d5e4e8] bg-white/58 p-4 text-sm leading-6 text-muted-foreground lg:col-span-3">
-                暂时没有未验收阶段。可以先建一个课题阶段，再写 1-3 条下一步动作。
+              <div className="rounded-xl border border-dashed border-[#d5e4e8] bg-white/58 p-4 text-sm font-medium leading-6 text-muted-foreground lg:col-span-3">
+                暂无未验收阶段
               </div>
             )}
           </div>
@@ -1586,35 +1586,35 @@ function taskActionLabel(task: Task) {
 
 function taskActionReason(task: Task) {
   if (task.status === "done") {
-    return "这条任务已收口，可以在推进笔记里作为本周进展使用。";
+    return "已收口";
   }
 
   if (!task.milestoneId) {
-    return "还没挂到里程碑，先放回课题路线图，后续复盘不会散。";
+    return "未挂阶段";
   }
 
   const distance = daysUntil(task.dueDate);
   if (distance !== null && distance < 0) {
-    return `已逾期 ${Math.abs(distance)} 天，今天先处理或改期。`;
+    return `逾期 ${Math.abs(distance)} 天`;
   }
 
   if (distance === 0) {
-    return "今天截止，先完成最小可交付版本。";
+    return "今日截止";
   }
 
   if (task.status === "doing") {
-    return "已经在进行中，先补最新进展或明确下一步实验。";
+    return "推进中";
   }
 
   if (task.priority === "high") {
-    return "高优先级任务，通常关系到导师沟通、关键实验或论文主线。";
+    return "高优先级";
   }
 
   if (distance !== null && distance <= 7) {
-    return `${distance} 天内要收口，适合放进本周推进清单。`;
+    return `${distance} 天内`;
   }
 
-  return "把它推进到进行中，或转成实验日志开始记录证据。";
+  return "可启动";
 }
 
 function MilestoneRow({
@@ -1859,8 +1859,8 @@ function ProjectForm({
         />
       </Field>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           <Route className="size-3.5 shrink-0" />
           保存后先拆 1 个里程碑，再写 1 条下一步行动就够了。
         </p>
@@ -1944,8 +1944,8 @@ function MilestoneForm({
         </Field>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           <CheckCircle2 className="size-3.5 shrink-0" />
           保存后给这个阶段加 1-3 条下一步行动，避免路线图变成空壳。
         </p>
@@ -2052,8 +2052,8 @@ function TaskForm({
         />
       </Field>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           <FileText className="size-3.5 shrink-0" />
           保存后可转实验、生成推进笔记，或进入今日推进栈继续处理。
         </p>

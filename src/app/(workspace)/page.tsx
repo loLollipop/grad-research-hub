@@ -1925,7 +1925,7 @@ function StarterStepCard({
       </div>
       <span>
         <span className="block font-semibold hero-title">{title}</span>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
+        <span className="sr-only">{detail}</span>
       </span>
       <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
         {actionLabel}
@@ -1971,7 +1971,7 @@ function FirstRunStep({
       <span className="font-mono text-xs font-semibold text-white/50">{index}</span>
       <span className="min-w-0">
         <span className="block font-medium text-white">{title}</span>
-        <span className="mt-1 block text-xs leading-5 text-white/58">{detail}</span>
+        <span className="sr-only">{detail}</span>
       </span>
       <ArrowRight className="hidden size-4 text-white/45 sm:block" />
     </>
@@ -2022,7 +2022,7 @@ function StartCard({
           </span>
           <span>
             <span className="block font-semibold">{title}</span>
-            <span className="mt-1 block text-sm leading-6 text-muted-foreground">{detail}</span>
+            <span className="sr-only">{detail}</span>
           </span>
           <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
             {action}
@@ -2042,7 +2042,7 @@ function ChecklistRow({ title, detail }: { title: string; detail: string }) {
       </span>
       <span>
         <span className="block font-medium">{title}</span>
-        <span className="mt-1 block text-sm leading-6 text-muted-foreground">{detail}</span>
+        <span className="sr-only">{detail}</span>
       </span>
     </div>
   );
@@ -2056,7 +2056,7 @@ function DoNotDoRow({ title, detail }: { title: string; detail: string }) {
       </span>
       <span>
         <span className="block text-sm font-medium hero-title">{title}</span>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
+        <span className="sr-only">{detail}</span>
       </span>
     </div>
   );
@@ -2080,7 +2080,7 @@ function FocusStackItem({
         <span className="h-px flex-1 bg-white/12" />
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </>
   );
 
@@ -2132,7 +2132,7 @@ function DailyFlowStep({
           <span className="text-xs font-medium text-muted-foreground">{label}</span>
         </span>
         <span className="mt-1 block line-clamp-1 text-sm font-semibold hero-title">{value}</span>
-        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</span>
+        <span className="sr-only">{detail}</span>
       </span>
     </Link>
   );

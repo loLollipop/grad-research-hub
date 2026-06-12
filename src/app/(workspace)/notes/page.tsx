@@ -191,22 +191,22 @@ function noteActionReason(note: Note, allNotes: Note[]) {
   const missingLinkCount = links.filter((link) => !allTitles.has(normalizeTitle(link))).length;
 
   if (checklist > 0) {
-    return "这篇里还有待办清单，适合拆回课题任务，避免笔记变成死清单。";
+    return "待拆任务";
   }
 
   if (missingLinkCount > 0) {
-    return "有未创建的双链主题，补齐后阅读、实验和写作上下文会更容易接上。";
+    return "补双链";
   }
 
   if (isWritingMaterial(note)) {
-    return "这篇已经接近写作素材，适合继续打磨成组会、周报或论文段落。";
+    return "可写作";
   }
 
   if (links.length > 0) {
-    return "这篇已经有上下文关系，可以回顾它连接到哪些文献、实验或想法。";
+    return "有关联";
   }
 
-  return "先继续补背景、关键观察和下一步，让它以后能被检索和复用。";
+  return "继续补";
 }
 
 function noteActionScore(note: Note, allNotes: Note[]) {
@@ -850,7 +850,7 @@ export default async function NotesPage({ searchParams }: Props) {
                             {snippet}
                           </span>
                         ) : null}
-                        <span className="mt-2 block line-clamp-2 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
+                        <span className="mt-2 inline-flex rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-1 text-xs leading-5 text-muted-foreground">
                           {actionReason}
                         </span>
                       </Link>
@@ -861,7 +861,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 <div className="flex h-full min-h-48 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 p-5 text-center">
                   <NotebookPen className="mb-2 size-7 text-muted-foreground" />
                   <p className="text-sm font-medium">暂无匹配笔记</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  <p className="sr-only">
                     换个关键词，或者直接新建一篇。
                   </p>
                 </div>
@@ -882,7 +882,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 <FileText className="size-3.5 text-primary" />
                 {activeNote
                   ? `${folderLabel(activeNote.folder)} · 更新 ${formatDateTime(activeNote.updatedAt)}`
-                  : "写一篇能继续用的笔记 · 默认保存到收件箱"}
+                  : "新笔记"}
               </div>
               <h2 className="truncate text-lg font-semibold tracking-tight">
                 {activeNote ? activeNote.title : "先写材料，后面再整理"}
@@ -922,7 +922,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 <TabsTrigger value="preview">预览</TabsTrigger>
                 <TabsTrigger value="links">双链</TabsTrigger>
               </TabsList>
-              <p className="text-xs text-muted-foreground">
+              <p className="sr-only">
                 {taskSync === "empty"
                   ? "没有新的未同步待办清单。"
                   : "支持 Markdown、`[[双链标题]]` 和 `- [ ] 待办清单`"}
@@ -943,7 +943,7 @@ export default async function NotesPage({ searchParams }: Props) {
             >
               <article className="mx-auto min-h-full max-w-4xl rounded-2xl border border-border/72 bg-white px-5 py-5 text-sm leading-7 shadow-[0_10px_28px_rgba(27,42,56,0.045)] md:px-7">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {activeNote?.content || "保存一篇笔记后，这里会显示 Markdown 预览。"}
+                  {activeNote?.content || "暂无预览"}
                 </ReactMarkdown>
               </article>
             </TabsContent>
@@ -1256,7 +1256,7 @@ function InboxTriageSignalCard({
             {signal.count}
           </span>
         </span>
-        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {signal.detail}
         </span>
       </span>
@@ -1342,7 +1342,7 @@ function WritingMaterialSignalCard({
             {signal.count}
           </span>
         </span>
-        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {signal.detail}
         </span>
       </span>
@@ -1441,7 +1441,7 @@ function QuickNoteCapture() {
           className="min-h-28 resize-none border-[#d4e0e5] bg-white/90 text-sm leading-6"
         />
         <div className="flex items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2">
-          <p className="text-xs leading-5 text-muted-foreground">
+          <p className="sr-only">
             默认进收件箱，之后再归档。
           </p>
           <SubmitButton className="w-fit">收进笔记</SubmitButton>
@@ -1499,7 +1499,7 @@ function NoteRadarItem({
               <span className="text-xs font-medium text-primary">{value}</span>
             </span>
           </span>
-          <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+          <span className="sr-only">
             {detail}
           </span>
         </span>
@@ -1542,7 +1542,7 @@ function NoteSourceChip({
           {count}
         </span>
       </span>
-      <span className="mt-1.5 block line-clamp-1 text-[11px] leading-4 text-muted-foreground">
+      <span className="sr-only">
         {detail}
       </span>
     </Link>
@@ -1594,7 +1594,7 @@ function NoteForm({
             <PenLine className="size-3.5" />
             暖纸写作区
           </span>
-          <span>先写下材料，保存后自动更新预览和双链</span>
+          <span className="sr-only">先写下材料，保存后自动更新预览和双链</span>
         </div>
         <Textarea
           name="content"

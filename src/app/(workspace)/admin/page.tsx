@@ -541,12 +541,12 @@ export default async function AdminPage({ searchParams }: Props) {
                       {focusItem.location}
                     </p>
                   ) : null}
-                  <p className="mt-3 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-3 py-2 text-xs leading-5 text-muted-foreground">
+                  <p className="mt-3 inline-flex rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-1 text-xs leading-5 text-muted-foreground">
                     {adminActionReason(focusItem)}
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">暂时没有待处理事务。</p>
+                <p className="text-sm font-medium text-muted-foreground">暂无待处理事务</p>
               )}
             </CardContent>
           </Card>
@@ -1575,7 +1575,7 @@ function AdminReliefCard({ item, index }: { item: AdminItem; index: number }) {
           <p className="text-sm font-medium text-[var(--workspace-title)]">
             {adminActionLabel(item)}
           </p>
-          <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1 inline-flex rounded-lg border border-[#d5e4e8] bg-white/65 px-2 py-0.5 text-xs leading-5 text-muted-foreground">
             {adminActionReason(item)}
           </p>
         </div>
@@ -1659,7 +1659,7 @@ function AdminTimelineCard({ item }: { item: AdminItem }) {
             <Sparkles className="size-3.5" />
             行动理由
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{adminActionReason(item)}</p>
+          <p className="mt-1 inline-flex rounded-lg border border-[#d5e4e8] bg-white/65 px-2 py-0.5 text-xs leading-5 text-muted-foreground">{adminActionReason(item)}</p>
         </div>
 
         <div className="flex flex-col gap-3 border-t border-border/65 pt-3 md:flex-row md:items-center md:justify-between">
@@ -1702,7 +1702,7 @@ function AdminItemForm({
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {item ? "调整事务减负卡" : "把小事从脑子里移走"}
             </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               只记录会影响科研节奏的组会、材料、报销和硬截止，处理完就回到研究主线。
             </p>
           </div>
@@ -1783,8 +1783,8 @@ function AdminItemForm({
         />
       </Field>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           <FileCheck2 className="size-3.5 shrink-0" />
           保存后会进入减负栈，周报草稿也能自动带上相关提醒。
         </p>
@@ -1851,36 +1851,36 @@ function adminActionLabel(item: AdminItem) {
 
 function adminActionReason(item: AdminItem) {
   if (item.status === "done") {
-    return "这件事已经收口，可以暂时从注意力里移开。";
+    return "已收口";
   }
 
   const distance = daysUntil(item.dueDate);
 
   if (distance !== null && distance < 0) {
-    return "已经逾期，先补状态或改期，避免继续占用脑内缓存。";
+    return "已逾期";
   }
 
   if (distance === 0) {
-    return "今天到期，先处理或明确下一步，避免打断后面的科研时间。";
+    return "今日到期";
   }
 
   if (item.status === "doing") {
-    return "已经开始推进，优先补齐材料、地点或下一步，别让它悬空。";
+    return "推进中";
   }
 
   if (item.type === "meeting") {
-    return "组会会牵动任务、实验和结果，先准备可汇报材料。";
+    return "备组会";
   }
 
   if (item.type === "reimbursement") {
-    return "报销最容易丢票据和流程，先把材料入口、单号或缺项写清楚。";
+    return "补材料";
   }
 
   if (item.type === "material") {
-    return "材料类事项通常有隐性截止，先确认入口、格式和提交对象。";
+    return "看截止";
   }
 
-  return "先登记最小下一步，处理完就回到文献、实验和结果。";
+  return "待处理";
 }
 
 function prioritizeAdminRelief(items: AdminItem[]) {

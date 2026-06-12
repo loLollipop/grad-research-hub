@@ -342,7 +342,7 @@ function ConnectionControlPanel({
             <KeyRound className="size-4 text-primary" />
             常用连接
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="sr-only">
             常改的只有 AI、Zotero 和访问密码。点卡片再改，平时不用看完整表单。
           </p>
         </div>
@@ -378,7 +378,7 @@ function ConnectionControlPanel({
                 </span>
               </span>
               <span className="mt-3 block text-sm font-semibold hero-title">{item.title}</span>
-              <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+              <span className="sr-only">
                 {item.detail}
               </span>
               <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
@@ -425,11 +425,11 @@ function SettingsDetailSection({
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold hero-title">{title}</span>
-            <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
+            <span className="sr-only">{description}</span>
           </span>
         </span>
         <span className="shrink-0 rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
-          点击展开
+          展开
         </span>
       </summary>
       <div className="border-t border-border/60 p-4 pt-3">
@@ -454,8 +454,8 @@ function AiSettingsForm({
   return (
     <form action={updateAiSettings} className="grid gap-4">
       {!encryptionReady ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          保存 API Key 前，需要先在服务器 `.env` 中设置 `APP_ENCRYPTION_KEY`。
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+          APP_ENCRYPTION_KEY 未设置
         </div>
       ) : null}
 
@@ -474,7 +474,7 @@ function AiSettingsForm({
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {settings.apiKeyConfigured ? "AI 草稿助手已接入" : "先接上一个可用的 AI 网关"}
             </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               这里只维护经常会换的 Key、模型和 Base URL。输入材料仍由你主动粘贴，输出只当草稿。
             </p>
           </div>
@@ -529,8 +529,8 @@ function AiSettingsForm({
         </SubmitButton>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           Key 留空表示不修改；输入 `CLEAR` 可以清除当前 Key。
         </p>
         <SubmitButton className="w-fit">保存 AI 连接</SubmitButton>
@@ -567,7 +567,7 @@ function ZoteroSettingsForm({
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {settings.apiKeyConfigured && settings.libraryId ? "Zotero 文献源已准备好" : "把 Zotero 当作文献源头接进来"}
             </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               研途 Hub 不接管 PDF，只同步条目、集合和标签，用来安排阅读和生成笔记。
             </p>
           </div>
@@ -631,8 +631,8 @@ function ZoteroSettingsForm({
         </SubmitButton>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           同步数量超过 100 时会自动分页读取；大型库建议先用 Collection Key 分批同步。
         </p>
         <SubmitButton className="w-fit">保存 Zotero</SubmitButton>
@@ -681,7 +681,7 @@ function ZoteroQuickGuideCard() {
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-medium">{step.title}</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">{step.detail}</p>
+                <p className="sr-only">{step.detail}</p>
                 <a
                   href={step.href}
                   target="_blank"
@@ -694,7 +694,7 @@ function ZoteroQuickGuideCard() {
             </div>
           </div>
         ))}
-        <div className="rounded-xl border border-[#edd8a5] bg-[#fff8e8] px-3 py-2 text-xs leading-5 text-[#6f542c]">
+        <div className="sr-only">
           常见填错：Collection Key 不是集合名称；个人库和群组库的 Library ID 不能混用；服务器网络访问 Zotero 失败也会导致测试不通过。
         </div>
       </CardContent>
@@ -720,7 +720,7 @@ function AccessSettingsForm() {
           required
         />
       </Field>
-      <p className="text-xs text-muted-foreground">
+      <p className="sr-only">
         保存后后续登录使用新密码；已经登录的当前浏览器不会被立刻踢下线。
       </p>
       <SubmitButton className="w-fit">更新密码</SubmitButton>
@@ -825,7 +825,7 @@ function HealthLine({
         </span>
         <div className="min-w-0">
           <p className="text-sm font-medium">{label}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{detail}</p>
+          <p className="sr-only">{detail}</p>
         </div>
       </div>
       <span

@@ -666,7 +666,7 @@ function SyncNotice({
             <p className={tone === "success" ? "font-medium text-emerald-950" : "font-medium text-rose-950"}>
               {title}
             </p>
-            <p className={tone === "success" ? "mt-1 text-emerald-900/80" : "mt-1 text-rose-900/80"}>
+            <p className="sr-only">
               {description}
             </p>
           </div>
@@ -851,7 +851,7 @@ function DailyReadingCard({ paper, index }: { paper: Paper; index: number }) {
             {authors} · {paper.year ?? "年份未知"} · {paper.category || "未分类"}
           </p>
         </div>
-        <p className="line-clamp-2 rounded-xl border border-[#d5e4e8] bg-[#f5fafb] px-3 py-2 text-xs leading-5 text-muted-foreground">
+        <p className="inline-flex rounded-xl border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-1 text-xs leading-5 text-muted-foreground">
           {paperActionReason(paper)}
         </p>
         <div className="mt-auto flex flex-wrap gap-2">
@@ -1042,7 +1042,7 @@ function ReadingRadarItem({
           <span className="text-sm font-medium">{label}</span>
           <span className="text-xs font-medium text-primary">{value}</span>
         </span>
-        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {detail}
         </span>
       </span>
@@ -1105,8 +1105,8 @@ function ZoteroConnectionOnboarding() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-2 rounded-xl border border-[#d5e4e8] bg-white/62 px-3 py-2 text-xs leading-5 text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p>
+      <div className="flex flex-col items-start justify-between gap-2 rounded-xl border border-[#d5e4e8] bg-white/62 px-3 py-2 text-xs leading-5 text-muted-foreground md:flex-row md:items-center">
+        <p className="sr-only">
           同步前只做一件事：接上 Zotero。临时网页、导师转发材料、还没入库的预印本才用“临时材料”。
         </p>
         <CreateDialog
@@ -1563,18 +1563,18 @@ function PaperCard({ paper }: { paper: Paper }) {
 
 function paperActionReason(paper: Paper) {
   if (paper.readStatus === "unread") {
-    return "先读摘要、方法和关键图表；如果发现可复现方法，直接转成实验草稿。";
+    return "待读";
   }
 
   if (paper.readStatus === "reading") {
-    return "这篇已经开始读了，优先收尾；读出方法、对照或指标后可生成阅读笔记或实验草稿。";
+    return "读中";
   }
 
   if (!paper.notes?.trim()) {
-    return "已经标为已读，但还没有留下可回顾笔记；先补问题、方法抓手和可复现实验线索。";
+    return "补笔记";
   }
 
-  return "已有阅读沉淀，可以回流到实验设计、组会讨论、综述或论文草稿。";
+  return "已沉淀";
 }
 
 function PaperForm({
@@ -1599,7 +1599,7 @@ function PaperForm({
                 name="title"
                 required
                 defaultValue={paper?.title ?? ""}
-                placeholder="粘贴标题即可，后续同步 Zotero 后可再完善"
+                placeholder="标题"
                 className="h-10 bg-white/84 text-base font-medium"
               />
             </Field>
@@ -1676,7 +1676,7 @@ function PaperForm({
             className="h-9 bg-white/84"
           />
         </Field>
-        <Field label="为什么要读">
+        <Field label="阅读目的">
           <Textarea
             name="notes"
             rows={4}

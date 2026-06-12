@@ -409,8 +409,8 @@ export default async function DataPage({ searchParams }: Props) {
               </form>
             </div>
             {brief === "empty" ? (
-              <p className="mt-3 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-                当前没有可生成的结果。先记录一条证据，或清除筛选后再试。
+              <p className="mt-3 inline-flex rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                暂无可生成结果
               </p>
             ) : null}
           </div>
@@ -1492,7 +1492,7 @@ function EvidenceTalkabilityStep({
             {value}
           </span>
         </span>
-        <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {detail}
         </span>
       </span>
@@ -1536,7 +1536,7 @@ function EvidenceGapCard({
       </span>
       <span>
         <span className="block text-sm font-semibold">{label}</span>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{detail}</span>
+        <span className="sr-only">{detail}</span>
       </span>
     </Link>
   );
@@ -1571,7 +1571,7 @@ function EvidenceCloseoutCard({
 
         <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3">
           <p className="text-sm font-medium text-[var(--workspace-title)]">{actionLabel}</p>
-          <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1 inline-flex rounded-lg border border-[#d5e4e8] bg-white/65 px-2 py-0.5 text-xs leading-5 text-muted-foreground">
             {actionReason}
           </p>
         </div>
@@ -1651,7 +1651,7 @@ function ResultCard({
             </span>
             <div className="min-w-0">
               <p className="text-sm font-medium">{nextAction}</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">{actionReason}</p>
+              <p className="mt-1 inline-flex rounded-lg border border-[#d5e4e8] bg-white/65 px-2 py-0.5 text-xs leading-5 text-muted-foreground">{actionReason}</p>
             </div>
           </div>
         </div>
@@ -1786,26 +1786,26 @@ function resultActionReason(result: ResultFull) {
   const reproducibility = config.reproducibility ?? "unknown";
 
   if (reproducibility === "unknown") {
-    return "先判断这条结果是否值得复现、汇报或放弃，避免把精力耗在低价值指标上。";
+    return "待判定";
   }
 
   if (reproducibility === "todo") {
-    return "还没有复现实验，先生成待补证据任务，把数据、脚本和对照条件补齐。";
+    return "待复现";
   }
 
   if (reproducibility === "reproducing") {
-    return "复现正在进行中，优先补上对照、日志和最新指标，避免结果停在半路。";
+    return "复现中";
   }
 
   if (!result.artifactPath) {
-    return "缺少图表或结果文件路径，组会、周报和论文写作时会很难追溯。";
+    return "缺路径";
   }
 
   if (!config.manuscriptReady) {
-    return "结果已有路径，但还没标成写作素材；确认后生成素材笔记最省时间。";
+    return "待写作";
   }
 
-  return "证据基本闭环，可以进入组会、周报或论文写作素材池。";
+  return "可讲";
 }
 
 function prioritizeEvidenceQueue(results: ResultFull[]) {
@@ -1942,7 +1942,7 @@ function DatasetForm({
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {dataset ? "调整数据来源卡" : "登记一个会影响结果复现的数据来源"}
             </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               只登记关键数据版本和位置，细节文档继续放在实验记录或数据目录里。
             </p>
           </div>
@@ -2016,8 +2016,8 @@ function DatasetForm({
         />
       </Field>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           <Link2 className="size-3.5 shrink-0" />
           保存后可在结果证据卡里关联，帮助以后追溯图表和复现实验。
         </p>
@@ -2189,8 +2189,8 @@ function ResultForm({
       <input type="hidden" name="metrics" value={result?.metrics ?? "{}"} />
       <input type="hidden" name="config" value={result?.config ?? "{}"} />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
-        <p className="flex min-w-0 items-center gap-2 text-xs leading-5 text-[#315266]">
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-[#d5e4e8] bg-[#eef6f4] px-3 py-2">
+        <p className="sr-only">
           <FileCheck2 className="size-3.5 shrink-0" />
           保存后可生成证据任务、写作素材或结果汇总笔记。
         </p>

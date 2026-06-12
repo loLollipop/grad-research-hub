@@ -238,7 +238,7 @@ export default async function AiPage() {
               <MaterialRow icon={BookOpenText} label="文献" value={`${papers.length} 篇`} />
               <MaterialRow icon={FileText} label="笔记" value={`${notes.length} 篇`} />
               <MaterialRow icon={CalendarClock} label="事务" value={`${adminItems.length} 件`} />
-              <p className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3 text-xs leading-5 text-muted-foreground">
+              <p className="sr-only">
                 材料包只会预填到输入框；点击“生成草稿”前，你仍可删掉敏感内容或改写上下文。
               </p>
             </CardContent>
@@ -266,7 +266,7 @@ export default async function AiPage() {
                     去设置
                   </Link>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                <p className="sr-only">
                   Key 不会在浏览器显示明文；模型和 Base URL 可在设置中心随时改。
                 </p>
               </div>

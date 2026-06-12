@@ -642,11 +642,12 @@ function ExperimentReproBoard({
                     <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                       {experiment.project?.title ?? "未关联项目"} · 结果 {experiment.results.length} 条
                     </p>
-                    <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-2">
+                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-2">
                       <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/72 text-primary">
                         <Icon className="size-3.5" />
                       </span>
-                      <p className="line-clamp-3 text-xs leading-5 text-muted-foreground">{action.detail}</p>
+                      <p className="text-xs font-medium leading-5 text-muted-foreground">{action.label}</p>
+                      <span className="sr-only">{action.detail}</span>
                     </div>
                   </div>
                 );
@@ -1130,7 +1131,7 @@ function experimentNextAction(experiment: ExperimentFull) {
   if (experiment.status === "failed") {
     return {
       label: "复盘失败",
-      title: "先把失败变成下一次实验动作",
+      title: "复盘失败",
       detail: "补失败现象、可能原因、对照组和下一次修改，不让负结果散掉。",
       icon: AlertTriangle,
       className:
@@ -1141,7 +1142,7 @@ function experimentNextAction(experiment: ExperimentFull) {
   if (experiment.results.length > 0) {
     return {
       label: "回填结果",
-      title: "已有结果，建议回填到实验正文",
+      title: "回填结果",
       detail: "把关键指标和一句话结论写回实验记录，后续组会和论文素材会更顺。",
       icon: FileChartColumn,
       className:
@@ -1152,7 +1153,7 @@ function experimentNextAction(experiment: ExperimentFull) {
   if (experiment.status === "completed") {
     return {
       label: "补结果",
-      title: "实验已完成，下一步是登记关键结果",
+      title: "补结果",
       detail: "至少留下 1-3 个指标、复现状态和图表路径，避免结论只停在正文里。",
       icon: CheckCircle2,
       className:
@@ -1162,7 +1163,7 @@ function experimentNextAction(experiment: ExperimentFull) {
 
   return {
     label: "继续观察",
-    title: "继续补观察、结论和下一步",
+    title: "继续观察",
     detail: "实验还在进行中，今天先把最新现象写清楚，再决定是否收口。",
     icon: FlaskConical,
     className:
@@ -1228,7 +1229,7 @@ function ExperimentCard({
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold">{nextAction.title}</span>
-            <span className="mt-1 block text-xs leading-5 opacity-78">{nextAction.detail}</span>
+            <span className="sr-only">{nextAction.detail}</span>
           </span>
         </div>
 
