@@ -86,10 +86,7 @@ export function AiWorkbench({
         <div className="rounded-2xl border border-[#d5e4e8] bg-[#f8fbf8]/78 p-3">
           <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#173042]">先选一个草稿场景</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                默认已放入最近材料包；需要时再切到组会、复盘、阅读或写作模板。
-              </p>
+              <p className="text-sm font-semibold text-[#173042]">草稿场景</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -156,9 +153,6 @@ export function AiWorkbench({
                 <Bot className="size-4 text-primary" />
                 草稿输入
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                先选场景，再粘贴脱敏材料；没有提供的事实会被要求标为待补。
-              </p>
             </div>
             <span className="rounded-full border border-white/80 bg-white/72 px-2 py-0.5 text-[11px] text-muted-foreground">
               {normalizedPrompt.length} / {MAX_PROMPT_LENGTH} 字
@@ -193,11 +187,7 @@ export function AiWorkbench({
             className="min-h-[22rem] flex-1 resize-none rounded-none border-0 bg-white/68 p-4 text-sm leading-6 shadow-none focus-visible:ring-0"
           />
 
-          <div className="flex flex-col gap-3 border-t border-border/70 bg-white/72 px-4 py-3 md:flex-row md:items-center md:justify-between">
-            <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
-              <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />
-              输入会自动保存在当前浏览器，切换页面后回来也能继续写；生成时最多提交 {MAX_PROMPT_LENGTH} 字。
-            </p>
+          <div className="flex justify-end border-t border-border/70 bg-white/72 px-4 py-3">
             <Button type="button" onClick={submit} disabled={isPending || !normalizedPrompt}>
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               生成草稿
@@ -212,13 +202,10 @@ export function AiWorkbench({
                 <FilePlus2 className="size-4 text-primary" />
                 可核对草稿
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                生成后可直接保存到笔记工作室继续改。
-              </p>
             </div>
             {result ? (
               <span className="rounded-full border bg-white px-2 py-0.5 text-[11px] text-muted-foreground">
-                {result.mode === "live" ? result.provider ?? "live" : "配置提示"}
+                {result.mode === "live" ? result.provider ?? "live" : "待连接"}
               </span>
             ) : null}
           </div>
@@ -228,7 +215,7 @@ export function AiWorkbench({
               <div className="rounded-xl border border-[#d5e4e8] bg-white/86 p-4">
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <Bot className="size-4 text-[#1f3d33]" />
-                  {result.mode === "live" ? "AI 草稿" : "配置提示"}
+                  {result.mode === "live" ? "AI 草稿" : "待连接"}
                 </p>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
                   {result.summary}
@@ -266,10 +253,7 @@ export function AiWorkbench({
                 <span className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-[#d5e4e8] bg-white/82 text-primary">
                   <Bot className="size-5" />
                 </span>
-                <p className="mt-3 text-sm font-medium text-[#173042]">先准备一段材料</p>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  选择场景、补充上下文，然后生成一版可核对草稿。这里不会自动读取你的全部数据。
-                </p>
+                <p className="mt-3 text-sm font-medium text-[#173042]">粘贴材料后生成</p>
               </div>
             </div>
           )}

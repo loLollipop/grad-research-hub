@@ -271,9 +271,6 @@ export default async function PapersPage({ searchParams }: Props) {
                 <BookOpenCheck className="size-4 text-primary" />
                 三篇启动队列
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                先从 3 篇开始，避免 Zotero 同步后变成大列表压力。读出方法、对照或指标后再转实验/任务。
-              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
@@ -947,9 +944,7 @@ function ReadingSourcePanel({
             {ready ? "Zotero 已作为文献源头" : "先接 Zotero，不手动搬库"}
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {ready
-              ? `库内已有 ${papersCount} 篇；最近同步 ${lastSyncedAt ? formatDate(lastSyncedAt) : "暂无记录"}。`
-              : "正式文献继续放在 Zotero。这里同步条目后，只负责安排阅读和沉淀笔记。"}
+            {ready ? `${papersCount} 篇 · ${lastSyncedAt ? formatDate(lastSyncedAt) : "未同步"}` : "待连接"}
           </p>
         </div>
         <span
@@ -991,7 +986,7 @@ function ReadingSourcePanel({
 }
 
 function ReadingFlowStep({
-  detail,
+  detail: _detail,
   index,
   title,
 }: {
@@ -1006,7 +1001,7 @@ function ReadingFlowStep({
       </span>
       <span className="min-w-0">
         <span className="block text-xs font-semibold text-[var(--workspace-title)]">{title}</span>
-        <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{detail}</span>
+        <span className="sr-only">{_detail}</span>
       </span>
     </div>
   );
@@ -1078,9 +1073,6 @@ function ZoteroConnectionOnboarding() {
           <p className="flex items-center gap-2 text-sm font-semibold text-[#6f542c]">
             <AlertCircle className="size-4" />
             Zotero 还没接上，先别手动录一堆文献
-          </p>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6f542c]/86">
-            文献源头建议继续放在 Zotero。研途 Hub 只负责同步条目、安排阅读、生成笔记和转实验线索，避免重复维护两套文献库。
           </p>
         </div>
         <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -1271,7 +1263,7 @@ function ResearchProofLine({ source, text }: { source: string; text: string }) {
   return (
     <div className="flex gap-2 rounded-xl border border-white/64 bg-white/54 px-3 py-2">
       <span className="shrink-0 font-mono text-[11px] font-semibold text-primary">{source}</span>
-      <span>{text}</span>
+      <span className="sr-only">{text}</span>
     </div>
   );
 }
@@ -1611,9 +1603,6 @@ function PaperForm({
                 className="h-10 bg-white/84 text-base font-medium"
               />
             </Field>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Zotero 是主文献库。这里适合先收住网页、预印本、导师临时发来的材料。
-            </p>
           </div>
         </div>
       </section>
@@ -1701,16 +1690,13 @@ function PaperForm({
             name="abstract"
             rows={4}
             defaultValue={paper?.abstract ?? ""}
-            placeholder="可粘贴摘要，也可以先留空，读完后再补。"
+            placeholder="摘要（可选）"
             className="bg-white/84"
           />
         </Field>
       </section>
 
-      <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-white/72 p-3 md:flex-row md:items-center md:justify-between">
-        <p className="text-xs leading-5 text-muted-foreground">
-          少量临时材料才需要手动补录；正式文献建议回到 Zotero 管理。
-        </p>
+      <div className="flex justify-end rounded-2xl border border-border/70 bg-white/72 p-3">
         <SubmitButton>{paper ? "保存文献" : "添加文献"}</SubmitButton>
       </div>
     </form>

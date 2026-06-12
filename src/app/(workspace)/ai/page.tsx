@@ -221,9 +221,6 @@ export default async function AiPage() {
                   detail={step.detail}
                 />
               ))}
-              <div className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3 text-xs leading-5 text-muted-foreground">
-                场景按钮已经放到右侧工作台顶部，避免左侧和右侧重复选择。
-              </div>
             </CardContent>
           </Card>
 
@@ -295,8 +292,8 @@ export default async function AiPage() {
           </CardHeader>
           <CardContent className="grid gap-4">
             {!settings.apiKeyConfigured ? (
-              <div className="rounded-xl border border-amber-200 bg-[#fff8eb] p-3 text-sm leading-6 text-amber-950">
-                还没有配置 AI Key。先去设置中心填 Key、Base URL 和模型名；未配置时这里只给连接指引，配置后会调用真实模型生成草稿。
+              <div className="rounded-xl border border-amber-200 bg-[#fff8eb] p-3 text-sm font-medium text-amber-950">
+                AI Key 待配置
               </div>
             ) : null}
             <AiWorkbench

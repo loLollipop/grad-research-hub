@@ -954,11 +954,7 @@ function FigureEvidencePack({
                   补证据缺口
                 </SubmitButton>
               </form>
-            ) : (
-              <p className="rounded-xl border border-white/68 bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
-                暂时没有明显证据缺口。下一步可以把可讲结果整理成写作素材。
-              </p>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -1006,11 +1002,7 @@ function FigureEvidencePack({
                   </div>
                 );
               })
-            ) : (
-              <div className="rounded-xl border border-dashed border-[#d5e4e8] bg-white/58 p-4 text-sm leading-6 text-muted-foreground lg:col-span-3">
-                先记录一条有图表路径、结果文件路径，或已标记写作素材的结果，这里会自动形成图表候选。
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -1145,11 +1137,7 @@ function DatasetHealthBoard({
                   <DatasetHealthCandidateCard key={candidate.dataset.id} candidate={candidate} />
                 ))}
               </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 p-3 text-sm leading-6 text-muted-foreground">
-                暂时没有明显数据来源缺口。继续记录结果时，记得固定数据源或路径即可。
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -1432,11 +1420,11 @@ function QuickResultCapture() {
   );
 }
 
-function WorkflowTip({ title, text }: { title: string; text: string }) {
+function WorkflowTip({ title, text: _text }: { title: string; text: string }) {
   return (
     <div className="soft-tile rounded-xl p-3">
       <p className="font-medium">{title}</p>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
+      <p className="sr-only">{_text}</p>
     </div>
   );
 }
@@ -2066,9 +2054,6 @@ function ResultForm({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {result ? "调整结果证据卡" : "记录一条能讲清楚的结果"}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              这里只收关键结论和证据位置，过程、参数和脚本细节继续放实验日志。
             </p>
           </div>
         </div>

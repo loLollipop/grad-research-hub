@@ -737,7 +737,6 @@ export default async function AdminPage({ searchParams }: Props) {
             currentMeetingBrief={currentMeetingBrief}
             currentTodayMeetingBrief={currentTodayMeetingBrief}
             items={advisorPackItems}
-            periodLabel={meetingBriefPeriod.shortLabel}
             questions={advisorQuestions}
             score={advisorPrepScore}
           />
@@ -1058,14 +1057,12 @@ function AdvisorFiveMinutePack({
   currentMeetingBrief,
   currentTodayMeetingBrief,
   items,
-  periodLabel,
   questions,
   score,
 }: {
   currentMeetingBrief: MeetingBriefSummary | null;
   currentTodayMeetingBrief: MeetingBriefSummary | null;
   items: AdvisorPackItem[];
-  periodLabel: string;
   questions: string[];
   score: number;
 }) {
@@ -1136,13 +1133,6 @@ function AdvisorFiveMinutePack({
             </div>
           </div>
 
-          <p className="mt-3 rounded-xl border border-white/68 bg-white/52 px-3 py-2 text-xs leading-5 text-muted-foreground">
-            {currentTodayMeetingBrief
-              ? `今日沟通单已生成，更新 ${formatDateTime(currentTodayMeetingBrief.updatedAt)}。`
-              : currentMeetingBrief
-                ? `已有 ${periodLabel} 周报草稿，更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
-                : "还没有草稿时，先生成今日沟通单，比从空白文档开始更快。"}
-          </p>
         </div>
 
         <div className="grid gap-3">
@@ -1164,11 +1154,7 @@ function AdvisorFiveMinutePack({
               <div className="mt-3 grid gap-2">
                 {items.length ? (
                   items.map((item) => <AdvisorPackRow key={item.id} item={item} />)
-                ) : (
-                  <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/54 p-3 text-sm text-muted-foreground">
-                    暂时没有可自动整理的线索。先记录一个任务、实验、结果或组会提醒。
-                  </div>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -1241,11 +1227,7 @@ function AdvisorQuestionQueue({ questions }: { questions: AdvisorQuestionItem[] 
               questions.map((question) => (
                 <AdvisorQuestionRow key={question.id} item={question} />
               ))
-            ) : (
-              <div className="rounded-2xl border border-dashed border-[#cfe0df] bg-white/58 p-4 text-sm leading-6 text-muted-foreground">
-                暂时没有可自动推导的问题。先记录一个高优先级任务、失败实验、可讲结果或组会提醒。
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -1254,7 +1236,7 @@ function AdvisorQuestionQueue({ questions }: { questions: AdvisorQuestionItem[] 
 }
 
 function AdvisorQuestionStep({
-  detail,
+  detail: _detail,
   index,
   title,
 }: {
@@ -1269,7 +1251,7 @@ function AdvisorQuestionStep({
         <MessageSquareText className="size-3.5 text-primary" />
       </div>
       <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{_detail}</p>
     </div>
   );
 }
@@ -1401,11 +1383,7 @@ function AdvisorFeedbackLoop({
                   notes.slice(0, 3).map((note) => (
                     <FeedbackLoopRow key={note.id} note={note} />
                   ))
-                ) : (
-                  <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/54 p-3 text-sm text-muted-foreground">
-                    还没有导师反馈记录。会后点“新建反馈回填”，先把原话和下一步收住。
-                  </div>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -1504,7 +1482,7 @@ function PenActionIcon() {
 }
 
 function AdvisorPrepTile({
-  detail,
+  detail: _detail,
   done,
   index,
   title,
@@ -1529,7 +1507,7 @@ function AdvisorPrepTile({
         </span>
       </div>
       <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
-      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{_detail}</p>
     </div>
   );
 }

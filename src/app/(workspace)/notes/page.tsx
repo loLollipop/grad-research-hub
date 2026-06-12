@@ -980,11 +980,7 @@ export default async function NotesPage({ searchParams }: Props) {
                             </span>
                           );
                         })
-                      ) : (
-                        <p className="text-sm leading-7 text-muted-foreground">
-                          当前笔记还没有 `[[双链]]`。写阅读札记或实验想法时，可以直接引用相关主题。
-                        </p>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
@@ -1009,11 +1005,7 @@ export default async function NotesPage({ searchParams }: Props) {
                           </span>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-sm leading-7 text-muted-foreground">
-                        当前引用都能找到对应笔记。继续写就好，不需要额外维护关系表。
-                      </p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
@@ -1043,11 +1035,7 @@ export default async function NotesPage({ searchParams }: Props) {
                           </Link>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-sm leading-7 text-muted-foreground">
-                        还没有匹配到同名笔记。可以先保留引用，后续补一篇同名主题笔记。
-                      </p>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="rounded-2xl border border-border/72 bg-white p-5 shadow-[0_10px_24px_rgba(27,42,56,0.035)]">
@@ -1075,11 +1063,7 @@ export default async function NotesPage({ searchParams }: Props) {
                           </Link>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-sm leading-7 text-muted-foreground">
-                        暂时没有其他笔记引用当前标题。等阅读摘录、实验复盘写多后，这里会自动长出来。
-                      </p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -1237,11 +1221,7 @@ function InboxTriageBoard({
                   <InboxTriageNoteRow key={note.id} action={action} note={note} />
                 ))}
               </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 p-3 text-sm leading-6 text-muted-foreground">
-                暂时没有需要优先清理的笔记。可以继续写新材料，或生成写作素材包。
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -1624,10 +1604,7 @@ function NoteForm({
         />
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border/75 bg-[#fffefa] px-4 py-3 md:flex-row md:items-center md:justify-between">
-        <p className="text-xs text-muted-foreground">
-          临时想法可以先放收件箱，后面再整理分类和双链。
-        </p>
+      <div className="flex justify-end gap-2 border-t border-border/75 bg-[#fffefa] px-4 py-3">
         <div className="flex items-center gap-2">
           <Button render={<Link href="/notes" />} variant="outline">
             <ArrowRight className="size-4" />
@@ -1645,6 +1622,4 @@ const defaultNoteContent = `## 记录
 - 背景：
 - 关键观察：
 - 下一步：
-
-可以使用 [[双链标题]] 连接相关文献、实验或想法。
 `;

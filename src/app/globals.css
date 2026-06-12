@@ -1056,12 +1056,19 @@
 
   .hero-copy {
     color: var(--workspace-copy);
+    @apply sr-only;
+  }
+
+  .explain-muted {
+    @apply sr-only;
+  }
+
+  .workbench-card p.text-muted-foreground,
+  .workbench-panel p.text-muted-foreground {
     display: -webkit-box;
-    max-width: 62ch;
     overflow: hidden;
-    text-wrap: pretty;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
   }
 
   .need-signal-card p.text-muted-foreground,

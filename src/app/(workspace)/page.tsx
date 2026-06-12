@@ -1073,9 +1073,7 @@ export default async function DashboardPage() {
                   </Link>
                 );
               })
-            ) : (
-              <p className="text-sm text-muted-foreground">创建项目后，这里会显示正在推进的课题。</p>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </section>
@@ -1112,9 +1110,7 @@ export default async function DashboardPage() {
                   </Link>
                 );
               })
-            ) : (
-              <p className="text-sm text-muted-foreground">记录结果后，这里会显示可复盘的证据。</p>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </section>
@@ -1780,9 +1776,6 @@ function StarterProgress({
             <CircleCheck className="size-4 text-primary" />
             启动进度
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            这不是配置清单，只确认工作台有没有接住真实科研流。完成后这里会自动消失。
-          </p>
         </div>
         <div className="rounded-xl border border-white/72 bg-white/64 p-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -1886,7 +1879,7 @@ function ResearchEvidenceLine({ source, text }: { source: string; text: string }
   return (
     <div className="flex gap-2 rounded-xl border border-white/64 bg-white/54 px-3 py-2">
       <span className="shrink-0 font-mono text-[11px] font-semibold text-primary">{source}</span>
-      <span>{text}</span>
+      <span className="sr-only">{text}</span>
     </div>
   );
 }
@@ -2195,9 +2188,6 @@ function ResearchRhythm({
             <TimerReset className="size-4 text-primary" />
             今日研究流
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            按一天真实节奏组织，不让文献、实验、结果和周报散在不同页面里。
-          </p>
         </div>
         <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
           轻量顺序 · 可随时跳转
@@ -2279,11 +2269,7 @@ function ClosingRadar({ items }: { items: ClosingItem[] }) {
             </Link>
           ))}
         </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 p-3 text-sm text-muted-foreground">
-          暂时没有逾期任务、久未更新实验或待补证据。今天可以直接从“下一步队列”开始。
-        </div>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -2308,9 +2294,6 @@ function ResearchLanes({ lanes }: { lanes: ResearchLane[] }) {
               <Lightbulb className="size-4 text-primary" />
               高频研究通道
             </CardTitle>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              不复制 Zotero、ELN、OSF 或 Obsidian，只把每天最常走的四条科研路径接顺。
-            </p>
           </div>
           <span className="hidden rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-[11px] text-muted-foreground sm:inline-flex">
             少配置 · 多推进
@@ -2458,10 +2441,6 @@ function ResearchTimeline({ items }: { items: TimelineItem[] }) {
                   </Link>
                 );
               })}
-            </div>
-
-            <div className="rounded-xl border border-dashed border-[#cfe0df] bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
-              这不是新的日志系统，只把最近的文献、实验、结果和笔记串起来。组会或周报前，先从这里回看本周研究脉络。
             </div>
           </>
         ) : (

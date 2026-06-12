@@ -612,11 +612,7 @@ function ExperimentReproBoard({
                 收成三项实验清单
               </SubmitButton>
             </form>
-          ) : (
-            <p className="mt-4 rounded-xl border border-white/68 bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
-              暂时没有明显待收口实验。继续记录新实验，或把已有结果回填到实验正文。
-            </p>
-          )}
+          ) : null}
         </div>
 
         <div className="grid gap-3">
@@ -655,11 +651,7 @@ function ExperimentReproBoard({
                   </div>
                 );
               })
-            ) : (
-              <div className="rounded-xl border border-dashed border-[#d5e4e8] bg-white/58 p-4 text-sm text-muted-foreground lg:col-span-3">
-                没有待收口队列。下一次实验记录只需要先写目的、观察、结论和下一步。
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -1245,9 +1237,6 @@ function ExperimentCard({
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="font-medium">这条失败实验值得复盘</p>
-                <p className="mt-1 text-xs leading-5 text-amber-900/80">
-                  生成一个高优先级复盘任务，去项目页继续拆解原因、对照和下一次实验修改。
-                </p>
               </div>
               <form action={createExperimentReviewTask}>
                 <input type="hidden" name="id" value={experiment.id} />
@@ -1262,7 +1251,7 @@ function ExperimentCard({
 
         <div className="soft-tile rounded-xl p-4 text-sm leading-6">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {experiment.content || "暂无实验内容。建议至少写下：目的、方法、观察、结论和下一步。"}
+            {experiment.content || "暂无实验内容。"}
           </ReactMarkdown>
         </div>
 
@@ -1360,7 +1349,7 @@ function ExperimentResultActions({ experiment }: { experiment: ExperimentFull })
 }
 
 function ExperimentFlowStep({
-  detail,
+  detail: _detail,
   index,
   title,
 }: {
@@ -1375,7 +1364,7 @@ function ExperimentFlowStep({
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-[var(--workspace-title)]">{title}</span>
-        <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{detail}</span>
+        <span className="sr-only">{_detail}</span>
       </span>
     </div>
   );

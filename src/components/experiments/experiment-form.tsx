@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { Experiment, Paper, Project } from "@prisma/client";
 import { BookOpenText, FlaskConical, FolderKanban, ListChecks } from "lucide-react";
 
@@ -33,11 +33,6 @@ export function ExperimentForm({
     experiment?.content || experimentTemplateContent(initialTemplate),
   );
   const [dirty, setDirty] = useState(Boolean(experiment?.content));
-  const selectedTemplate = useMemo(
-    () => EXPERIMENT_TEMPLATES.find((item) => item.value === template),
-    [template],
-  );
-
   return (
     <form action={action} className="grid gap-4">
       {experiment ? <input type="hidden" name="id" value={experiment.id} /> : null}
@@ -111,12 +106,6 @@ export function ExperimentForm({
             ))}
           </select>
         </div>
-        <div className="md:col-span-3">
-          <p className="rounded-xl border border-[#d8e5ee] bg-[#f5fafb] px-3 py-2 text-xs leading-5 text-muted-foreground">
-            {selectedTemplate?.detail ?? "选择模板后会预填正文结构。"}
-            {!experiment && dirty ? " 已手动编辑正文，切换模板不会再覆盖内容。" : null}
-          </p>
-        </div>
       </section>
 
       <section className="grid gap-3 rounded-2xl border border-border/70 bg-white/72 p-3 md:grid-cols-2">
@@ -146,9 +135,6 @@ export function ExperimentForm({
             <FlaskConical className="size-4 text-primary" />
             实验记录纸
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Markdown 正文保留自由写法，模板只负责给你一张可复盘的记录纸。
-          </p>
         </div>
         <Textarea
           name="content"
@@ -162,10 +148,7 @@ export function ExperimentForm({
         />
       </section>
 
-      <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-white/72 p-3 md:flex-row md:items-center md:justify-between">
-        <p className="text-xs leading-5 text-muted-foreground">
-          保存后可从实验卡片继续生成复盘笔记、失败复盘任务或收一条结果证据。
-        </p>
+      <div className="flex justify-end rounded-2xl border border-border/70 bg-white/72 p-3">
         <SubmitButton>{experiment ? "保存实验日志" : "保存到实验日志"}</SubmitButton>
       </div>
     </form>

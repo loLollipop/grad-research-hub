@@ -399,9 +399,6 @@ export default async function ProjectsPage({ searchParams }: Props) {
                 <TimerReset className="size-4 text-primary" />
                 三项课题推进
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                先推进逾期、今天截止、高优先级或可转实验的 3 个动作。任务队列再长，也先从这里开始。
-              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="w-fit rounded-full border border-border/70 bg-white/72 px-2.5 py-1 text-xs text-muted-foreground">
@@ -877,9 +874,6 @@ function ProjectDeliveryBoard({
                 收成阶段推进清单
               </SubmitButton>
             </form>
-            <p className="rounded-xl border border-white/68 bg-white/58 px-3 py-2 text-xs leading-5 text-muted-foreground">
-              阶段只管验收标准；复杂甘特图、成员和审批不放进这里，避免又变成一套后台。
-            </p>
           </div>
         </div>
 
@@ -1434,9 +1428,6 @@ function ProjectStructureEntry({ projects }: { projects: Project[] }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <p className="rounded-xl border border-[#d5e4e8] bg-[#f5fafb] p-3 text-xs leading-5 text-muted-foreground">
-          结构不用每天维护。需要开新方向时建课题，需要验收节点时拆阶段；平时先记下一步动作。
-        </p>
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
           <CreateDialog
             title="建立一个课题"
@@ -1705,9 +1696,11 @@ function ProjectRoadmapCard({
                 {project.milestones.length} 个里程碑 · {project.experiments.length} 条实验
               </span>
             </div>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              {project.description ?? "暂无一句话目标。建议写成：我想验证什么，以及近期交付物是什么。"}
-            </p>
+            {project.description ? (
+              <p className="mt-2 line-clamp-1 max-w-3xl text-sm text-muted-foreground">
+                {project.description}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <CreateDialog title="编辑项目" label="编辑" icon={Edit3}>
@@ -1747,11 +1740,7 @@ function ProjectRoadmapCard({
               />
             ))}
           </div>
-        ) : (
-          <div className="rounded-xl border border-dashed bg-muted/25 p-4 text-sm text-muted-foreground">
-            还没有里程碑。先把课题切成一个可以验收的小阶段。
-          </div>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -1823,9 +1812,6 @@ function ProjectForm({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {project ? "调整课题目标卡" : "建立一个真实课题"}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              只写当前研究主线，不需要把所有背景、经费和成员信息都搬进来。
             </p>
           </div>
         </div>
@@ -1992,9 +1978,6 @@ function TaskForm({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {task ? "调整下一步行动" : "写下下一步行动"}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              任务只记录能在今天或本周推进的动作，不写成项目说明书。
             </p>
           </div>
         </div>

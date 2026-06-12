@@ -61,9 +61,6 @@ export default async function LoginPage({ searchParams }: Props) {
               <LockKeyhole className="size-5" />
             </div>
             <CardTitle className="text-2xl">进入研途 Hub</CardTitle>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              输入部署时设置的访问密码。AI Key、Zotero Key 和同步范围登录后在设置中心维护。
-            </p>
           </CardHeader>
           <CardContent className="px-6 pb-7 md:px-8 md:pb-10">
             <form action={login} className="grid gap-3">
@@ -86,9 +83,6 @@ export default async function LoginPage({ searchParams }: Props) {
                 进入工作台
               </SubmitButton>
             </form>
-            <div className="mt-5 rounded-2xl border border-dashed border-[#d5e2dc] bg-white/56 px-3 py-3 text-xs leading-5 text-muted-foreground">
-              这是个人自托管入口，不做多用户协作和复杂权限。先保护工作台，再进入当天研究流。
-            </div>
           </CardContent>
         </Card>
       </div>
