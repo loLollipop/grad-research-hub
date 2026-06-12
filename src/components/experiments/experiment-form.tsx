@@ -52,7 +52,7 @@ export function ExperimentForm({
                 className="h-10 bg-white/84 text-base font-medium"
               />
             </Field>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               像写实验纸一样先留下目的、观察、结论和下一步；参数细节放正文里即可。
             </p>
           </div>

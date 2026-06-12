@@ -542,7 +542,7 @@ export default async function DataPage({ searchParams }: Props) {
                           {resultActionLabel(result)} ·{" "}
                           {result.experiment?.title ?? result.dataset?.name ?? "未关联来源"}
                         </p>
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                        <p className="sr-only">
                           {resultActionReason(result)}
                         </p>
                       </div>
@@ -629,7 +629,7 @@ export default async function DataPage({ searchParams }: Props) {
                   <Target className="size-4 text-primary" />
                   三条结果证据缺口
                 </p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                <p className="sr-only">
                   从全库结果里优先挑 3 条最该收口的证据，不受当前筛选影响。先把复现、图表路径和写作素材补齐。
                 </p>
               </div>
@@ -1026,7 +1026,7 @@ function FigureEvidenceSignalCard({
       </span>
       <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
-      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
       <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
         {action}
         <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
@@ -1161,7 +1161,7 @@ function DatasetHealthSignalCard({ signal }: { signal: DatasetHealthSignal }) {
       </span>
       <span className="mt-4 block">
         <span className="text-base font-semibold leading-snug hero-title">{signal.label}</span>
-        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {signal.detail}
         </span>
       </span>
@@ -1327,7 +1327,7 @@ function ResultStackItem({
         <span className="h-px flex-1 bg-white/12" />
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -2117,7 +2117,7 @@ function ResultForm({
               <BarChart3 className="size-4 text-primary" />
               核心指标
             </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               填 1-3 个最关键指标即可，用来判断能否进入组会、周报或论文素材。
             </p>
           </div>
@@ -2167,7 +2167,7 @@ function ResultForm({
           />
           <span>
             <span className="block font-medium">可写入组会/周报/论文</span>
-            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+            <span className="sr-only">
               勾选前确认路径、指标和复现状态足够支撑结论。
             </span>
           </span>

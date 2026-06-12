@@ -795,7 +795,7 @@ function SettingsStackItem({
         </span>
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }

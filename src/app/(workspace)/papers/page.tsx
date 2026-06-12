@@ -1100,7 +1100,7 @@ function ZoteroConnectionOnboarding() {
               </span>
               <p className="text-sm font-medium text-[var(--workspace-title)]">{step.title}</p>
             </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">{step.detail}</p>
+            <p className="sr-only">{step.detail}</p>
           </div>
         ))}
       </div>
@@ -1206,7 +1206,7 @@ function LiteratureSynthesisBoard({
                     <NotebookPen className="size-4 text-primary" />
                     先补读后抓手
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  <p className="sr-only">
                     已读/读中却没留下笔记的文献，最容易在组会和综述前丢失价值。
                   </p>
                 </div>
@@ -1233,7 +1233,7 @@ function LiteratureSynthesisBoard({
                     <BookOpenText className="size-4 text-primary" />
                     再生成综述矩阵
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  <p className="sr-only">
                     只生成结构化表格，问题、方法、数据和可复用点仍由你核对填写。
                   </p>
                 </div>
@@ -1295,7 +1295,7 @@ function LiteratureSignalCard({
       </span>
       <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
-      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -1385,7 +1385,7 @@ function BridgeStep({
         <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
       </div>
       <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -1500,7 +1500,7 @@ function PaperCard({ paper }: { paper: Paper }) {
             </span>
             <div className="min-w-0">
               <p className="text-sm font-medium">{nextAction}</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">{actionReason}</p>
+              <p className="sr-only">{actionReason}</p>
             </div>
           </div>
         </div>

@@ -128,7 +128,7 @@ export function AiWorkbench({
                 <span className="grid min-w-0 gap-1">
                   <span className="line-clamp-1 font-medium">{preset.label}</span>
                   {preset.detail ? (
-                    <span className="line-clamp-2 text-xs font-normal leading-5 text-muted-foreground">
+                    <span className="sr-only">
                       {preset.detail}
                     </span>
                   ) : null}

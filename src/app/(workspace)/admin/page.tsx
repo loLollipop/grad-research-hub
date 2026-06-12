@@ -757,7 +757,7 @@ export default async function AdminPage({ searchParams }: Props) {
                   <Clock3 className="size-4 text-primary" />
                   三件事务减负
                 </p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                <p className="sr-only">
                   从全库事务里优先挑 3 件最该处理的小事，不受当前筛选影响。先处理逾期、今天截止、组会和进行中事项。
                 </p>
               </div>
@@ -852,7 +852,7 @@ function AdminStackItem({
         <span className="h-px flex-1 bg-white/12" />
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -1003,7 +1003,7 @@ function AdvisorPrepItem({
           {value}
         </span>
       </div>
-      <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -1044,7 +1044,7 @@ function AdminReliefRadarItem({
             <span className="text-sm font-medium">{label}</span>
             <span className="text-xs font-medium text-primary">{value}</span>
           </span>
-          <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+          <span className="sr-only">
             {detail}
           </span>
         </span>
@@ -1164,7 +1164,7 @@ function AdvisorFiveMinutePack({
                 {questions.map((question, index) => (
                   <div key={question} className="rounded-xl border border-white/72 bg-white/64 px-3 py-2">
                     <p className="font-mono text-[11px] font-semibold text-primary">Q{index + 1}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{question}</p>
+                    <p className="sr-only">{question}</p>
                   </div>
                 ))}
               </div>
@@ -1389,7 +1389,7 @@ function AdvisorFeedbackLoop({
 
             <div className="rounded-2xl border border-white/70 bg-white/60 p-3">
               <p className="text-sm font-semibold hero-title">一键回到课题</p>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              <p className="sr-only">
                 有待办清单时，直接拆成项目页任务；没有清单时先打开最近反馈补几条。
               </p>
               <div className="mt-3 grid gap-2">
@@ -1446,7 +1446,7 @@ function FeedbackLoopTile({
         </span>
       </div>
       <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
-      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -1530,7 +1530,7 @@ function AdvisorPackRow({ item }: { item: AdvisorPackItem }) {
           </span>
           <span className="line-clamp-1 text-sm font-semibold hero-title">{item.title}</span>
         </span>
-        <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">{item.detail}</span>
+        <span className="sr-only">{item.detail}</span>
       </span>
       <span className="text-xs font-semibold text-primary">{item.action}</span>
     </Link>

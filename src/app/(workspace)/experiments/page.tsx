@@ -278,7 +278,7 @@ export default async function ExperimentsPage({ searchParams }: Props) {
                 <TimerReset className="size-4 text-primary" />
                 三项实验收口
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              <p className="sr-only">
                 先处理失败、久未更新或缺结果证据的实验。目标不是补全所有字段，而是留下能复盘的下一步。
               </p>
             </div>
@@ -538,7 +538,7 @@ function TemplateHint({
             </span>
             <p className="font-medium text-[var(--workspace-title)]">{title}</p>
           </div>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+          <p className="sr-only">{detail}</p>
         </div>
         <CreateDialog
           title={`用「${title}」记录一次实验`}
@@ -745,7 +745,7 @@ function ResultBridgeStep({
         <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
       </div>
       <p className="mt-3 text-sm font-semibold hero-title">{title}</p>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -833,7 +833,7 @@ function ExperimentReproSignal({
       </span>
       <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
-      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </Link>
   );
 }
@@ -872,7 +872,7 @@ function ExperimentCloseout({
           <span className="text-sm font-medium">{label}</span>
           <span className="text-xs font-medium text-primary">{value}</span>
         </span>
-        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {detail}
         </span>
       </span>
@@ -1013,7 +1013,7 @@ function ExperimentCloseoutCard({
             </span>
             <span className="min-w-0">
               <span className="block text-xs font-medium">{nextAction.label}</span>
-              <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+              <span className="sr-only">
                 {nextAction.detail}
               </span>
             </span>

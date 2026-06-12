@@ -965,7 +965,7 @@ function ProjectDeliverySignalCard({
       </span>
       <p className="mt-3 text-sm font-semibold hero-title">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight hero-title">{value}</p>
-      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </Link>
   );
 }
@@ -1090,7 +1090,7 @@ function ProjectRadarItem({
           <span className="text-sm font-medium">{label}</span>
           <span className="text-xs font-medium text-primary">{value}</span>
         </span>
-        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {detail}
         </span>
       </span>
@@ -1179,7 +1179,7 @@ function PushTaskCard({
           </p>
         </div>
 
-        <p className="line-clamp-2 rounded-xl border border-[#d5e4e8] bg-[#f5fafb] px-3 py-2 text-xs leading-5 text-muted-foreground">
+        <p className="inline-flex rounded-xl border border-[#d5e4e8] bg-[#f5fafb] px-2.5 py-1 text-xs leading-5 text-muted-foreground">
           {actionLabel}：{actionReason}
         </p>
 
@@ -1508,7 +1508,7 @@ function QuickTaskCapture({ milestones }: { milestones: MilestoneFull[] }) {
           </Field>
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d5e4e8] bg-white/58 px-3 py-2">
-            <p className="text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               只收下一步；复杂上下文后面再补。
             </p>
             <SubmitButton className="w-fit">收进推进栈</SubmitButton>
@@ -1892,7 +1892,7 @@ function MilestoneForm({
             <p className="text-sm font-semibold text-[var(--workspace-title)]">
               {milestone ? "调整阶段验收卡" : "把课题拆成一个可验收阶段"}
             </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               里程碑不是待办清单，最好写成一个能判断完成与否的阶段交付物。
             </p>
           </div>

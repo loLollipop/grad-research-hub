@@ -109,13 +109,8 @@ export function NavLink({
       ) : null}
       <span className="min-w-0">
         <span className="block truncate">{label}</span>
-        {detail && active ? (
-          <span
-            className={cn(
-              "mt-0.5 block truncate text-[11px] font-normal",
-              active ? "text-white/68" : "text-muted-foreground/78",
-            )}
-          >
+        {detail ? (
+          <span className="sr-only">
             {detail}
           </span>
         ) : null}

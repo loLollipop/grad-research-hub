@@ -156,7 +156,7 @@ function FlowHint({
           </span>
         </span>
       </span>
-      <span className="ml-auto truncate text-[11px] font-normal text-muted-foreground">{detail}</span>
+      <span className="sr-only">{detail}</span>
     </div>
   );
 }

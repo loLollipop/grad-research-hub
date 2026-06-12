@@ -323,7 +323,7 @@ function AiStackItem({
         <span className="h-px flex-1 bg-white/12" />
       </div>
       <p className="mt-2 line-clamp-1 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 line-clamp-1 text-xs text-white/58">{detail}</p>
+      <p className="sr-only">{detail}</p>
     </div>
   );
 }
@@ -379,7 +379,7 @@ function FlowStep({
             <span className="font-mono text-[11px] font-semibold text-muted-foreground">{index}</span>
             <p className="text-sm font-semibold text-[#173042]">{title}</p>
           </div>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+          <p className="sr-only">{detail}</p>
         </div>
       </div>
     </div>

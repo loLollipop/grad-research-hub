@@ -656,7 +656,7 @@ export default async function NotesPage({ searchParams }: Props) {
                 <p className="text-sm font-semibold text-[#173042]">
                   {currentWritingPack ? "今天的写作素材包已生成" : "写论文或周报前先收一次材料"}
                 </p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                <p className="sr-only">
                   {currentWritingPack
                     ? `更新 ${formatDateTime(currentWritingPack.updatedAt)}，可以继续编辑，不会重复创建。`
                     : "自动汇总可写入结果、读中文献和最近笔记，生成后仍在右侧编辑。"}

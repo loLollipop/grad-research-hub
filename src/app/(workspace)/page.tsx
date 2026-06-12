@@ -936,7 +936,7 @@ export default async function DashboardPage() {
           <p className="text-sm font-semibold hero-title">
             {currentMeetingBrief ? "本周组会/周报草稿已经准备好" : "组会前先生成一版周报草稿"}
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="sr-only">
             {currentMeetingBrief
               ? `覆盖 ${meetingBriefPeriod.shortLabel}，最近更新 ${formatDateTime(currentMeetingBrief.updatedAt)}。`
               : "自动汇总本周高优先级任务、临近事务、最近实验、结果证据和待读文献，生成后在笔记页改成能直接汇报的版本。"}
@@ -1389,7 +1389,7 @@ function DailyChecklistHub({
               <Sparkles className="size-4 text-primary" />
               {intro ? "开箱后会自动整理" : "3 分钟自动整理"}
             </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="sr-only">
               {intro
                 ? "先写一条真实记录。等文献、课题、实验或结果进入工作台后，这里会变成一排可生成的日计划、阅读计划和证据清单。"
                 : "不翻长列表。每天只生成会用到的计划、导师沟通单和跨模块收口清单。"}
@@ -1547,7 +1547,7 @@ function StartupStepCard({ step }: { step: StartupStep }) {
         <span className="mt-1.5 block line-clamp-1 text-xs font-semibold text-primary">
           {step.value}
         </span>
-        <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {step.detail}
         </span>
       </span>
@@ -1632,7 +1632,7 @@ function ResearchDaySegmentCard({
           {segment.title}
         </span>
         <span className="mt-1.5 block text-xs font-medium text-primary">{segment.value}</span>
-        <span className="mt-2 block line-clamp-4 text-xs leading-5 text-muted-foreground">
+        <span className="sr-only">
           {segment.detail}
         </span>
       </span>
@@ -1689,7 +1689,7 @@ function ChecklistActionCard({
         </span>
         <span>
           <span className="block text-sm font-semibold hero-title">{title}</span>
-          <span className="mt-1 block text-xs text-muted-foreground">{detail}</span>
+          <span className="sr-only">{detail}</span>
           <span className="mt-2 block line-clamp-1 text-xs text-muted-foreground">
             {ids[0]?.title ?? emptyText}
           </span>
@@ -1858,7 +1858,7 @@ function ResearchNeedCompass({
                   <span className="mt-1.5 block text-xs font-medium text-primary">
                     {signal.value}
                   </span>
-                  <span className="mt-2 block line-clamp-3 text-xs leading-5 text-muted-foreground">
+                  <span className="sr-only">
                     {signal.detail}
                   </span>
                 </span>
@@ -2214,7 +2214,7 @@ function ResearchRhythm({
                   <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
                 </div>
                 <p className="mt-1 line-clamp-1 font-semibold tracking-tight">{item.value}</p>
-                <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{item.detail}</p>
+                <p className="sr-only">{item.detail}</p>
               </div>
             </Link>
           );
@@ -2233,7 +2233,7 @@ function ClosingRadar({ items }: { items: ClosingItem[] }) {
             <TimerReset className="size-4 text-primary" />
             收口提醒
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="sr-only">
             只提醒最容易被遗忘的任务、实验、结果和文献，不增加新的配置。
           </p>
         </div>
@@ -2322,7 +2322,7 @@ function ResearchLanes({ lanes }: { lanes: ResearchLane[] }) {
                   <span className="mt-1 block text-xs font-medium text-muted-foreground">
                     {lane.value}
                   </span>
-                  <span className="mt-1.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+                  <span className="sr-only">
                     {lane.detail}
                   </span>
                 </span>
